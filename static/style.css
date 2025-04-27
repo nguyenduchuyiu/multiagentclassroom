@@ -1,0 +1,618 @@
+:root {
+    --primary-color: #4a6fa5; /* Màu chính */
+    --secondary-color: #6c8cbf; /* Màu phụ */
+    --tertiary-color: #e6ecf5; /* Nền sáng nhẹ */
+    --light-color: #f5f7fa; /* Nền chính */
+    --dark-color: #2c3e50; /* Màu chữ chính */
+    --user-color: #1abc9c; /* Màu người dùng */
+    --success-color: #2ecc71; /* Màu trạng thái thành công/online */
+    --warning-color: #f39c12; /* Màu trạng thái cảnh báo/connecting */
+    --error-color: #e74c3c; /* Màu trạng thái lỗi/offline */
+
+    /* Màu cho các AI (NÊN ĐỔI TÊN BIẾN THEO VAI TRÒ/ID) */
+    --coder-ai-color: #f2994a; /* Alice cũ */
+    --manager-ai-color: #6fcf97; /* Bob cũ */
+    /* --other-ai-color: #bb6bd9; /* Charlie cũ */
+
+    --border-radius: 8px; /* Giảm nhẹ border-radius */
+    --transition: all 0.2s ease-in-out;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    /* Loại bỏ min-height và display: flex để container tự quản lý */
+}
+
+.container {
+    max-width: 1300px; /* Tăng nhẹ max-width */
+    margin: 0 auto;
+    padding: 15px; /* Giảm padding */
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Container chiếm toàn bộ chiều cao viewport */
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px; /* Chỉ padding dưới */
+    margin-bottom: 15px; /* Giảm margin */
+    border-bottom: 1px solid #e0e0e0; /* Màu border nhạt hơn */
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.6rem; /* Giảm nhẹ font-size */
+    font-weight: 600; /* Dùng 600 thay bold */
+    color: var(--primary-color);
+}
+
+.logo i {
+    color: var(--secondary-color);
+}
+
+.status {
+    /* background-color: var(--primary-color); */ /* Để màu nền theo trạng thái */
+    color: white;
+    padding: 5px 12px; /* Giảm padding */
+    border-radius: 15px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+}
+
+.status i#connectionStatusIcon {
+    font-size: 0.7rem;
+    transition: var(--transition);
+}
+
+/* Trạng thái kết nối */
+.status.connecting { background-color: var(--warning-color); }
+.status.connected { background-color: var(--success-color); }
+.status.disconnected { background-color: var(--error-color); }
+
+
+.main-content {
+    display: flex;
+    gap: 15px; /* Giảm gap */
+    flex: 1; /* Quan trọng: để main-content chiếm hết không gian còn lại */
+    overflow: hidden; /* Ngăn tràn nội dung */
+}
+
+.chat-container {
+    flex: 3; /* Tỷ lệ giữ nguyên */
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06); /* Giảm shadow */
+    overflow: hidden;
+}
+
+.info-panel {
+    flex: 1; /* Tỷ lệ giữ nguyên */
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    padding: 15px; /* Giảm padding */
+    overflow-y: auto; /* Cho phép cuộn nếu nội dung dài */
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Giảm gap */
+}
+
+/* Custom scrollbar cho Webkit browsers */
+.info-panel::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+.info-panel::-webkit-scrollbar-track,
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+.info-panel::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+.info-panel::-webkit-scrollbar-thumb:hover,
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+
+.chat-messages {
+    flex: 1; /* Quan trọng: để chat-messages chiếm hết không gian */
+    overflow-y: auto; /* Cho phép cuộn */
+    padding: 15px; /* Giảm padding */
+}
+
+.message {
+    margin-bottom: 15px; /* Giảm margin */
+    display: flex; /* Thêm flex để dễ căn chỉnh avatar (nếu có) */
+    flex-direction: column; /* Hiển thị sender/time trên content */
+    max-width: 85%; /* Giới hạn chiều rộng tối đa */
+    animation: fadeIn 0.3s ease-out;
+}
+
+.message.user-message {
+    align-self: flex-end; /* Đẩy tin nhắn người dùng sang phải */
+    align-items: flex-end; /* Căn nội dung bên phải */
+}
+
+.message.ai-message {
+    align-self: flex-start; /* Giữ tin nhắn AI bên trái */
+    align-items: flex-start; /* Căn nội dung bên trái */
+}
+
+.message-header { /* Phần chứa sender và time */
+    display: flex;
+    justify-content: space-between; /* Đẩy time sang phải */
+    width: 100%; /* Chiếm hết chiều rộng của .message */
+    margin-bottom: 4px;
+    padding: 0 5px; /* Thêm padding nhỏ */
+}
+
+.sender-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--primary-color); /* Màu tên người gửi mặc định */
+}
+
+.message.user-message .sender-name {
+    color: var(--user-color); /* Màu tên người dùng */
+}
+
+.timestamp {
+    font-size: 0.75rem;
+    color: #999;
+    margin-left: 10px; /* Khoảng cách với tên */
+}
+
+.message-content {
+    padding: 10px 15px; /* Giảm padding */
+    border-radius: var(--border-radius);
+    background-color: var(--tertiary-color);
+    word-break: break-word;
+    line-height: 1.5;
+    position: relative; /* Cho phép định vị các yếu tố con như border */
+}
+
+/* Định dạng riêng cho tin nhắn người dùng */
+.message.user-message .message-content {
+    background-color: var(--user-color);
+    color: white;
+}
+/* Ghi đè màu timestamp cho tin nhắn người dùng nếu cần */
+.message.user-message .timestamp {
+     color: rgba(255, 255, 255, 0.8);
+}
+.message.user-message .sender-name {
+     color: rgba(255, 255, 255, 0.9); /* Màu tên sáng hơn trên nền đậm */
+}
+
+
+/* Định dạng cho tin nhắn AI - sử dụng border thay vì nền */
+.message.ai-message .message-content {
+    background-color: #f0f4f8; /* Nền xám nhạt chung cho AI */
+    border-left: 4px solid var(--secondary-color); /* Border mặc định */
+}
+
+/* Ghi đè border cho từng AI (DÙNG CLASS TƯƠNG ỨNG VỚI AGENT_ID) */
+.message.ai-message.sender-CoderAI .message-content { /* Class = sender-<agent_id> */
+    border-left-color: var(--coder-ai-color);
+}
+.message.ai-message.sender-ManagerAI .message-content {
+    border-left-color: var(--manager-ai-color);
+}
+/* Thêm các AI khác nếu cần */
+/* .message.ai-message.sender-OtherAI .message-content {
+    border-left-color: var(--other-ai-color);
+} */
+
+
+.typing-indicator {
+    padding: 5px 15px;
+    height: 25px; /* Chiều cao cố định */
+    font-size: 0.85rem;
+    font-style: italic;
+    color: #888;
+    border-top: 1px solid #eee;
+    background-color: #fdfdfd;
+}
+.typing-indicator span { /* Định dạng cho từng "X is typing" */
+    margin-right: 10px;
+}
+
+
+.chat-input {
+    padding: 15px; /* Giảm padding */
+    border-top: 1px solid #e0e0e0;
+    background-color: #fff;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end; /* Căn các nút xuống dưới cùng với textarea */
+}
+
+.input-container textarea {
+    flex: 1;
+    padding: 10px 15px; /* Giảm padding */
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    resize: none;
+    min-height: 44px; /* Chiều cao tối thiểu */
+    max-height: 120px; /* Giới hạn chiều cao tối đa */
+    font-size: 0.95rem;
+    line-height: 1.4;
+    transition: var(--transition);
+    overflow-y: auto; /* Cho phép cuộn nếu nhiều dòng */
+}
+
+.input-container textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.15);
+}
+
+.send-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    height: 44px; /* Chiều cao bằng min-height của textarea */
+    width: 44px; /* Nút vuông */
+    padding: 0; /* Bỏ padding */
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0; /* Không co lại */
+}
+
+.send-btn:hover {
+    background-color: var(--secondary-color);
+}
+.send-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.send-btn i {
+    font-size: 1.1rem; /* Kích thước icon */
+}
+
+/* Bỏ style nút skip nếu không dùng */
+/* .skip-btn { ... } */
+
+
+.section-title {
+    font-size: 1.1rem; /* Giảm font-size */
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    padding-bottom: 5px; /* Thêm padding dưới */
+    border-bottom: 1px solid #eee; /* Thêm đường kẻ */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.stage-info {
+    background-color: var(--tertiary-color);
+    padding: 12px; /* Giảm padding */
+    border-radius: var(--border-radius);
+}
+
+.current-stage {
+    font-size: 1.3rem; /* Giảm font-size */
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 3px;
+}
+
+.stage-description {
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.stage-progress {
+    margin-top: 12px;
+}
+
+.progress-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 5px;
+    background-color: #e0e0e0;
+    border-radius: 2.5px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    transition: width 0.4s ease-out;
+}
+
+.participants {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Giảm gap */
+}
+
+.participant {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px; /* Giảm padding */
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    background-color: #f9f9f9; /* Nền nhẹ cho participant */
+    border: 1px solid transparent; /* Border ẩn để giữ layout khi active */
+}
+.participant:hover {
+    background-color: #f0f0f0;
+}
+
+.participant-avatar {
+    width: 28px; /* Giảm kích thước avatar */
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: 600;
+    margin-right: 10px;
+    font-size: 0.8rem; /* Chữ trong avatar nhỏ hơn */
+    flex-shrink: 0;
+}
+
+.participant-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between; /* Đẩy status sang phải */
+    align-items: center;
+}
+
+.participant-name {
+    font-weight: 500; /* Giảm độ đậm */
+    font-size: 0.9rem;
+}
+
+.participant-status {
+    font-size: 0.8rem;
+    color: #666;
+    display: flex; /* Cho phép chứa typing dot */
+    align-items: center;
+}
+
+.typing-dot {
+    display: inline-block; /* Hiện khi cần */
+    width: 5px;
+    height: 5px;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+    margin-left: 5px;
+    animation: typing-blink 1.4s infinite both;
+}
+.typing-dot:nth-child(2) { animation-delay: .2s; }
+.typing-dot:nth-child(3) { animation-delay: .4s; } /* Nếu muốn nhiều chấm */
+
+@keyframes typing-blink {
+    0% { opacity: .2; }
+    20% { opacity: 1; }
+    100% { opacity: .2; }
+}
+
+
+/* Màu nền và avatar cho từng participant (DÙNG CLASS = participant-<agent_id>) */
+.participant.participant-Human .participant-avatar { background-color: var(--user-color); }
+.participant.participant-CoderAI .participant-avatar { background-color: var(--coder-ai-color); }
+.participant.participant-ManagerAI .participant-avatar { background-color: var(--manager-ai-color); }
+/* Thêm các AI khác */
+
+
+.stats {
+    display: grid; /* Dùng grid cho dễ căn */
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Chia cột tự động */
+    gap: 10px;
+}
+
+.stat-card {
+    /* flex: 1; */ /* Bỏ flex khi dùng grid */
+    background-color: var(--tertiary-color);
+    padding: 12px; /* Giảm padding */
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.6rem; /* Giảm font-size */
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 3px;
+}
+
+.stat-label {
+    font-size: 0.75rem; /* Giảm font-size */
+    color: #555;
+    text-transform: uppercase; /* Viết hoa label */
+}
+
+.controls {
+    margin-top: 15px; /* Giảm margin */
+    border-top: 1px solid #eee; /* Thêm đường kẻ phân cách */
+    padding-top: 15px; /* Padding trên */
+}
+
+.control-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 12px; /* Giảm padding */
+    margin-bottom: 8px; /* Giảm margin */
+    background-color: #e9edf2; /* Màu nền nhạt hơn */
+    border: 1px solid #dce1e8; /* Thêm border nhẹ */
+    border-radius: var(--border-radius);
+    color: var(--dark-color);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px; /* Giảm gap */
+    font-size: 0.9rem;
+}
+
+.control-btn:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+}
+.control-btn:last-child {
+     margin-bottom: 0; /* Bỏ margin cho nút cuối */
+}
+
+.control-btn.restart {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.control-btn.restart:hover {
+    background-color: #3a5a8c;
+    border-color: #3a5a8c;
+}
+
+.control-btn i {
+    font-size: 0.9em; /* Kích thước icon tương đối */
+}
+
+/* Thêm trạng thái loading cho nút (nếu cần) */
+.button-loading .fas { display: none; } /* Ẩn icon thường */
+.button-loading::after { /* Hiện spinner */
+    content: '';
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.6s linear infinite;
+    margin-left: 5px; /* Khoảng cách với text (nếu có) */
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.disabled { /* Style cho nút bị vô hiệu hóa */
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #e0e0e0 !important; /* Ghi đè màu nền */
+    color: #999 !important; /* Ghi đè màu chữ */
+    border-color: #d0d0d0 !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) { /* Thêm breakpoint cho tablet lớn */
+    .container {
+        max-width: 95%;
+    }
+    .info-panel {
+        flex: 1.2; /* Cho info panel rộng hơn chút */
+    }
+    .chat-container {
+        flex: 2.8;
+    }
+}
+
+
+@media (max-width: 768px) { /* Điều chỉnh breakpoint */
+    .main-content {
+        flex-direction: column;
+        overflow: visible; /* Cho phép tràn khi xếp chồng */
+    }
+
+    .info-panel {
+        order: -1; /* Đưa info panel lên đầu */
+        margin-bottom: 15px;
+        max-height: 40vh; /* Giới hạn chiều cao info panel */
+        flex: none; /* Bỏ flex để tự động chiều cao */
+    }
+    .chat-container {
+         flex: 1; /* Chat container chiếm phần còn lại */
+         min-height: 50vh; /* Đảm bảo chiều cao tối thiểu */
+    }
+
+    .container {
+         height: auto; /* Container tự động chiều cao */
+         padding: 10px;
+    }
+    body { /* Cho phép body cuộn trên mobile */
+        display: block;
+    }
+}
+
+@media (max-width: 480px) { /* Điều chỉnh breakpoint mobile nhỏ */
+    .logo {
+        font-size: 1.3rem;
+    }
+    .status {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+    .message {
+         max-width: 95%;
+    }
+    .input-container textarea {
+        padding: 8px 10px;
+        min-height: 40px;
+    }
+    .send-btn {
+         height: 40px;
+         width: 40px;
+    }
+    .send-btn i {
+         font-size: 1rem;
+    }
+    .stats {
+        grid-template-columns: 1fr 1fr; /* Luôn 2 cột trên mobile nhỏ */
+    }
+    .section-title {
+         font-size: 1rem;
+    }
+    .current-stage {
+         font-size: 1.2rem;
+    }
+}
