@@ -4,39 +4,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('userInput');
     const sendButton = document.getElementById('sendBtn');
     const typingIndicator = document.getElementById('typingIndicator');
-    const participantsList = document.getElementById('participantsList'); // Vùng chứa participant
+    const participantsList = document.getElementById('participantsList');
     const messageCountEl = document.getElementById('messageCount');
-    const turnCountEl = document.getElementById('turnCount'); // Có thể không dùng 'turn'
+    const turnCountEl = document.getElementById('turnCount');
     const connectionStatusIcon = document.getElementById('connectionStatusIcon');
     const statusText = document.getElementById('statusText');
     const restartBtn = document.getElementById('restartBtn');
     const exportBtn = document.getElementById('exportBtn');
-    // Thêm các phần tử khác nếu cần cập nhật động (stage, progress, etc.)
 
     let messageCounter = 0;
-    let currentTypingAgents = new Set(); // Lưu trữ ID các agent đang typing
+    let currentTypingAgents = new Set();               // Quản lý chỉ báo chung
+    let agentStatuses = {};                             // Lưu trạng thái từng agent
 
-    // --- Hàm tiện ích ---
-
-    // Định dạng thời gian (ví dụ đơn giản)
-    function formatTimestamp(timestamp) {
-        if (!timestamp) return '';
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // --- Khởi tạo trạng thái ban đầu cho các agent ---
+    function initializeAgentStatuses() {
+        agentStatuses = {};
+        const divs = participantsList.querySelectorAll('.participant[data-agent-id]');
+        divs.forEach(div => {
+            const id = div.dataset.agentId;
+            if (id && id !== 'Human') agentStatuses[id] = 'idle';
+        });
+        updateParticipantDisplay();
     }
 
-    // Hàm hiển thị tin nhắn mới vào chatbox
+    // --- Tiện ích chung ---
+    function formatTimestamp(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    // --- Hiển thị tin nhắn ---
     function displayMessage(sender, text, timestamp, senderType = 'ai', agentId = null) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message');
+        const msg = document.createElement('div');
+        msg.classList.add('message');
 
-        let senderClass = '';
-        let messageContent = '';
-
+        let html = '';
         if (senderType === 'user') {
-            messageDiv.classList.add('user-message');
-            senderClass = 'user-message'; // Class cho message-content
-            messageContent = `
+            msg.classList.add('user-message');
+            html = `
                 <div class="message-header">
                     <strong class="sender-name">Bạn</strong>
                     <span class="timestamp">${formatTimestamp(timestamp)}</span>
@@ -45,322 +57,244 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="message-text">${escapeHTML(text)}</div>
                 </div>`;
         } else if (senderType === 'system') {
-            messageDiv.classList.add('system-message'); // Thêm class riêng cho hệ thống nếu muốn
-            senderClass = 'system-message';
-             messageContent = `
+            msg.classList.add('system-message');
+            html = `
                 <div class="message-header">
                     <strong class="sender-name">${sender}</strong>
                     <span class="timestamp">${formatTimestamp(timestamp)}</span>
                 </div>
-                <div class="message-content" style="background-color: #f0f0f0; font-style: italic;">
+                <div class="message-content system-content">
                     <div class="message-text">${escapeHTML(text)}</div>
                 </div>`;
-        }
-        else { // AI message
-            messageDiv.classList.add('ai-message');
-            // Thêm class dựa trên agentId để CSS áp dụng màu border/avatar
+        } else {
+            msg.classList.add('ai-message');
             if (agentId) {
-                messageDiv.classList.add(`sender-${agentId}`);
-                 senderClass = `sender-${agentId}`;
+                msg.classList.add(`sender-${agentId.toLowerCase()}`);
             }
-            messageContent = `
-                 <div class="message-header">
+            html = `
+                <div class="message-header">
                     <strong class="sender-name">${sender}</strong>
                     <span class="timestamp">${formatTimestamp(timestamp)}</span>
                 </div>
                 <div class="message-content">
-                     <div class="message-text">${escapeHTML(text)}</div>
+                    <div class="message-text">${escapeHTML(text)}</div>
                 </div>`;
         }
 
-        messageDiv.innerHTML = messageContent;
-        chatbox.appendChild(messageDiv);
-
-        // Tự động cuộn xuống cuối
+        msg.innerHTML = html;
+        chatbox.appendChild(msg);
         chatbox.scrollTop = chatbox.scrollHeight;
 
-        // Cập nhật bộ đếm tin nhắn
         messageCounter++;
         messageCountEl.textContent = messageCounter;
-        // Cập nhật lượt (nếu cần logic riêng)
-        // turnCountEl.textContent = ...;
 
-        // Xử lý MathJax nếu có công thức toán
-        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
-             MathJax.typesetPromise([messageDiv]).catch(function (err) {
-                 console.error('MathJax typesetting error:', err);
-             });
+        if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise([msg]).catch(err => console.error('MathJax error:', err));
         }
     }
 
-     // Hàm thoát HTML để tránh XSS
-     function escapeHTML(str) {
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
-     }
-
-
-    // Hàm cập nhật chỉ báo typing
-    function updateTypingIndicator() {
+    // --- Cập nhật hiển thị panel người tham gia ---
+    function updateParticipantDisplay() {
+        // Typing chung
         if (currentTypingAgents.size === 0) {
-            typingIndicator.innerHTML = ''; // Xóa nếu không ai đang nhập
-            typingIndicator.style.display = 'none'; // Ẩn vùng chỉ báo
+            typingIndicator.style.display = 'none';
+            typingIndicator.innerHTML = '';
         } else {
-            const agentNames = Array.from(currentTypingAgents).join(', ');
-            typingIndicator.innerHTML = `<span>${agentNames} đang nhập...</span>`;
-            typingIndicator.style.display = 'block'; // Hiện vùng chỉ báo
+            const names = Array.from(currentTypingAgents).map(id => {
+                const d = participantsList.querySelector(`.participant[data-agent-id="${id}"]`);
+                return d?.querySelector('.participant-name')?.textContent || id;
+            }).join(', ');
+            typingIndicator.innerHTML = `${names} đang nhập...`;
+            typingIndicator.style.display = 'block';
         }
 
-        // Cập nhật trạng thái trong panel người tham gia
-        const participantDivs = participantsList.querySelectorAll('.participant');
-        participantDivs.forEach(div => {
-            const agentId = div.id.replace('participant-', ''); // Lấy agentId từ id div
-            const statusElement = div.querySelector(`#status-${agentId}`);
-            const typingDot = div.querySelector('.typing-dot');
-
-            if (statusElement && typingDot) {
-                if (currentTypingAgents.has(agentId)) {
-                    statusElement.textContent = 'Typing '; // Text trạng thái
-                    typingDot.style.display = 'inline-block'; // Hiện dấu chấm
-                } else {
-                    // Chỉ đặt lại thành Idle nếu không phải người dùng
-                    if(agentId !== 'Human'){
-                        statusElement.textContent = 'Idle ';
-                        typingDot.style.display = 'none'; // Ẩn dấu chấm
-                    }
-                }
+        // Trạng thái từng agent
+        const divs = participantsList.querySelectorAll('.participant[data-agent-id]');
+        divs.forEach(div => {
+            const id = div.dataset.agentId;
+            if (id === 'Human') return;
+            const statusEl = div.querySelector(`#status-${id}`);
+            const dot = div.querySelector('.typing-dot');
+            const st = agentStatuses[id] || 'idle';
+            div.classList.remove('status-idle', 'status-typing', 'status-thinking');
+            if (st === 'typing') {
+                statusEl.textContent = 'Typing ';
+                dot && (dot.style.display = 'inline-block');
+                div.classList.add('status-typing');
+            } else if (st === 'thinking') {
+                statusEl.textContent = 'Thinking...';
+                dot && (dot.style.display = 'none');
+                div.classList.add('status-thinking');
+            } else {
+                statusEl.textContent = 'Đang hoạt động ';
+                dot && (dot.style.display = 'none');
+                div.classList.add('status-idle');
             }
         });
     }
 
-    // Hàm cập nhật trạng thái kết nối
+    // --- Cập nhật trạng thái kết nối ---
     function updateConnectionStatus(status) {
-        const statusElement = document.querySelector('.status');
-        statusElement.classList.remove('connecting', 'connected', 'disconnected'); // Xóa class cũ
-
+        const panel = document.querySelector('.status');
+        panel.classList.remove('connecting', 'connected', 'disconnected');
         switch (status) {
             case 'connected':
                 connectionStatusIcon.style.color = 'var(--success-color)';
                 statusText.textContent = 'Đã kết nối';
-                statusElement.classList.add('connected');
-                messageInput.disabled = false; // Cho phép nhập liệu
+                panel.classList.add('connected');
+                messageInput.disabled = false;
                 sendButton.disabled = false;
                 break;
             case 'disconnected':
                 connectionStatusIcon.style.color = 'var(--error-color)';
                 statusText.textContent = 'Mất kết nối';
-                statusElement.classList.add('disconnected');
-                messageInput.disabled = true; // Không cho nhập liệu
+                panel.classList.add('disconnected');
+                messageInput.disabled = true;
                 sendButton.disabled = true;
-                // Có thể thêm logic thử kết nối lại ở đây
                 break;
-            default: // connecting or initial state
+            default:
                 connectionStatusIcon.style.color = 'var(--warning-color)';
                 statusText.textContent = 'Đang kết nối...';
-                statusElement.classList.add('connecting');
+                panel.classList.add('connecting');
                 messageInput.disabled = true;
                 sendButton.disabled = true;
         }
     }
 
-    // --- Xử lý gửi tin nhắn ---
+    // --- Gửi tin nhắn ---
     function sendMessage() {
         const text = messageInput.value.trim();
-        if (text && !messageInput.disabled) { // Chỉ gửi nếu có text và không bị disable
-            // Vô hiệu hóa tạm thời để tránh gửi liên tục
-            messageInput.disabled = true;
-            sendButton.disabled = true;
-            sendButton.classList.add('disabled'); // Thêm class disabled
+        if (!text || messageInput.disabled) return;
 
-            fetch('/send_message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text: text }),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    console.error("Gửi tin nhắn thất bại:", response.statusText);
-                    // Có thể hiển thị lỗi cho người dùng
-                    displayMessage('System', `Lỗi gửi tin nhắn: ${response.statusText}`, Date.now(), 'system');
-                }
-                 // Không cần làm gì khi thành công, SSE sẽ xử lý tin nhắn mới
-            })
-            .catch(error => {
-                console.error('Lỗi mạng khi gửi tin nhắn:', error);
-                 displayMessage('System', `Lỗi mạng: ${error.message}`, Date.now(), 'system');
-            })
-            .finally(() => {
-                // Cho phép nhập lại sau khi gửi xong (dù thành công hay lỗi)
-                // Server sẽ cập nhật trạng thái connected/disconnected qua SSE nếu cần
-                if(eventSource && eventSource.readyState === EventSource.OPEN) {
-                     messageInput.disabled = false;
-                     sendButton.disabled = false;
-                     sendButton.classList.remove('disabled');
-                     messageInput.focus(); // Focus lại vào ô input
-                }
-            });
+        messageInput.disabled = true;
+        sendButton.disabled = true;
+        sendButton.classList.add('disabled');
 
-            messageInput.value = ''; // Xóa input ngay sau khi lấy giá trị
-            messageInput.style.height = 'auto'; // Reset chiều cao textarea
-        }
+        fetch('/send_message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        })
+        .then(res => {
+            if (!res.ok) {
+                displayMessage('System', `Lỗi gửi: ${res.statusText}`, Date.now(), 'system');
+            }
+        })
+        .catch(err => displayMessage('System', `Lỗi mạng: ${err.message}`, Date.now(), 'system'))
+        .finally(() => {
+            if (eventSource && eventSource.readyState === EventSource.OPEN) {
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                sendButton.classList.remove('disabled');
+                messageInput.focus();
+            }
+        });
+
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
     }
 
-    // --- Lắng nghe sự kiện ---
     sendButton.addEventListener('click', sendMessage);
-
-    messageInput.addEventListener('keypress', (e) => {
-        // Gửi khi nhấn Enter (không nhấn Shift)
+    messageInput.addEventListener('keypress', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Ngăn xuống dòng mặc định
-            sendMessage();
+            e.preventDefault(); sendMessage();
         }
     });
+    messageInput.addEventListener('input', () => {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = `${messageInput.scrollHeight}px`;
+    });
 
-     // Tự động điều chỉnh chiều cao textarea khi nhập
-     messageInput.addEventListener('input', () => {
-        messageInput.style.height = 'auto'; // Reset chiều cao
-        messageInput.style.height = (messageInput.scrollHeight) + 'px'; // Đặt chiều cao mới
-     });
-
-
-    // --- Thiết lập Server-Sent Events (SSE) ---
-    let eventSource = null;
-
+    // --- Thiết lập SSE ---
+    let eventSource;
     function connectSSE() {
-        if (eventSource && (eventSource.readyState === EventSource.OPEN || eventSource.readyState === EventSource.CONNECTING)) {
-            console.log("SSE connection already open or connecting.");
-            return;
-        }
+        if (eventSource &&
+            (eventSource.readyState === EventSource.OPEN || eventSource.readyState === EventSource.CONNECTING)) return;
 
-        console.log("Connecting to SSE stream...");
-        updateConnectionStatus('connecting'); // Cập nhật trạng thái UI
-
+        updateConnectionStatus('connecting');
         eventSource = new EventSource('/stream');
 
-        eventSource.onopen = function() {
-            console.log("SSE connection established.");
-            updateConnectionStatus('connected'); // Cập nhật trạng thái UI
-            // Lấy lịch sử chat khi kết nối thành công
-             fetch('/history')
-                .then(response => response.json())
+        eventSource.onopen = () => {
+            updateConnectionStatus('connected');
+            initializeAgentStatuses();
+            fetch('/history')
+                .then(r => r.json())
                 .then(history => {
-                    chatbox.innerHTML = ''; // Xóa chat cũ (nếu có)
-                    messageCounter = 0; // Reset counter
+                    chatbox.innerHTML = '';
+                    messageCounter = 0;
                     history.forEach(msg => {
-                        const senderType = msg.sender === 'Human' ? 'user' : (msg.sender === 'System' ? 'system' : 'ai');
-                        const agentId = senderType === 'ai' ? msg.sender : null;
-                        displayMessage(msg.sender, msg.text, msg.timestamp, senderType, agentId);
+                        const type = msg.sender === 'Human' ? 'user' :
+                                     (msg.sender === 'System' ? 'system' : 'ai');
+                        const aid = type === 'ai' ? msg.sender : null;
+                        displayMessage(msg.sender, msg.text, msg.timestamp, type, aid);
                     });
-                    messageInput.focus(); // Focus vào ô nhập liệu
-                })
-                .catch(error => console.error("Error fetching history:", error));
+                    messageInput.focus();
+                });
         };
 
-        eventSource.onerror = function(err) {
-            console.error("SSE error:", err);
+        eventSource.onerror = err => {
             updateConnectionStatus('disconnected');
-            eventSource.close(); // Đóng kết nối cũ
-            // Thử kết nối lại sau một khoảng thời gian
-            setTimeout(connectSSE, 5000); // Thử lại sau 5 giây
+            eventSource.close();
+            setTimeout(connectSSE, 5000);
         };
 
-        // Lắng nghe sự kiện 'new_message'
-        eventSource.addEventListener('new_message', function(event) {
+        eventSource.addEventListener('new_message', e => {
             try {
-                const message = JSON.parse(event.data);
-                console.log("SSE new_message:", message);
-                const senderType = message.sender === 'Human' ? 'user' : (message.sender === 'System' ? 'system' : 'ai');
-                 const agentId = senderType === 'ai' ? message.sender : null;
-                displayMessage(message.sender, message.text, message.timestamp, senderType, agentId);
-                 // Khi có tin nhắn mới, xóa hết trạng thái typing
-                 currentTypingAgents.clear();
-                 updateTypingIndicator();
-            } catch (e) {
-                console.error("Error parsing new_message data:", e, event.data);
-            }
+                const m = JSON.parse(e.data);
+                const type = m.sender === 'Human' ? 'user' :
+                             (m.sender === 'System' ? 'system' : 'ai');
+                const aid = type === 'ai' ? m.sender : null;
+                displayMessage(m.sender, m.text, m.timestamp, type, aid);
+            } catch (e) { console.error(e); }
         });
 
-        // Lắng nghe sự kiện 'agent_status'
-        eventSource.addEventListener('agent_status', function(event) {
+        eventSource.addEventListener('agent_status', e => {
             try {
-                const statusUpdate = JSON.parse(event.data);
-                console.log("SSE agent_status:", statusUpdate);
-                if (statusUpdate.status === 'typing') {
-                    currentTypingAgents.add(statusUpdate.agent_id);
-                } else {
-                    currentTypingAgents.delete(statusUpdate.agent_id);
-                }
-                updateTypingIndicator();
-            } catch (e) {
-                console.error("Error parsing agent_status data:", e, event.data);
-            }
+                const upd = JSON.parse(e.data);
+                const id = upd.agent_id;
+                const st = upd.status;  // 'typing', 'thinking', 'idle'
+                agentStatuses[id] = st;
+                if (st === 'typing') currentTypingAgents.add(id);
+                else currentTypingAgents.delete(id);
+                updateParticipantDisplay();
+            } catch (e) { console.error(e); }
         });
-
-         // (Tùy chọn) Lắng nghe các sự kiện khác từ server nếu cần
-         // eventSource.addEventListener('progress_update', function(event) { ... });
-         // eventSource.addEventListener('stats_update', function(event) { ... });
-
     }
 
-    // --- Xử lý các nút điều khiển khác ---
+    // --- Nút Restart ---
     restartBtn.addEventListener('click', () => {
-        if (confirm("Bạn có chắc muốn bắt đầu lại cuộc trò chuyện? Toàn bộ lịch sử sẽ bị xóa.")) {
-            console.log("Restarting conversation...");
-            // TODO: Gửi yêu cầu tới backend để reset trạng thái (nếu cần)
-            // fetch('/restart', { method: 'POST' }).then(...)
-
-            // Reset frontend
+        if (confirm('Bạn có chắc muốn bắt đầu lại cuộc trò chuyện?')) {
             chatbox.innerHTML = '';
             messageCounter = 0;
             messageCountEl.textContent = '0';
-            turnCountEl.textContent = '0'; // Reset lượt
+            turnCountEl.textContent = '0';
             currentTypingAgents.clear();
-            updateTypingIndicator();
-            // Reset progress, stage...
-            // Hiển thị lại tin nhắn chào mừng (nếu có)
-            // displayMessage('System', 'Cuộc trò chuyện đã được khởi động lại.', Date.now(), 'system');
-
-             // Đóng và mở lại SSE để đảm bảo trạng thái sạch
-             if (eventSource) {
-                eventSource.close();
-             }
-             setTimeout(connectSSE, 500); // Kết nối lại sau 0.5s
+            initializeAgentStatuses();
+            if (eventSource) eventSource.close();
+            setTimeout(connectSSE, 500);
         }
     });
 
+    // --- Nút Export ---
     exportBtn.addEventListener('click', () => {
-        console.log("Exporting conversation...");
-        // Lấy nội dung chat
-        let chatContent = "";
-        const messages = chatbox.querySelectorAll('.message');
-        messages.forEach(msg => {
-            const sender = msg.querySelector('.sender-name')?.textContent || 'Unknown';
-            const text = msg.querySelector('.message-text')?.textContent || '';
+        let content = '';
+        chatbox.querySelectorAll('.message').forEach(msg => {
+            const name = msg.querySelector('.sender-name')?.textContent || '';
+            const txt = msg.querySelector('.message-text')?.textContent || '';
             const time = msg.querySelector('.timestamp')?.textContent || '';
-            chatContent += `[${time}] ${sender} ${text}\n`;
+            content += `[${time}] ${name}: ${txt}\n`;
         });
-
-        if (!chatContent) {
-            alert("Không có nội dung để xuất.");
-            return;
-        }
-
-        // Tạo file và tải xuống
-        const blob = new Blob([chatContent], { type: 'text/plain;charset=utf-8' });
+        if (!content) return alert('Không có nội dung để xuất.');
+        const blob = new Blob([content], { type: 'text/plain' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `chatcollab_export_${new Date().toISOString().slice(0,10)}.txt`;
+        link.download = `chat_export_${new Date().toISOString().slice(0,10)}.txt`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(link.href); // Giải phóng bộ nhớ
+        URL.revokeObjectURL(link.href);
     });
 
-
-    // --- Khởi tạo kết nối SSE ban đầu ---
+    // --- Khởi tạo ---
     connectSSE();
-
-}); // Kết thúc DOMContentLoaded
+});

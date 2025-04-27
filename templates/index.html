@@ -6,138 +6,114 @@
     <title>Hệ Thống Trò Chuyện AI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <!-- Liên kết CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
+        <!-- Header giữ nguyên -->
         <header>
-            <div class="logo">
-                <i class="fas fa-robot"></i> Hệ Thống Trò Chuyện AI
-            </div>
-            <div class="status">
-                <i class="fas fa-circle" id="connectionStatusIcon" style="color: orange;"></i> <!-- Thêm ID và màu mặc định -->
-                <span id="statusText">Đang kết nối...</span> <!-- Trạng thái kết nối SSE -->
-            </div>
-        </header>
+           <div class="logo">
+               <i class="fas fa-robot"></i> Hệ Thống Trò Chuyện AI
+           </div>
+           <div class="status">
+               <i class="fas fa-circle" id="connectionStatusIcon" style="color: orange;"></i>
+               <span id="statusText">Đang kết nối...</span>
+           </div>
+       </header>
 
         <div class="main-content">
-            <div class="chat-container">
+            <!-- Chat Container giữ nguyên -->
+             <div class="chat-container">
                 <div class="chat-messages" id="chatMessages">
                     <!-- Tin nhắn sẽ được thêm vào đây -->
-                    <!-- Ví dụ cấu trúc tin nhắn:
-                    <div class="message user-message">
-                        <strong class="sender-name">Bạn:</strong>
-                        <div class="message-content">Đây là tin nhắn của người dùng.</div>
-                        <span class="timestamp">10:30 AM</span>
-                    </div>
-                    <div class="message ai-message">
-                        <strong class="sender-name">Alice:</strong>
-                        <div class="message-content">Đây là tin nhắn của AI.</div>
-                         <span class="timestamp">10:31 AM</span>
-                    </div>
-                    -->
                 </div>
-                <!-- Vùng hiển thị trạng thái typing -->
-                <div class="typing-indicator" id="typingIndicator">
-                    <!-- Ví dụ: <span>Alice is typing...</span> -->
-                </div>
+                <div class="typing-indicator" id="typingIndicator"></div>
                 <div class="chat-input">
-                    <div class="input-container">
-                        <textarea id="userInput" placeholder="Nhập tin nhắn của bạn..." rows="2"></textarea> <!-- Giảm rows mặc định -->
+                     <div class="input-container">
+                        <textarea id="userInput" placeholder="Nhập tin nhắn của bạn..." rows="2"></textarea>
                         <button class="send-btn" id="sendBtn" title="Gửi tin nhắn">
                             <i class="fas fa-paper-plane"></i>
-                            <!-- Bỏ chữ "Gửi" để gọn hơn -->
                         </button>
                     </div>
                 </div>
             </div>
 
+
             <div class="info-panel">
-                <!-- Phần Tiến trình (Giữ nguyên cấu trúc, JS sẽ cập nhật nội dung) -->
+                <!-- Phần Tiến trình giữ nguyên -->
                 <div>
-                    <div class="section-title">
-                        <i class="fas fa-chart-line"></i> Tiến Trình
-                    </div>
+                    <div class="section-title"><i class="fas fa-chart-line"></i> Tiến Trình</div>
                     <div class="stage-info">
                         <div class="current-stage" id="currentStage">Khởi tạo</div>
-                        <div class="stage-description" id="stageDescription">
-                            Bắt đầu cuộc trò chuyện
-                        </div>
+                        <div class="stage-description" id="stageDescription">Bắt đầu cuộc trò chuyện</div>
                         <div class="stage-progress">
-                            <!-- Cấu trúc progress bar giữ nguyên -->
-                            <div class="progress-container">
-                                <span>1</span> <span>2</span> <span>3</span> <span>4</span> <span>5</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                            </div>
+                            <div class="progress-container"><span>1</span> <span>2</span> <span>3</span> <span>4</span> <span>5</span></div>
+                            <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Phần Người Tham Gia (Thêm ID cho từng participant và status) -->
+                <!-- Phần Người Tham Gia (SỬA Ở ĐÂY) -->
                 <div>
                     <div class="section-title">
                         <i class="fas fa-users"></i> Người Tham Gia
                     </div>
                     <div class="participants" id="participantsList">
-                        <!-- JS sẽ tạo các participant hoặc bạn định nghĩa sẵn với ID -->
-                        <div class="participant user-participant" id="participant-Human">
-                            <div class="participant-avatar">BẠN</div> <!-- Rõ ràng hơn -->
+                        <!-- 1. Giữ lại phần tử 'Bạn' (Human) -->
+                        <div class="participant user-participant" id="participant-Human" data-agent-id="Human">
+                            <div class="participant-avatar">BẠN</div>
                             <div class="participant-info">
                                 <div class="participant-name">Bạn</div>
+                                <!-- Trạng thái 'Đang hoạt động' là cố định cho người dùng -->
                                 <div class="participant-status" id="status-Human">Đang hoạt động</div>
                             </div>
                         </div>
-                        <div class="participant alice-participant" id="participant-CoderAI"> <!-- Đổi ID thành agent_id -->
-                            <div class="participant-avatar">C</div> <!-- Thay đổi Avatar nếu muốn -->
-                            <div class="participant-info">
-                                <div class="participant-name">CoderAI</div> <!-- Tên agent -->
-                                <div class="participant-status" id="status-CoderAI">Idle <span class="typing-dot" style="display: none;">...</span></div> <!-- Thêm span ẩn để hiện typing -->
+
+                        <!-- 2. Tạo động các agent AI từ biến 'participants' -->
+                        {% if participants %} {# Kiểm tra xem biến có tồn tại và không rỗng #}
+                            {% for agent in participants %}
+                            {# Sử dụng agent.id để tạo class và ID duy nhất #}
+                            {# Thêm class agent-participant để có thể style chung cho AI #}
+                            <div class="participant agent-participant participant-{{ agent.id | lower }}" id="participant-{{ agent.id }}" data-agent-id="{{ agent.id }}">
+                                {# Lấy chữ cái đầu làm avatar #}
+                                <div class="participant-avatar">{{ agent.name[0] | upper }}</div>
+                                <div class="participant-info">
+                                    <div class="participant-name">{{ agent.name }}</div>
+                                    {# ID trạng thái động #}
+                                    <div class="participant-status" id="status-{{ agent.id }}">Idle <span class="typing-dot" style="display: none;">...</span></div>
+                                </div>
                             </div>
-                        </div>
-                         <div class="participant bob-participant" id="participant-ManagerAI">
-                            <div class="participant-avatar">M</div>
-                            <div class="participant-info">
-                                <div class="participant-name">ManagerAI</div>
-                                <div class="participant-status" id="status-ManagerAI">Idle <span class="typing-dot" style="display: none;">...</span></div>
-                            </div>
-                        </div>
-                        <!-- Thêm các AI khác nếu cần -->
+                            {% endfor %}
+                        {% else %}
+                             <p>Không có agent nào được tải.</p> {# Thông báo nếu không có agent #}
+                        {% endif %}
+
                     </div>
                 </div>
 
-                <!-- Phần Thống Kê (Giữ nguyên cấu trúc, JS cập nhật) -->
-                <div>
-                    <div class="section-title">
-                        <i class="fas fa-info-circle"></i> Thống Kê
-                    </div>
+                <!-- Phần Thống Kê giữ nguyên -->
+                 <div>
+                    <div class="section-title"><i class="fas fa-info-circle"></i> Thống Kê</div>
                     <div class="stats">
                         <div class="stat-card">
                             <div class="stat-value" id="messageCount">0</div>
                             <div class="stat-label">Tin nhắn</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-value" id="turnCount">0</div> <!-- Có thể bỏ nếu không rõ ràng -->
+                            <div class="stat-value" id="turnCount">0</div>
                             <div class="stat-label">Lượt</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Phần Controls (Thêm ID nếu cần xử lý JS) -->
-                <div class="controls">
-                    <button class="control-btn restart" id="restartBtn" title="Bắt đầu lại cuộc trò chuyện">
-                        <i class="fas fa-redo"></i> Khởi Động Lại
-                    </button>
-                    <button class="control-btn" id="exportBtn" title="Xuất nội dung chat">
-                        <i class="fas fa-download"></i> Xuất
-                    </button>
+                <!-- Phần Controls giữ nguyên -->
+                 <div class="controls">
+                    <button class="control-btn restart" id="restartBtn" title="Bắt đầu lại cuộc trò chuyện"><i class="fas fa-redo"></i> Khởi Động Lại</button>
+                    <button class="control-btn" id="exportBtn" title="Xuất nội dung chat"><i class="fas fa-download"></i> Xuất</button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Liên kết JS -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

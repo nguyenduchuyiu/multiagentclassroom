@@ -41,7 +41,10 @@ atexit.register(cleanup_agents)
 # --- API Routes ---
 @app.route('/')
 def index():
-    return render_template('index.html')
+    participant_list = [{'id': agent_id, 'name': agent_id, 'avatar_initial': agent_id[0].upper()}
+                        for agent_id in agents.keys()]
+
+    return render_template('index.html', participants=participant_list)
 
 @app.route('/history')
 def history():

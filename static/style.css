@@ -299,9 +299,6 @@ header {
     font-size: 1.1rem; /* Kích thước icon */
 }
 
-/* Bỏ style nút skip nếu không dùng */
-/* .skip-btn { ... } */
-
 
 .section-title {
     font-size: 1.1rem; /* Giảm font-size */
@@ -368,67 +365,103 @@ header {
 .participant {
     display: flex;
     align-items: center;
-    padding: 8px 10px; /* Giảm padding */
-    border-radius: var(--border-radius);
-    transition: var(--transition);
-    background-color: #f9f9f9; /* Nền nhẹ cho participant */
-    border: 1px solid transparent; /* Border ẩn để giữ layout khi active */
-}
-.participant:hover {
-    background-color: #f0f0f0;
+    margin-bottom: 15px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid transparent; /* Border mặc định */
+    transition: background-color 0.2s ease;
 }
 
+.participant:hover {
+    background-color: #f9f9f9;
+}
+
+
 .participant-avatar {
-    width: 28px; /* Giảm kích thước avatar */
-    height: 28px;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background-color: #ccc; /* Màu nền mặc định */
     color: white;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
     margin-right: 10px;
-    font-size: 0.8rem; /* Chữ trong avatar nhỏ hơn */
-    flex-shrink: 0;
+    font-size: 0.9em;
 }
 
 .participant-info {
-    flex: 1;
-    display: flex;
-    justify-content: space-between; /* Đẩy status sang phải */
-    align-items: center;
+    flex-grow: 1;
 }
 
 .participant-name {
-    font-weight: 500; /* Giảm độ đậm */
-    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
 }
 
 .participant-status {
-    font-size: 0.8rem;
+    font-size: 0.85em;
     color: #666;
-    display: flex; /* Cho phép chứa typing dot */
+    display: flex; /* Để dấu chấm typing thẳng hàng */
     align-items: center;
 }
 
 .typing-dot {
-    display: inline-block; /* Hiện khi cần */
-    width: 5px;
-    height: 5px;
-    background-color: var(--primary-color);
+    display: inline-block; /* Hiển thị dấu chấm */
+    width: 6px;
+    height: 6px;
+    background-color: var(--primary-color); /* Màu dấu chấm */
     border-radius: 50%;
     margin-left: 5px;
-    animation: typing-blink 1.4s infinite both;
-}
-.typing-dot:nth-child(2) { animation-delay: .2s; }
-.typing-dot:nth-child(3) { animation-delay: .4s; } /* Nếu muốn nhiều chấm */
-
-@keyframes typing-blink {
-    0% { opacity: .2; }
-    20% { opacity: 1; }
-    100% { opacity: .2; }
+    animation: typing 1s infinite ease-in-out;
+    vertical-align: middle; /* Căn giữa theo chiều dọc */
 }
 
+
+/* --- Định nghĩa style riêng cho từng participant --- */
+
+/* Người dùng */
+.user-participant {
+    border-left-color: #555; /* Màu border cho User */
+}
+.user-participant .participant-avatar {
+    background-color: #555; /* Màu avatar User */
+}
+
+/* Agent Khánh */
+.participant-khanh { /* Class được tạo động bởi Jinja */
+    border-left-color: #007bff; /* Ví dụ màu xanh dương */
+}
+.participant-khanh .participant-avatar {
+    background-color: #007bff;
+}
+
+/* Agent Nam */
+.participant-nam { /* Class được tạo động bởi Jinja */
+    border-left-color: #28a745; /* Ví dụ màu xanh lá */
+}
+.participant-nam .participant-avatar {
+    background-color: #28a745;
+}
+
+/* Thêm style cho các agent khác nếu có */
+/* .participant-huy {
+    border-left-color: #ffc107;
+}
+.participant-huy .participant-avatar {
+    background-color: #ffc107;
+} */
+
+
+/* Animation cho typing dot (giữ nguyên) */
+@keyframes typing {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1); }
+}
 
 /* Màu nền và avatar cho từng participant (DÙNG CLASS = participant-<agent_id>) */
 .participant.participant-Human .participant-avatar { background-color: var(--user-color); }

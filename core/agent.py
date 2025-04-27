@@ -54,6 +54,7 @@ class BaseAgent:
     def _decide_action(self, llm_response):
         """Quyết định có phản hồi hay không dựa trên kết quả LLM."""
         # Logic đơn giản: nếu không phải NO_RESPONSE và không rỗng thì trả lời
+        print("raw ", llm_response)
         llm_response = json.loads(llm_response)
         if llm_response:
             if llm_response["text"].strip().upper() != "NO_RESPONSE":
@@ -86,27 +87,36 @@ class BaseAgent:
             llm_response = self._think() # Calls methods that might use Conversation lock
 
             actionable_response = self._decide_action(llm_response)
+            
 
             if actionable_response:
                 self._update_status("typing") # Safe call
                 
-                # Thời gian suy nghĩ
-                think_time = random.uniform(2, 5)
-                # Tính delay dựa trên độ dài tin nhắn
-                text_length = len(actionable_response)
-                # Giả sử mỗi ký tự cần khoảng 0.3 - 1 giây để "gõ"
-                per_char_time = random.uniform(0.1, 0.3)  # random một tí cho tự nhiên
-                sleep_time = text_length * per_char_time
-                # Nhưng giới hạn lại, không quá lâu
-                sleep_time = min(think_time + sleep_time, 15)  # tối đa 15 giây
-                time.sleep(sleep_time)
+                # --- Tách tin nhắn nếu cần ---
+                messages = actionable_response.split(" ||| ")
                 
-                # Chỉ gửi nếu vẫn đang 'typing' (phòng trường hợp có gì đó thay đổi status)
-                if self.get_status() == "typing":
-                    # Calls method that uses Conversation lock
-                    ai_message = self.conversation.add_message(self.agent_id, actionable_response)
-                    # Calls method that uses EventManager lock
-                    self.event_manager.broadcast_new_message(ai_message)
+                for idx, msg in enumerate(messages):
+                    msg = msg.strip()
+                    if not msg:
+                        continue
+
+                    # 1) Thời gian “suy nghĩ” ngắn giữa các message
+                    think_time = random.uniform(1, 2)
+                    time.sleep(think_time)
+
+                    # 2) Tính delay typing dựa trên độ dài mỗi msg
+                    text_length = len(msg)
+                    per_char_time = random.uniform(0.02, 0.06)  # tốc độ nhanh hơn: 20–60ms/char
+                    typing_time = text_length * per_char_time
+                    typing_time = min(typing_time, 8)  # giới hạn max 8s
+                    time.sleep(typing_time)
+
+                    # 3) Gửi và broadcast riêng từng msg
+                    if self.get_status() == "typing":
+                        ai_message = self.conversation.add_message(self.agent_id, msg)
+                        self.event_manager.broadcast_new_message(ai_message)
+                    else:
+                        break  # nếu status đổi, ngừng gửi
 
                 self._update_status("idle") # Safe call
             else:
@@ -186,7 +196,14 @@ class Khanh(BaseAgent):
 class Nam(BaseAgent):
      def __init__(self, agent_id, event_manager, conversation):
         role = "Bạn là Nam - một sinh viên nam 20 tuổi học UET. Là bạn của Khánh và Huy. Thích phông bạt, hay vẽ ra những viễn cảnh tương lai đẹp, vẽ ra những kế hoạch để giải quyết một công việc nào đó. Thích những thứ nghệ nghệ."
-        system_instruction = "Hãy tham gia trò chuyện sôi nổi với các bạn. Nếu người khác được hỏi đích danh, hãy im lặng và lắng nghe. Nếu không muốn trả lời hãy trả về {'text': 'NO_RESPONSE'}. Chỉ trả về lời nói, không thêm gì hơn. Và nói ngắn thôi để phù hợp với việc chat qua lại. Hãy nhắn thêm một lần nữa nếu cần thiết dù trước đó bạn đã nói."
+        system_instruction = (
+            "Hãy tham gia trò chuyện sôi nổi với các bạn. "
+            "Nếu người khác được hỏi đích danh, hãy im lặng và lắng nghe. "
+            "Nếu không muốn trả lời, hãy trả về {'text': 'NO_RESPONSE'}. "
+            "Chỉ trả về lời nói, không thêm gì hơn. "
+            "Trả lời câu hỏi của người khác trực tiếp, không được vòng vo chờ đợi."
+            "Bạn có thể chia các câu để follow up bằng dấu ' ||| ' (ba dấu gạch đứng và khoảng trắng) tránh việc tin nhắn quá dài, ví dụ: 'Ừ, nghe vui đấy! ||| Nhưng có chắc không vậy?' 'B1: Làm như này ||| B2: Làm như kia ...etc'"
+            "Không bao giờ thêm bất cứ định dạng nào khác ngoài ' ||| '.")
         response_schema = {
                             "type": "object",
                             "properties": {
