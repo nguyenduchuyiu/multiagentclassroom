@@ -1,12 +1,10 @@
 # app.py
 from flask import Flask, render_template, request, Response, jsonify
 from flask_cors import CORS
-from sse_starlette.sse import EventSourceResponse
-import threading
 import uuid
 import json
 import queue
-
+import atexit
 
 # Import các thành phần từ core và services
 from core.conversation import Conversation
@@ -26,9 +24,19 @@ event_manager = EventManager()
 # Ví dụ khởi tạo cứng
 agents = {
     "Nam": Nam("Nam", event_manager, conversation),
-    "Khánh": Khanh("Khánh", event_manager, conversation)
+    # "Khánh": Khanh("Khánh", event_manager, conversation)
 }
 # Hoặc dùng một hàm/lớp để quản lý agent lifecycle
+
+# Hàm cleanup để hủy đăng ký agent khi ứng dụng thoát
+def cleanup_agents():
+    print("--- APP: Cleaning up agents before exit ---")
+    for agent in agents.values():
+        agent.cleanup() # Gọi hàm cleanup của agent
+        
+# Đăng ký hàm cleanup để chạy khi ứng dụng thoát
+atexit.register(cleanup_agents)
+
 
 # --- API Routes ---
 @app.route('/')
@@ -52,12 +60,6 @@ def send_message():
     # Phát sự kiện tin nhắn mới qua EventManager (sẽ tự động gửi SSE)
     event_manager.broadcast_new_message(user_message)
 
-    # Kích hoạt các agent suy nghĩ (thông qua EventManager hoặc gọi trực tiếp)
-    for agent in agents.values():
-         # Chạy trong thread để không block request
-        thread = threading.Thread(target=agent.process_new_event)
-        thread.daemon = True
-        thread.start()
 
     return jsonify({"status": "Message received"}), 200
 
@@ -79,7 +81,6 @@ def stream():
                 try:
                     event_data = sse_queue.get(timeout=1)  # 1s timeout
                 except queue.Empty:
-                    # every 15s with no events, send a comment so proxies don’t kill the connection
                     yield ": keep-alive\n\n"
                     continue
 
@@ -116,4 +117,4 @@ if __name__ == '__main__':
     # Thêm tin nhắn chào mừng ban đầu qua Conversation manager
     if not conversation.get_history():
          conversation.add_message("System", "Chào mừng đến với ChatCollab Demo!")
-    app.run(debug=True, threaded=True) # threaded=True quan trọng cho SSE và background tasks
+    app.run(debug=True, threaded=True, use_reloader=False) # threaded=True quan trọng cho SSE và background tasks

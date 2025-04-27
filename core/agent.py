@@ -1,4 +1,5 @@
 # agent.py
+import json
 import random
 import time
 import threading # Import threading
@@ -6,21 +7,17 @@ from services.llm_service import LLMService
 
 
 class BaseAgent:
-    def __init__(self, agent_id: str, event_manager, conversation, role_description: str, instructions: str):
+    def __init__(self, agent_id: str, event_manager, conversation, role_description: str, **config):
         self.agent_id = agent_id
         self.event_manager = event_manager
         self.conversation = conversation
         self.role_description = role_description
-        self.instructions = instructions
-        # Khởi tạo LLMService (đã có)
-        # Specify the model directly here or pass it
-        self._llm_service = LLMService("gemini-2.0-flash") # Use the correct model name
-        # self._llm_service = LLMService() # Or initialize without model if handled inside
-
-        # --- SOLUTION: Use RLock instead of Lock ---
+        self._llm_service = LLMService(model_name="gemini-2.0-flash", **config) # Use the correct model name
         self._lock = threading.RLock() # Use Reentrant Lock
-        # -------------------------------------------
         self._current_status = "idle"
+        # --- Đăng ký agent với EventManager ---
+        if self.event_manager:
+            self.event_manager.subscribe_agent(self)
 
     def _update_status(self, status):
         # Now this is safe even if called from process_new_event
@@ -47,21 +44,20 @@ class BaseAgent:
         last_message = recent_history[-1] if recent_history else None
 
         prompt = f"{self.role_description}\n"
-        prompt += f"Hướng dẫn: {self.instructions}\n"
         prompt += "--- Lịch sử chat gần đây ---\n"
         prompt += f"{history_text}\n"
         prompt += "--- Kết thúc lịch sử ---\n"
         if last_message:
             prompt += f"Tin nhắn mới nhất từ {last_message['sender']} là: {last_message['text']}\n"
-        prompt += "Dựa vào vai trò, hướng dẫn và lịch sử, bạn có nên trả lời không? Nếu có, nội dung trả lời là gì? Nếu không, chỉ trả lời 'NO_RESPONSE'."
-        # TODO: Thêm logic kiểm tra hỏi đích danh, etc. vào đây hoặc instructions
         return prompt
 
     def _decide_action(self, llm_response):
         """Quyết định có phản hồi hay không dựa trên kết quả LLM."""
         # Logic đơn giản: nếu không phải NO_RESPONSE và không rỗng thì trả lời
-        if llm_response and llm_response.strip().upper() != "NO_RESPONSE":
-            return llm_response.strip()
+        llm_response = json.loads(llm_response)
+        if llm_response:
+            if llm_response["text"].strip().upper() != "NO_RESPONSE":
+                return llm_response["text"].strip()
         return None
 
     def _think(self):
@@ -93,13 +89,24 @@ class BaseAgent:
 
             if actionable_response:
                 self._update_status("typing") # Safe call
-                # Consider adding a small sleep *here* if you want typing delay
-                time.sleep(random.uniform(1, 5))
-
-                # Calls method that uses Conversation lock
-                ai_message = self.conversation.add_message(self.agent_id, actionable_response)
-                # Calls method that uses EventManager lock
-                self.event_manager.broadcast_new_message(ai_message)
+                
+                # Thời gian suy nghĩ
+                think_time = random.uniform(2, 5)
+                # Tính delay dựa trên độ dài tin nhắn
+                text_length = len(actionable_response)
+                # Giả sử mỗi ký tự cần khoảng 0.3 - 1 giây để "gõ"
+                per_char_time = random.uniform(0.1, 0.3)  # random một tí cho tự nhiên
+                sleep_time = text_length * per_char_time
+                # Nhưng giới hạn lại, không quá lâu
+                sleep_time = min(think_time + sleep_time, 15)  # tối đa 15 giây
+                time.sleep(sleep_time)
+                
+                # Chỉ gửi nếu vẫn đang 'typing' (phòng trường hợp có gì đó thay đổi status)
+                if self.get_status() == "typing":
+                    # Calls method that uses Conversation lock
+                    ai_message = self.conversation.add_message(self.agent_id, actionable_response)
+                    # Calls method that uses EventManager lock
+                    self.event_manager.broadcast_new_message(ai_message)
 
                 self._update_status("idle") # Safe call
             else:
@@ -121,20 +128,81 @@ class BaseAgent:
             self._lock.release()
             print(f"--- AGENT {self.agent_id}: Released agent RLock.")
 
+    def cleanup(self):
+         """Unsubscribe the agent from the event manager."""
+         if self.event_manager:
+              print(f"--- AGENT {self.agent_id}: Cleaning up and unsubscribing.")
+              self.event_manager.unsubscribe_agent(self.agent_id)
+              
+    def __del__(self):
+        # Gọi cleanup khi đối tượng bị hủy (không đảm bảo luôn được gọi trong mọi TH)
+        self.cleanup()
+        
+    def _human_like_typing(text):
+        pointer = 0
+        length = len(text)
+        while pointer < length:
+            # Random số ký tự sẽ "gõ" lần này (5 đến 15 ký tự)
+            chunk_size = random.randint(5, 15)
+            end = min(pointer + chunk_size, length)
+            chunk = text[pointer:end]
+            print(chunk, end='', flush=True)  # Giả vờ in từng chunk ra nếu muốn
+
+            # Nếu chunk kết thúc bằng dấu ngắt câu, nghỉ lâu hơn
+            if chunk[-1] in ['.', '!', '?', ',']:
+                pause = random.uniform(0.5, 1.0)  # Nghỉ lâu
+            else:
+                pause = random.uniform(0.05, 0.2)  # Nghỉ ngắn
+
+            time.sleep(pause)
+            pointer = end
 
 # --- Lớp Agent cụ thể ---
 class Khanh(BaseAgent):
     def __init__(self, agent_id, event_manager, conversation):
         role = "Bạn là Khánh - một sinh viên nam 20 tuổi học UET. Là bạn của Nam và Huy. Bạn là một chúa hề và mới nhận việc intern remote không lương ở một công ty startup bên Singapore. Hay nói bậy một chút."
         # Hướng dẫn cụ thể hơn cho Coder
-        instructions = "Hãy tham gia trò chuyện sôi nổi với các bạn. Nếu người khác được hỏi đích danh, hãy im lặng và lắng nghe. Nếu không muốn trả lời hãy trả về 'NO_RESPONSE'"
-        super().__init__(agent_id, event_manager, conversation, role, instructions)
-
+        system_instruction = "Hãy tham gia trò chuyện sôi nổi với các bạn. Nếu người khác được hỏi đích danh, hãy im lặng và lắng nghe. Nếu không muốn trả lời hãy trả về {'text': 'NO_RESPONSE'}'. Chỉ trả về lời nói, không thêm gì hơn. Và nói ngắn thôi để phù hợp với việc chat qua lại."
+        response_schema = {
+                            "type": "object",
+                            "properties": {
+                                "text": {
+                                "type": "string"
+                                }
+                            },
+                            "required": [
+                                "text"
+                            ]
+                        }
+        super().__init__(agent_id=agent_id, 
+                         event_manager=event_manager, 
+                         conversation=conversation, 
+                         role_description=role, 
+                         system_instruction=system_instruction,
+                         response_mime_type="application/json",
+                         response_schema=response_schema)
     # Có thể override _create_prompt hoặc _decide_action nếu cần logic riêng
 
 class Nam(BaseAgent):
      def __init__(self, agent_id, event_manager, conversation):
         role = "Bạn là Nam - một sinh viên nam 20 tuổi học UET. Là bạn của Khánh và Huy. Thích phông bạt, hay vẽ ra những viễn cảnh tương lai đẹp, vẽ ra những kế hoạch để giải quyết một công việc nào đó. Thích những thứ nghệ nghệ."
-        instructions = "Hãy tham gia trò chuyện sôi nổi với các bạn. Nếu người khác được hỏi đích danh, hãy im lặng và lắng nghe. Nếu không muốn trả lời hãy trả về 'NO_RESPONSE'"
-        super().__init__(agent_id, event_manager, conversation, role, instructions)
+        system_instruction = "Hãy tham gia trò chuyện sôi nổi với các bạn. Nếu người khác được hỏi đích danh, hãy im lặng và lắng nghe. Nếu không muốn trả lời hãy trả về {'text': 'NO_RESPONSE'}. Chỉ trả về lời nói, không thêm gì hơn. Và nói ngắn thôi để phù hợp với việc chat qua lại. Hãy nhắn thêm một lần nữa nếu cần thiết dù trước đó bạn đã nói."
+        response_schema = {
+                            "type": "object",
+                            "properties": {
+                                "text": {
+                                "type": "string"
+                                }
+                            },
+                            "required": [
+                                "text"
+                            ]
+                        }
+        super().__init__(agent_id=agent_id, 
+                         event_manager=event_manager, 
+                         conversation=conversation, 
+                         role_description=role, 
+                         system_instruction=system_instruction,
+                         response_mime_type="application/json",
+                         response_schema=response_schema)
     # Có thể override _create_prompt hoặc _decide_action
