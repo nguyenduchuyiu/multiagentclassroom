@@ -5,7 +5,7 @@ import json
 # Import Agent base class để type hint và tránh circular import
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from core.agent import BaseAgent
+    from core.base_agent import BaseAgent
 
 class EventManager:
     def __init__(self):
@@ -66,7 +66,7 @@ class EventManager:
              print(f"--- EVT_MGR: Triggering agents: {[a.agent_id for a in agents_to_trigger]}") # Log agent được trigger
              for agent in agents_to_trigger:
                  # Chạy process_new_event trong thread riêng để không block EventManager
-                 thread = threading.Thread(target=agent.process_new_event, daemon=True)
+                 thread = threading.Thread(target=agent.process_new_event, kwargs={"name": "ck"}, daemon=True)
                  # thread.daemon = True # Đảm bảo thread con tự thoát khi main thread thoát
                  thread.start()
         # else: # DEBUG
@@ -86,7 +86,6 @@ class EventManager:
         if not client_ids_to_broadcast:
             print("--- EVT_MGR: No active SSE clients to broadcast to.")
         else:
-            # print(f"--- EVT_MGR: Broadcasting SSE to clients: {client_ids_to_broadcast}") # Log nhiều quá có thể bỏ
             for client_id in client_ids_to_broadcast:
                 q = None
                 with self._lock: # Lock lại để lấy queue an toàn
@@ -117,7 +116,7 @@ class EventManager:
         originating_agent_id = sender_id if is_agent_message else None
         self.broadcast_event("new_message", message_dict, originating_agent_id=originating_agent_id)
 
-    def broadcast_agent_status(self, agent_id, status):
-        status_data = {"agent_id": agent_id, "status": status}
+    def broadcast_agent_status(self, agent_id, agent_name, status):
+        status_data = {"agent_id": agent_id, "status": status, "agent_name": agent_name}
         # Trạng thái agent không cần trigger agent khác
         self.broadcast_event("agent_status", status_data, originating_agent_id=None)

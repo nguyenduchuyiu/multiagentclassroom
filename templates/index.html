@@ -1,3 +1,4 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -10,37 +11,39 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header giữ nguyên -->
+        <!-- Header -->
         <header>
            <div class="logo">
                <i class="fas fa-robot"></i> Hệ Thống Trò Chuyện AI
            </div>
-           <div class="status">
-               <i class="fas fa-circle" id="connectionStatusIcon" style="color: orange;"></i>
+           <div class="status connecting"> <!-- Start with connecting status -->
+               <i class="fas fa-circle" id="connectionStatusIcon"></i>
                <span id="statusText">Đang kết nối...</span>
            </div>
        </header>
 
         <div class="main-content">
-            <!-- Chat Container giữ nguyên -->
+            <!-- Chat Container -->
              <div class="chat-container">
                 <div class="chat-messages" id="chatMessages">
                     <!-- Tin nhắn sẽ được thêm vào đây -->
                 </div>
-                <div class="typing-indicator" id="typingIndicator"></div>
+                <!-- Typing Indicator (General) -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;"></div>
+                <!-- Chat Input Area -->
                 <div class="chat-input">
                      <div class="input-container">
-                        <textarea id="userInput" placeholder="Nhập tin nhắn của bạn..." rows="2"></textarea>
-                        <button class="send-btn" id="sendBtn" title="Gửi tin nhắn">
+                        <textarea id="userInput" placeholder="Nhập tin nhắn của bạn..." rows="1"></textarea> <!-- Start with rows=1 -->
+                        <button class="send-btn" id="sendBtn" title="Gửi tin nhắn" disabled> <!-- Start disabled -->
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-
+            <!-- Info Panel -->
             <div class="info-panel">
-                <!-- Phần Tiến trình giữ nguyên -->
+                <!-- Progress Section (Keep as is) -->
                 <div>
                     <div class="section-title"><i class="fas fa-chart-line"></i> Tiến Trình</div>
                     <div class="stage-info">
@@ -53,45 +56,45 @@
                     </div>
                 </div>
 
-                <!-- Phần Người Tham Gia (SỬA Ở ĐÂY) -->
+                <!-- Participants Section -->
                 <div>
                     <div class="section-title">
                         <i class="fas fa-users"></i> Người Tham Gia
                     </div>
-                    <div class="participants" id="participantsList">
-                        <!-- 1. Giữ lại phần tử 'Bạn' (Human) -->
-                        <div class="participant user-participant" id="participant-Human" data-agent-id="Human">
-                            <div class="participant-avatar">BẠN</div>
+                    <ul class="participants" id="participantsList">
+                        <!-- Human Participant (Fixed) - JS will update name/avatar -->
+                        <li class="participant user-participant" data-agent-name="Human"> {# Keep Human initially #}
+                            <div class="participant-avatar">BẠN</div> {# JS updates this #}
                             <div class="participant-info">
-                                <div class="participant-name">Bạn</div>
-                                <!-- Trạng thái 'Đang hoạt động' là cố định cho người dùng -->
-                                <div class="participant-status" id="status-Human">Đang hoạt động</div>
+                                <div class="participant-name">Bạn</div> {# JS updates this #}
+                                <div class="participant-status">Online</div>
                             </div>
-                        </div>
+                        </li>
 
-                        <!-- 2. Tạo động các agent AI từ biến 'participants' -->
-                        {% if participants %} {# Kiểm tra xem biến có tồn tại và không rỗng #}
+                        <!-- Dynamic Agent Participants (Keep as before) -->
+                        {% if participants %}
                             {% for agent in participants %}
-                            {# Sử dụng agent.id để tạo class và ID duy nhất #}
-                            {# Thêm class agent-participant để có thể style chung cho AI #}
-                            <div class="participant agent-participant participant-{{ agent.id | lower }}" id="participant-{{ agent.id }}" data-agent-id="{{ agent.id }}">
-                                {# Lấy chữ cái đầu làm avatar #}
-                                <div class="participant-avatar">{{ agent.name[0] | upper }}</div>
+                            {% set agent_css_name = agent.name|lower|replace('[^a-z0-9]+', '-') %}
+                            <li class="participant agent-participant status-idle"
+                                data-agent-id="{{ agent.id }}"
+                                data-agent-name="{{ agent.name }}">
+                                <div class="participant-avatar">{{ agent.avatar_initial }}</div>
                                 <div class="participant-info">
                                     <div class="participant-name">{{ agent.name }}</div>
-                                    {# ID trạng thái động #}
-                                    <div class="participant-status" id="status-{{ agent.id }}">Idle <span class="typing-dot" style="display: none;">...</span></div>
+                                    <div class="participant-status">
+                                        Đang hoạt động
+                                        <span class="typing-dot" style="display: none;"></span>
+                                    </div>
                                 </div>
-                            </div>
+                            </li>
                             {% endfor %}
                         {% else %}
-                             <p>Không có agent nào được tải.</p> {# Thông báo nếu không có agent #}
+                            <li class="participant-empty">Không có agent nào được tải.</li>
                         {% endif %}
-
-                    </div>
+                    </ul>
                 </div>
 
-                <!-- Phần Thống Kê giữ nguyên -->
+                <!-- Statistics Section (Keep as is) -->
                  <div>
                     <div class="section-title"><i class="fas fa-info-circle"></i> Thống Kê</div>
                     <div class="stats">
@@ -106,14 +109,19 @@
                     </div>
                 </div>
 
-                <!-- Phần Controls giữ nguyên -->
+                <!-- Controls Section (Keep as is) -->
                  <div class="controls">
-                    <button class="control-btn restart" id="restartBtn" title="Bắt đầu lại cuộc trò chuyện"><i class="fas fa-redo"></i> Khởi Động Lại</button>
-                    <button class="control-btn" id="exportBtn" title="Xuất nội dung chat"><i class="fas fa-download"></i> Xuất</button>
+                    <button class="control-btn restart" id="restartBtn" title="Bắt đầu lại cuộc trò chuyện">
+                        <i class="fas fa-redo"></i> Khởi Động Lại
+                    </button>
+                    <button class="control-btn" id="exportBtn" title="Xuất nội dung chat">
+                        <i class="fas fa-download"></i> Xuất
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+    <!-- Ensure script is loaded at the end -->
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

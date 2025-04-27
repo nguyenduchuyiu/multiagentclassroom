@@ -1,20 +1,23 @@
 :root {
-    --primary-color: #4a6fa5; /* Màu chính */
-    --secondary-color: #6c8cbf; /* Màu phụ */
-    --tertiary-color: #e6ecf5; /* Nền sáng nhẹ */
-    --light-color: #f5f7fa; /* Nền chính */
-    --dark-color: #2c3e50; /* Màu chữ chính */
-    --user-color: #1abc9c; /* Màu người dùng */
-    --success-color: #2ecc71; /* Màu trạng thái thành công/online */
-    --warning-color: #f39c12; /* Màu trạng thái cảnh báo/connecting */
-    --error-color: #e74c3c; /* Màu trạng thái lỗi/offline */
+    --primary-color: #4a6fa5; /* Main blue */
+    --secondary-color: #6c8cbf; /* Lighter blue */
+    --tertiary-color: #e6ecf5; /* Very light blue background */
+    --light-color: #f5f7fa; /* Main page background */
+    --dark-color: #2c3e50; /* Main text color */
+    --user-color: #1abc9c; /* User message/avatar color (Teal) */
+    --success-color: #2ecc71; /* Success/connected/idle status (Green) */
+    --warning-color: #f39c12; /* Warning/connecting/thinking status (Orange) */
+    --error-color: #e74c3c; /* Error/disconnected status (Red) */
+    --typing-color: var(--primary-color); /* Color for typing status (Blue) */
 
-    /* Màu cho các AI (NÊN ĐỔI TÊN BIẾN THEO VAI TRÒ/ID) */
-    --coder-ai-color: #f2994a; /* Alice cũ */
-    --manager-ai-color: #6fcf97; /* Bob cũ */
-    /* --other-ai-color: #bb6bd9; /* Charlie cũ */
+    /* Define Agent Colors using agent names (MATCH YOUR AGENT NAMES) */
+    /* Example: If you have agents named 'CoderAI' and 'ManagerAI' */
+    --agent-coderai-color: #f2994a; /* Orange for CoderAI */
+    --agent-managerai-color: #6fcf97; /* Green for ManagerAI */
+    /* Add more agent colors as needed */
+    /* --agent-anotheragent-color: #bb6bd9; */
 
-    --border-radius: 8px; /* Giảm nhẹ border-radius */
+    --border-radius: 6px; /* Slightly smaller border-radius */
     --transition: all 0.2s ease-in-out;
 }
 
@@ -28,33 +31,35 @@
 body {
     background-color: var(--light-color);
     color: var(--dark-color);
-    /* Loại bỏ min-height và display: flex để container tự quản lý */
+    /* Allow body scrolling on smaller screens if needed */
 }
 
 .container {
-    max-width: 1300px; /* Tăng nhẹ max-width */
+    max-width: 1300px;
     margin: 0 auto;
-    padding: 15px; /* Giảm padding */
+    padding: 15px;
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Container chiếm toàn bộ chiều cao viewport */
+    height: 100vh; /* Full viewport height */
+    overflow: hidden; /* Prevent container itself from scrolling */
 }
 
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 15px; /* Chỉ padding dưới */
-    margin-bottom: 15px; /* Giảm margin */
-    border-bottom: 1px solid #e0e0e0; /* Màu border nhạt hơn */
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .logo {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 1.6rem; /* Giảm nhẹ font-size */
-    font-weight: 600; /* Dùng 600 thay bold */
+    font-size: 1.5rem; /* Slightly smaller */
+    font-weight: 600;
     color: var(--primary-color);
 }
 
@@ -62,59 +67,59 @@ header {
     color: var(--secondary-color);
 }
 
+/* Status Indicator in Header */
 .status {
-    /* background-color: var(--primary-color); */ /* Để màu nền theo trạng thái */
     color: white;
-    padding: 5px 12px; /* Giảm padding */
+    padding: 5px 12px;
     border-radius: 15px;
     font-size: 0.85rem;
     display: flex;
     align-items: center;
     gap: 6px;
-    transition: var(--transition);
+    transition: background-color 0.3s ease; /* Transition background */
 }
 
 .status i#connectionStatusIcon {
     font-size: 0.7rem;
-    transition: var(--transition);
+    transition: color 0.3s ease; /* Transition icon color */
 }
 
-/* Trạng thái kết nối */
+/* Connection Status Backgrounds */
 .status.connecting { background-color: var(--warning-color); }
 .status.connected { background-color: var(--success-color); }
 .status.disconnected { background-color: var(--error-color); }
 
-
+/* Main Layout */
 .main-content {
     display: flex;
-    gap: 15px; /* Giảm gap */
-    flex: 1; /* Quan trọng: để main-content chiếm hết không gian còn lại */
-    overflow: hidden; /* Ngăn tràn nội dung */
+    gap: 15px;
+    flex: 1; /* Take remaining vertical space */
+    overflow: hidden; /* Important: Prevent content overflow */
 }
 
 .chat-container {
-    flex: 3; /* Tỷ lệ giữ nguyên */
+    flex: 3;
     display: flex;
     flex-direction: column;
     background-color: white;
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06); /* Giảm shadow */
-    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Softer shadow */
+    overflow: hidden; /* Contained overflow */
 }
 
 .info-panel {
-    flex: 1; /* Tỷ lệ giữ nguyên */
+    flex: 1;
     background-color: white;
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    padding: 15px; /* Giảm padding */
-    overflow-y: auto; /* Cho phép cuộn nếu nội dung dài */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    padding: 15px;
+    overflow-y: auto; /* Allow scrolling */
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Giảm gap */
+    gap: 20px; /* Slightly more gap between sections */
 }
 
-/* Custom scrollbar cho Webkit browsers */
+/* Custom Scrollbars (Webkit) */
 .info-panel::-webkit-scrollbar,
 .chat-messages::-webkit-scrollbar {
     width: 6px;
@@ -134,141 +139,161 @@ header {
     background: #aaa;
 }
 
-
+/* Chat Messages Area */
 .chat-messages {
-    flex: 1; /* Quan trọng: để chat-messages chiếm hết không gian */
-    overflow-y: auto; /* Cho phép cuộn */
-    padding: 15px; /* Giảm padding */
+    flex: 1; /* Take available space */
+    overflow-y: auto; /* Enable scrolling */
+    padding: 15px;
 }
 
 .message {
-    margin-bottom: 15px; /* Giảm margin */
-    display: flex; /* Thêm flex để dễ căn chỉnh avatar (nếu có) */
-    flex-direction: column; /* Hiển thị sender/time trên content */
-    max-width: 85%; /* Giới hạn chiều rộng tối đa */
+    margin-bottom: 12px; /* Slightly less margin */
+    display: flex;
+    flex-direction: column;
+    max-width: 85%;
     animation: fadeIn 0.3s ease-out;
 }
 
 .message.user-message {
-    align-self: flex-end; /* Đẩy tin nhắn người dùng sang phải */
-    align-items: flex-end; /* Căn nội dung bên phải */
+    align-self: flex-end;
+    align-items: flex-end;
 }
 
-.message.ai-message {
-    align-self: flex-start; /* Giữ tin nhắn AI bên trái */
-    align-items: flex-start; /* Căn nội dung bên trái */
+.message.ai-message,
+.message.system-message { /* Group AI and System alignment */
+    align-self: flex-start;
+    align-items: flex-start;
 }
 
-.message-header { /* Phần chứa sender và time */
+.message-header {
     display: flex;
-    justify-content: space-between; /* Đẩy time sang phải */
-    width: 100%; /* Chiếm hết chiều rộng của .message */
+    justify-content: space-between;
+    width: 100%;
     margin-bottom: 4px;
-    padding: 0 5px; /* Thêm padding nhỏ */
+    padding: 0 5px;
 }
 
 .sender-name {
     font-weight: 600;
     font-size: 0.9rem;
-    color: var(--primary-color); /* Màu tên người gửi mặc định */
+    color: var(--primary-color); /* Default sender color */
 }
 
 .message.user-message .sender-name {
-    color: var(--user-color); /* Màu tên người dùng */
+    color: var(--user-color);
 }
 
 .timestamp {
     font-size: 0.75rem;
     color: #999;
-    margin-left: 10px; /* Khoảng cách với tên */
+    margin-left: 10px;
+    white-space: nowrap; /* Prevent timestamp wrapping */
 }
 
 .message-content {
-    padding: 10px 15px; /* Giảm padding */
+    padding: 10px 15px;
     border-radius: var(--border-radius);
-    background-color: var(--tertiary-color);
+    background-color: var(--tertiary-color); /* Default background */
     word-break: break-word;
     line-height: 1.5;
-    position: relative; /* Cho phép định vị các yếu tố con như border */
+    position: relative; /* For pseudo-elements if needed */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle shadow on messages */
 }
 
-/* Định dạng riêng cho tin nhắn người dùng */
+/* User Message Specific Styles */
 .message.user-message .message-content {
     background-color: var(--user-color);
     color: white;
 }
-/* Ghi đè màu timestamp cho tin nhắn người dùng nếu cần */
 .message.user-message .timestamp {
      color: rgba(255, 255, 255, 0.8);
 }
 .message.user-message .sender-name {
-     color: rgba(255, 255, 255, 0.9); /* Màu tên sáng hơn trên nền đậm */
+     color: rgba(255, 255, 255, 0.9);
 }
 
 
-/* Định dạng cho tin nhắn AI - sử dụng border thay vì nền */
+/* AI Message Specific Styles - Using Border */
 .message.ai-message .message-content {
-    background-color: #f0f4f8; /* Nền xám nhạt chung cho AI */
-    border-left: 4px solid var(--secondary-color); /* Border mặc định */
+    background-color: #f0f4f8; /* Light greyish-blue background for AI */
+    border-left: 4px solid var(--secondary-color); /* Default AI border */
 }
 
-/* Ghi đè border cho từng AI (DÙNG CLASS TƯƠNG ỨNG VỚI AGENT_ID) */
-.message.ai-message.sender-CoderAI .message-content { /* Class = sender-<agent_id> */
-    border-left-color: var(--coder-ai-color);
+/* --- CORRECTED: AI Message Border Colors (match JS classes) --- */
+/* Assumes JS adds classes like 'agent-coderai', 'agent-managerai' */
+/* Make sure the agent name here matches the CSS variable name */
+.message.ai-message.agent-coderai .message-content {
+    border-left-color: var(--agent-coderai-color);
 }
-.message.ai-message.sender-ManagerAI .message-content {
-    border-left-color: var(--manager-ai-color);
+.message.ai-message.agent-managerai .message-content {
+    border-left-color: var(--agent-managerai-color);
 }
-/* Thêm các AI khác nếu cần */
-/* .message.ai-message.sender-OtherAI .message-content {
-    border-left-color: var(--other-ai-color);
+/* Add other agents */
+/* .message.ai-message.agent-anotheragent .message-content {
+    border-left-color: var(--agent-anotheragent-color);
 } */
 
+/* System Message Specific Styles */
+.message.system-message .message-content {
+    background-color: #f9f9f9; /* Very light grey for system */
+    border-left: 4px solid #ccc;
+    color: #555;
+    font-style: italic;
+    font-size: 0.9em;
+}
+.message.system-message .sender-name {
+    color: #666;
+}
 
+
+/* General Typing Indicator (Below Messages) */
 .typing-indicator {
     padding: 5px 15px;
-    height: 25px; /* Chiều cao cố định */
+    height: 25px;
     font-size: 0.85rem;
     font-style: italic;
     color: #888;
     border-top: 1px solid #eee;
     background-color: #fdfdfd;
-}
-.typing-indicator span { /* Định dạng cho từng "X is typing" */
-    margin-right: 10px;
+    flex-shrink: 0; /* Prevent shrinking */
+    line-height: 15px; /* Match height */
+    text-align: left;
 }
 
-
+/* Chat Input Area */
 .chat-input {
-    padding: 15px; /* Giảm padding */
+    padding: 10px 15px; /* Reduced padding */
     border-top: 1px solid #e0e0e0;
     background-color: #fff;
+    flex-shrink: 0; /* Prevent shrinking */
 }
 
 .input-container {
     display: flex;
     gap: 10px;
-    align-items: flex-end; /* Căn các nút xuống dưới cùng với textarea */
+    align-items: flex-end;
 }
 
 .input-container textarea {
     flex: 1;
-    padding: 10px 15px; /* Giảm padding */
+    padding: 10px 15px;
     border: 1px solid #ddd;
     border-radius: var(--border-radius);
     resize: none;
-    min-height: 44px; /* Chiều cao tối thiểu */
-    max-height: 120px; /* Giới hạn chiều cao tối đa */
+    min-height: 42px; /* Slightly smaller min-height */
+    max-height: 120px;
     font-size: 0.95rem;
     line-height: 1.4;
     transition: var(--transition);
-    overflow-y: auto; /* Cho phép cuộn nếu nhiều dòng */
+    overflow-y: auto;
+    background-color: #fdfdfd;
 }
 
 .input-container textarea:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.15);
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.1); /* Softer focus shadow */
+    background-color: #fff;
 }
 
 .send-btn {
@@ -276,36 +301,39 @@ header {
     color: white;
     border: none;
     border-radius: var(--border-radius);
-    height: 44px; /* Chiều cao bằng min-height của textarea */
-    width: 44px; /* Nút vuông */
-    padding: 0; /* Bỏ padding */
+    height: 42px; /* Match textarea min-height */
+    width: 42px;
+    padding: 0;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-shrink: 0; /* Không co lại */
+    flex-shrink: 0;
 }
 
 .send-btn:hover {
     background-color: var(--secondary-color);
 }
+/* Use .disabled class added by JS */
+.send-btn.disabled,
 .send-btn:disabled {
     background-color: #ccc;
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .send-btn i {
-    font-size: 1.1rem; /* Kích thước icon */
+    font-size: 1.1rem;
 }
 
-
+/* Info Panel Sections */
 .section-title {
-    font-size: 1.1rem; /* Giảm font-size */
+    font-size: 1.1rem;
     color: var(--primary-color);
     margin-bottom: 10px;
-    padding-bottom: 5px; /* Thêm padding dưới */
-    border-bottom: 1px solid #eee; /* Thêm đường kẻ */
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -362,106 +390,117 @@ header {
     gap: 8px; /* Giảm gap */
 }
 
-.participant {
+/* Participants List Styles */
+.participants {
+    list-style: none; /* Remove default list bullets */
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.participant { /* Styles for each LI */
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    /* margin-bottom: 8px; Removed, using gap on parent */
     padding: 8px 10px;
     border-radius: 6px;
     background-color: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border-left: 5px solid transparent; /* Border mặc định */
-    transition: background-color 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    border-left: 5px solid transparent; /* Base border */
+    transition: background-color 0.2s ease, border-left-color 0.3s ease; /* Animate border color */
 }
 
 .participant:hover {
     background-color: #f9f9f9;
 }
 
-
 .participant-avatar {
     width: 35px;
     height: 35px;
     border-radius: 50%;
-    background-color: #ccc; /* Màu nền mặc định */
+    background-color: #ccc; /* Default avatar color */
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    margin-right: 10px;
+    margin-right: 12px; /* Slightly more margin */
     font-size: 0.9em;
+    flex-shrink: 0;
 }
 
 .participant-info {
     flex-grow: 1;
+    overflow: hidden; /* Prevent long names/statuses overflowing */
 }
 
 .participant-name {
     font-weight: 600;
     color: #333;
     margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis if name is too long */
 }
 
 .participant-status {
     font-size: 0.85em;
     color: #666;
-    display: flex; /* Để dấu chấm typing thẳng hàng */
+    display: flex;
     align-items: center;
+    white-space: nowrap;
 }
 
 .typing-dot {
-    display: inline-block; /* Hiển thị dấu chấm */
+    display: inline-block;
     width: 6px;
     height: 6px;
-    background-color: var(--primary-color); /* Màu dấu chấm */
+    background-color: var(--typing-color); /* Use typing color variable */
     border-radius: 50%;
     margin-left: 5px;
     animation: typing 1s infinite ease-in-out;
-    vertical-align: middle; /* Căn giữa theo chiều dọc */
+    vertical-align: middle;
+    /* display: none; is handled by JS */
 }
 
-
-/* --- Định nghĩa style riêng cho từng participant --- */
-
-/* Người dùng */
-.user-participant {
-    border-left-color: #555; /* Màu border cho User */
+/* --- CORRECTED: Participant Avatar Colors --- */
+/* Target the LI using data-agent-name, then the avatar div inside */
+li.participant[data-agent-name="Human"] .participant-avatar {
+    background-color: var(--user-color);
 }
-.user-participant .participant-avatar {
-    background-color: #555; /* Màu avatar User */
+li.participant[data-agent-name="CoderAI"] .participant-avatar {
+    background-color: var(--agent-coderai-color);
 }
-
-/* Agent Khánh */
-.participant-khanh { /* Class được tạo động bởi Jinja */
-    border-left-color: #007bff; /* Ví dụ màu xanh dương */
+li.participant[data-agent-name="ManagerAI"] .participant-avatar {
+    background-color: var(--agent-managerai-color);
 }
-.participant-khanh .participant-avatar {
-    background-color: #007bff;
-}
-
-/* Agent Nam */
-.participant-nam { /* Class được tạo động bởi Jinja */
-    border-left-color: #28a745; /* Ví dụ màu xanh lá */
-}
-.participant-nam .participant-avatar {
-    background-color: #28a745;
-}
-
-/* Thêm style cho các agent khác nếu có */
-/* .participant-huy {
-    border-left-color: #ffc107;
-}
-.participant-huy .participant-avatar {
-    background-color: #ffc107;
+/* Add other agents */
+/* li.participant[data-agent-name="AnotherAgent"] .participant-avatar {
+    background-color: var(--agent-anotheragent-color);
 } */
 
 
-/* Animation cho typing dot (giữ nguyên) */
+/* --- Participant Status Border Colors --- */
+/* Target the LI based on the status class added by JS */
+li.participant.status-idle {
+    border-left-color: var(--success-color);
+}
+li.participant.status-thinking {
+    border-left-color: var(--warning-color);
+}
+li.participant.status-typing {
+    border-left-color: var(--typing-color);
+}
+
+
+/* Typing Animation */
 @keyframes typing {
-  0%, 100% { opacity: 0; transform: scale(0.5); }
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1); }
 }
+
 
 /* Màu nền và avatar cho từng participant (DÙNG CLASS = participant-<agent_id>) */
 .participant.participant-Human .participant-avatar { background-color: var(--user-color); }
@@ -572,80 +611,71 @@ header {
     border-color: #d0d0d0 !important;
 }
 
+/* Fade-in Animation for Messages */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive styles */
-@media (max-width: 1024px) { /* Thêm breakpoint cho tablet lớn */
+/* Responsive Styles */
+@media (max-width: 1024px) {
     .container {
-        max-width: 95%;
+        max-width: 98%; /* Use more width */
+        padding: 10px;
     }
     .info-panel {
-        flex: 1.2; /* Cho info panel rộng hơn chút */
+        flex: 1.2;
     }
     .chat-container {
         flex: 2.8;
     }
+    .logo { font-size: 1.4rem; }
 }
 
 
-@media (max-width: 768px) { /* Điều chỉnh breakpoint */
+@media (max-width: 768px) {
+    .container {
+        height: auto; /* Allow container to grow */
+        padding: 10px;
+        overflow-y: auto; /* Allow scrolling on the container itself if needed */
+    }
+    body {
+         overflow-y: scroll; /* Ensure body can scroll */
+    }
     .main-content {
         flex-direction: column;
-        overflow: visible; /* Cho phép tràn khi xếp chồng */
+        overflow: visible; /* Allow content to determine height */
+        height: auto;
     }
-
     .info-panel {
-        order: -1; /* Đưa info panel lên đầu */
+        order: -1; /* Move info panel to top */
         margin-bottom: 15px;
-        max-height: 40vh; /* Giới hạn chiều cao info panel */
-        flex: none; /* Bỏ flex để tự động chiều cao */
+        max-height: none; /* Remove max-height */
+        flex: none; /* Let content determine height */
+        width: 100%; /* Full width */
+        overflow-y: visible; /* Disable internal scrolling */
     }
     .chat-container {
-         flex: 1; /* Chat container chiếm phần còn lại */
-         min-height: 50vh; /* Đảm bảo chiều cao tối thiểu */
+         flex: 1; /* Take remaining space if any, but allow growth */
+         min-height: 60vh; /* Ensure decent chat height */
+         width: 100%;
     }
-
-    .container {
-         height: auto; /* Container tự động chiều cao */
-         padding: 10px;
-    }
-    body { /* Cho phép body cuộn trên mobile */
-        display: block;
+    .message {
+         max-width: 92%;
     }
 }
 
-@media (max-width: 480px) { /* Điều chỉnh breakpoint mobile nhỏ */
-    .logo {
-        font-size: 1.3rem;
-    }
-    .status {
-        padding: 4px 8px;
-        font-size: 0.75rem;
-    }
-    .message {
-         max-width: 95%;
-    }
-    .input-container textarea {
-        padding: 8px 10px;
-        min-height: 40px;
-    }
-    .send-btn {
-         height: 40px;
-         width: 40px;
-    }
-    .send-btn i {
-         font-size: 1rem;
-    }
-    .stats {
-        grid-template-columns: 1fr 1fr; /* Luôn 2 cột trên mobile nhỏ */
-    }
-    .section-title {
-         font-size: 1rem;
-    }
-    .current-stage {
-         font-size: 1.2rem;
-    }
+@media (max-width: 480px) {
+    .logo { font-size: 1.2rem; }
+    .status { padding: 4px 8px; font-size: 0.75rem; }
+    .message { max-width: 95%; }
+    .input-container textarea { padding: 8px 10px; min-height: 40px; }
+    .send-btn { height: 40px; width: 40px; }
+    .send-btn i { font-size: 1rem; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .section-title { font-size: 1rem; }
+    .current-stage { font-size: 1.2rem; }
+    .participant-avatar { width: 30px; height: 30px; margin-right: 8px; font-size: 0.8em;}
+    .participant-name { font-size: 0.95rem;}
+    .participant-status { font-size: 0.8em;}
 }
