@@ -63,14 +63,13 @@ class EventManager:
 
 
         if agents_to_trigger:
-             print(f"--- EVT_MGR: Triggering agents: {[a.agent_id for a in agents_to_trigger]}") # Log agent được trigger
+             print(f"--- EVT_MGR: Triggering agents: {[a.agent_name for a in agents_to_trigger]}") # Log agent được trigger
              for agent in agents_to_trigger:
                  # Chạy process_new_event trong thread riêng để không block EventManager
-                 thread = threading.Thread(target=agent.process_new_event, kwargs={"name": "ck"}, daemon=True)
+                 thread = threading.Thread(target=agent.process_new_event, daemon=True)
                  # thread.daemon = True # Đảm bảo thread con tự thoát khi main thread thoát
                  thread.start()
-        # else: # DEBUG
-            # print(f"--- EVT_MGR: No other agents to trigger.")
+
 
     def broadcast_event(self, event_type, data, originating_agent_id: str | None = None):
         """Broadcasts sự kiện tới client và trigger các agent khác nếu là tin nhắn mới."""

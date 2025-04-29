@@ -1,178 +1,131 @@
 # base_agent.py
 import json
+from pprint import pprint
 import random
 import time
-import threading # Import threading
+import threading
+import traceback
+from core.io_handler import DefaultIOHandler
 from services.llm_service import LLMService
 
+DEFAULT_PROMPT_TEMPLATE = """
+--- System instruction ---:
+{system_instruction}
+
+--- Rules ---:
+{rules}
+
+--- Tasks:
+{tasks}
+
+--- Recent chat history:
+{history}
+
+--- Last message:
+{last_message}
+
+Hãy phản hồi phù hợp:
+"""
 
 class BaseAgent:
-    def __init__(self, agent_id: str, event_manager, conversation, system_instruction:str, **config):
+    def __init__(self,
+                 agent_id: str,
+                 event_manager,
+                 conversation,
+                 system_instruction: str,
+                 prompt_template: str = None,
+                 io_handler=None,
+                 **config):
         self.agent_id = agent_id
         self.agent_name = config.pop('name', agent_id)
         self.event_manager = event_manager
         self.conversation = conversation
         self.system_instruction = system_instruction
         self.tasks = config.pop('tasks', {})
-        self._llm_service = LLMService(**config) # Use the correct model name
-        self._lock = threading.RLock() # Use Reentrant Lock
+        self._llm_service = LLMService(**config)
+        self._lock = threading.RLock()
         self._current_status = "idle"
         self.prompt = ""
-        # --- Đăng ký agent với EventManager ---
+
+        # Prompt template và IO handler (strategy)
+        self.prompt_template = prompt_template or DEFAULT_PROMPT_TEMPLATE
+        self.io = io_handler or DefaultIOHandler(self.prompt_template)
+
         if self.event_manager:
             self.event_manager.subscribe_agent(self)
 
     def _update_status(self, status):
-        # Now this is safe even if called from process_new_event
         with self._lock:
-            # Check if status actually changed to avoid redundant updates/broadcasts
             if self._current_status == status:
-                return # No change, do nothing
+                return
             self._current_status = status
-            print(f"AGENT STATUS: {self.agent_name} is now {status}") # Log the change
-
-        # Broadcast outside the lock to avoid holding agent lock while potentially
-        # waiting for event manager lock (reduces potential deadlock scenarios further, though unlikely here)
-        self.event_manager.broadcast_agent_status(self.agent_id, self.agent_name, status)
-
+        self.event_manager.broadcast_agent_status(
+            self.agent_id, self.agent_name, status
+        )
 
     def get_status(self):
-         with self._lock: # RLock is safe here too
-              return self._current_status
-
-    def _create_prompt(self, recent_history, **kwargs):
-        """Tạo prompt cụ thể cho LLM. Sẽ được override bởi lớp con."""
-        history_text = "\n".join([f"{msg['sender']}: {msg['text']}" for msg in recent_history])
-        last_message = recent_history[-1] if recent_history else None
-
-        prompt = f"--- System instruction ---:\n"
-        prompt += f"{self.system_instruction}\n"
-        prompt += "--- Tasks ---\n"
-        for idx, (task_name, task_info) in enumerate(self.tasks.items()):
-            prompt += f"{idx+1}. {task_name}: {task_info['description']}\n"
-        prompt += "--- Lịch sử chat gần đây ---\n"
-        prompt += f"{history_text}\n"
-        prompt += "--- Kết thúc lịch sử ---\n"
-        if last_message:
-            prompt += f"Tin nhắn mới nhất từ {last_message['sender']} là: {last_message['text']}\n"
-        
-        self.prompt = prompt.format(**kwargs)
-        print(self.prompt)
-    
-
-    def _decide_action(self, llm_response):
-        """Quyết định có phản hồi hay không dựa trên kết quả LLM."""
-        # Logic đơn giản: nếu không phải NO_RESPONSE và không rỗng thì trả lời
-        print("raw ", llm_response)
-        llm_response = json.loads(llm_response)
-        if llm_response:
-            if llm_response["response"].strip().upper() != "NO_RESPONSE":
-                return llm_response["response"].strip()
-        return None
+        with self._lock:
+            return self._current_status
 
     def _think(self, **kwargs):
-        """Quá trình suy nghĩ: lấy history, tạo prompt, gọi LLM."""
+        # Lấy lịch sử và chuẩn bị dữ liệu đầu vào
         recent_history = self.conversation.get_recent_history()
-        if not recent_history: # Không có gì để xử lý
-             return None
-        # add history
-        self._create_prompt(recent_history, **kwargs)
-        llm_response = self._llm_service.generate(self.prompt) 
-        return llm_response
+        if not recent_history:
+            return None
+        parsed = self.io.parse_input(kwargs, self.conversation)
+
+        # Build prompt và gọi LLM
+        prompt = self.io.build_prompt(
+            parsed,
+            system_instruction=self.system_instruction,
+            tasks=self.tasks
+        )
+        self.prompt = prompt
+        print("[Prompt Created]\n")
+        print(prompt)
+        return self._llm_service.generate(prompt)
+
+    def _decide_action(self, llm_response):
+        if not llm_response:
+            return None
+        chunks = self.io.parse_output(llm_response)
+        return chunks if chunks else None
 
     def process_new_event(self, **kwargs):
-        print(f"--- AGENT {self.agent_name}: Entered process_new_event")
-        # Acquire the RLock (non-blocking)
-        print(f"--- AGENT {self.agent_name}: Attempting to acquire agent RLock...")
         if not self._lock.acquire(blocking=False):
-            print(f"--- AGENT {self.agent_name}: Already processing (RLock held). Skipping.")
             return
-        print(f"--- AGENT {self.agent_name}: Acquired agent RLock.")
-
         try:
-            # Status update is now safe because RLock is re-entrant
             self._update_status("thinking")
-            
+            llm_response = self._think(**kwargs)
+            actionable = self._decide_action(llm_response)
 
-            llm_response = self._think(**kwargs) # Calls methods that might use Conversation lock
-
-            actionable_response = self._decide_action(llm_response)
-            
-
-            if actionable_response:
-                self._update_status("typing") # Safe call
-                
-                # --- Tách tin nhắn nếu cần ---
-                messages = actionable_response.split(" ||| ")
-                
-                for idx, msg in enumerate(messages):
+            if actionable:
+                self._update_status("typing")
+                for msg in actionable:
                     msg = msg.strip()
                     if not msg:
                         continue
-
-                    # 1) Thời gian “suy nghĩ” ngắn giữa các message
-                    think_time = random.uniform(1, 2)
-                    time.sleep(think_time)
-
-                    # 2) Tính delay typing dựa trên độ dài mỗi msg
-                    text_length = len(msg)
-                    per_char_time = random.uniform(0.02, 0.06)  # tốc độ nhanh hơn: 20–60ms/char
-                    typing_time = text_length * per_char_time
-                    typing_time = min(typing_time, 8)  # giới hạn max 8s
-                    time.sleep(typing_time)
-
-                    # 3) Gửi và broadcast riêng từng msg
+                    time.sleep(random.uniform(1, 2))
+                    time.sleep(min(len(msg) * random.uniform(0.02, 0.06), 8))
                     if self.get_status() == "typing":
-                        ai_message = self.conversation.add_message(self.agent_name, msg)
-                        self.event_manager.broadcast_new_message(ai_message)
+                        ai_msg = self.conversation.add_message(self.agent_name, msg)
+                        self.event_manager.broadcast_new_message(ai_msg)
                     else:
-                        break  # nếu status đổi, ngừng gửi
-
-                self._update_status("idle") # Safe call
+                        break
+                self._update_status("idle")
             else:
-                self._update_status("idle") # Safe call
-
+                self._update_status("idle")
         except Exception as e:
-            print(f"!!! ERROR in process_new_event for agent {self.agent_name}: {e}")
-            # Ensure status is reset even on error
-            try:
-                # Check current status before forcing idle, maybe it was already set
-                current_locked_status = self.get_status() # Safe call with RLock
-                if current_locked_status != "idle":
-                     print(f"--- AGENT {self.agent_name}: Setting status to idle due to error.")
-                     self._update_status("idle") # Safe call
-            except Exception as e_inner:
-                print(f"!!! ERROR updating status to idle after error for {self.agent_name}: {e_inner}")
+            print(f"Error in {self.agent_name}: {e}")
+            traceback.print_exc()
+            self._update_status("idle")
         finally:
-            print(f"--- AGENT {self.agent_name}: Releasing agent RLock...")
             self._lock.release()
-            print(f"--- AGENT {self.agent_name}: Released agent RLock.")
 
     def cleanup(self):
-         """Unsubscribe the agent from the event manager."""
-         if self.event_manager:
-              print(f"--- AGENT {self.agent_name}: Cleaning up and unsubscribing.")
-              self.event_manager.unsubscribe_agent(self.agent_name)
-              
-    def __del__(self):
-        # Gọi cleanup khi đối tượng bị hủy (không đảm bảo luôn được gọi trong mọi TH)
-        self.cleanup()
-        
-    def _human_like_typing(text):
-        pointer = 0
-        length = len(text)
-        while pointer < length:
-            # Random số ký tự sẽ "gõ" lần này (5 đến 15 ký tự)
-            chunk_size = random.randint(5, 15)
-            end = min(pointer + chunk_size, length)
-            chunk = text[pointer:end]
-            print(chunk, end='', flush=True)  # Giả vờ in từng chunk ra nếu muốn
+        if self.event_manager:
+            self.event_manager.unsubscribe_agent(self.agent_name)
 
-            # Nếu chunk kết thúc bằng dấu ngắt câu, nghỉ lâu hơn
-            if chunk[-1] in ['.', '!', '?', ',']:
-                pause = random.uniform(0.5, 1.0)  # Nghỉ lâu
-            else:
-                pause = random.uniform(0.05, 0.2)  # Nghỉ ngắn
 
-            time.sleep(pause)
-            pointer = end
+
+

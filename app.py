@@ -9,7 +9,7 @@ import atexit
 # Import core components
 from core.conversation import Conversation
 from core.event_manager import EventManager
-from src.agent_loader import AgentLoader
+from utils.agent_loader import AgentLoader
 
 app = Flask(__name__)
 CORS(app)
