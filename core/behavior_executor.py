@@ -83,58 +83,59 @@ Chào A, mình nghĩ bước đầu tiên là tìm tập xác định đúng kh�
 - Không cung cấp kiến thức vượt ngoài hay không có ích cho mục tiêu của nhiệm vụ (STEP#) hiện tại, KHÔNG để lộ hay nói ra trước các bước sau mà để cả nhóm có thể dần dần tìm hiểu.
 """
 
-
 class BehaviorExecutor:
     def __init__(self,
                  interaction_coordinator: 'InteractionCoordinator',
                  problem_description: str,
                  llm_service: LLMService,
-                 agent_manager: 'AgentManager'): # Use type hint
+                 agent_manager: 'AgentManager',
+                 app_instance):
         self.interaction_coordinator = interaction_coordinator
         self.problem = problem_description
-        self.llm_service = llm_service
-        self.agent_manager = agent_manager # To fetch full persona info
+        self.llm_service = llm_service,
+        self.app = app_instance 
+        self.agent_manager = agent_manager
 
     def _format_history_for_prompt(self, history: List[Dict], count=15) -> str:
-        """Formats history for the LLM prompt."""
+        # ... (implementation remains the same) ...
         recent_history = history[-count:]
         lines = []
         for i, event in enumerate(recent_history):
              text = event.get('content', {}).get('text', '(Non-message event)')
              source = event.get('source', 'Unknown')
-             # Use name if available (e.g., from agent message content or user message)
              sender_name = event.get('content', {}).get('sender_name', source)
              lines.append(f"CON#{i+1} {sender_name}: {text}")
         return "\n".join(lines) if lines else "Chưa có hội thoại."
 
-    def _generate_final_message(self, agent_id: str, agent_name: str, thought_details: Dict, phase_context: Dict, history: List[Dict]) -> str:
-        """Generates the final spoken message using the CLASSMATE_SPEAK prompt."""
-        print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Generating final message...")
+    # <<< Add session_id parameter >>>
+    def _generate_final_message(self, session_id: str, agent_id: str, agent_name: str, thought_details: Dict, phase_context: Dict, history: List[Dict]) -> str:
+        """Generates the final spoken message using the CLASSMATE_SPEAK prompt for a session."""
+        # Include session_id in log messages
+        log_prefix = f"--- BEHAVIOR_EXECUTOR [{agent_name} - {session_id}]"
+        print(f"{log_prefix}: Generating final message...")
 
-        # Get full persona details
         agent_mind = self.agent_manager.get_agent_mind(agent_id)
         if not agent_mind:
-             print(f"!!! ERROR [BehaviorExecutor]: Cannot find AgentMind for ID {agent_id}")
+             print(f"!!! ERROR [{log_prefix}]: Cannot find AgentMind for ID {agent_id}")
              return "(Lỗi: Không tìm thấy thông tin agent)"
         persona = agent_mind.persona
 
-        # Format phase description
-        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n"
+        # Format phase description (remains the same)
+        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: ..." # (rest of formatting)
         phase_desc_prompt += f"Description: {phase_context.get('description', '')}\n"
         phase_desc_prompt += "Tasks:\n" + "\n".join([f"- {t}" for t in phase_context.get('tasks', [])]) + "\n"
         phase_desc_prompt += "Goals:\n" + "\n".join([f"- {g}" for g in phase_context.get('goals', [])])
 
-        # Get list of other participant names (AI agents + User)
+
+        # Get friend names (remains the same logic, uses passed history)
         all_agent_minds = self.agent_manager.agents.values()
         friend_names = [mind.persona.name for mind in all_agent_minds if mind.persona.agent_id != agent_id]
-        # Find the user's name from history (assuming the last user message has sender_name)
-        user_name = "User" # Default
+        user_name = "User"
         for event in reversed(history):
              if event['source'].startswith('user-') and 'sender_name' in event['content']:
                   user_name = event['content']['sender_name']
                   break
-        if user_name not in friend_names:
-            friend_names.append(user_name)
+        if user_name not in friend_names: friend_names.append(user_name)
 
         prompt = CLASSMATE_SPEAK_PROMPT.format(
             AI_name=agent_name,
@@ -146,124 +147,117 @@ class BehaviorExecutor:
             friends=", ".join(friend_names),
             current_stage_description=phase_desc_prompt.strip(),
             inner_thought=thought_details.get('thought', '(Suy nghĩ bị lỗi)'),
-            history=self._format_history_for_prompt(history)
-            # to_user is removed as it wasn't clearly defined how to use it
+            history=self._format_history_for_prompt(history) # Use passed history list
         )
 
-        # print(f"--- BEHAVIOR_EXECUTOR [{agent_name}] SPEAK PROMPT ---") # DEBUG
-        # print(prompt)
-        # print("----------------------------------------------------")
-
         try:
+            if isinstance(self.llm_service, tuple):
+                self.llm_service = self.llm_service[0] # Dont know why but this is in tuple format ????
             raw_response = self.llm_service.generate(prompt)
-            print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Raw LLM Speak Response: {raw_response}")
+            print(f"{log_prefix}: Raw LLM Speak Response: {raw_response}")
 
-            # Parse the response: extract text after </think>
+            # Parse response (remains the same)
             match = re.search(r"<think>.*?</think>\s*(.*)", raw_response, re.DOTALL | re.IGNORECASE)
             if match:
                 final_message = match.group(1).strip()
-                think_block = match.group(0).split("</think>")[0] + "</think>" # For logging
-                print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Parsed Think Block: {think_block}")
             else:
-                print(f"!!! WARN [BehaviorExecutor - {agent_name}]: Could not find <think> block. Using full response.")
-                final_message = raw_response.strip() # Use the whole response as fallback
+                print(f"!!! WARN [{log_prefix}]: Could not find <think> block. Using full response.")
+                final_message = raw_response.strip()
 
             if not final_message:
-                 print(f"!!! WARN [BehaviorExecutor - {agent_name}]: Generated empty message after parsing. Skipping.")
-                 return "" # Return empty string if nothing to say
-
+                 print(f"!!! WARN [{log_prefix}]: Generated empty message after parsing. Skipping.")
+                 return ""
             return final_message
 
         except Exception as e:
-            print(f"!!! ERROR [BehaviorExecutor - {agent_name}]: Failed during final message generation LLM call: {e}")
+            print(f"!!! ERROR [{log_prefix}]: Failed during final message generation LLM call: {e}")
             traceback.print_exc()
             return "(Lỗi: Không thể tạo câu trả lời)"
 
+    def _simulate_typing_and_speak(self, session_id: str, agent_id: str, agent_name: str, thought_details: Dict, phase_context: Dict, history: List[Dict]):
+        """Generates message, simulates typing, and posts the message for a session."""
+        log_prefix = f"--- BEHAVIOR_EXECUTOR [{agent_name} - {session_id}]"
 
-    def _simulate_typing_and_speak(self, agent_id: str, agent_name: str, thought_details: Dict, phase_context: Dict, history: List[Dict]):
-        """Generates message, simulates typing, and posts the message."""
+        # <<< Get app instance >>>
+        # app = current_app._get_current_object() # Use this if you didn't store self.app
+        app = self.app # Use stored app instance
 
-        # 1. Generate the actual message using LLM
-        final_message = self._generate_final_message(agent_id, agent_name, thought_details, phase_context, history)
+        # Generate message (Does this need context? Only if it calls DB functions)
+        # Assuming _generate_final_message primarily calls LLM, no context needed here yet.
+        final_message = self._generate_final_message(session_id, agent_id, agent_name, thought_details, phase_context, history)
 
         if not final_message:
-            # If message generation failed or resulted in empty, just go idle
+            # Post idle status (Does post_event_to_clients need context? No, it uses its own lock)
             self.interaction_coordinator.post_event_to_clients(
-                event_type="agent_status",
-                source=agent_id,
-                content={"status": "idle", "agent_name": agent_name},
-                is_internal=True
-            )
+                session_id=session_id, event_type="agent_status", source=agent_id,
+                content={"status": "idle", "agent_name": agent_name}, is_internal=True)
             return
 
-        # 2. Broadcast typing status
+        # Post typing status (No context needed)
         self.interaction_coordinator.post_event_to_clients(
-            event_type="agent_status",
-            source=agent_id,
-            content={"status": "typing", "agent_name": agent_name},
-            is_internal=True
-        )
+            session_id=session_id, event_type="agent_status", source=agent_id,
+            content={"status": "typing", "agent_name": agent_name}, is_internal=True)
 
-        # 3. Calculate delay based on the *final generated* message
-        min_delay = 0.5
-        max_delay = 5.0
-        delay_per_char = random.uniform(0.03, 0.07)
+        # Calculate delay (No context needed)
+        min_delay, max_delay, delay_per_char = 0.5, 5.0, random.uniform(0.03, 0.07)
         typing_delay = min(max_delay, max(min_delay, len(final_message) * delay_per_char))
-        print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Simulating typing delay: {typing_delay:.2f}s")
-        time.sleep(typing_delay)
+        print(f"{log_prefix}: Simulating typing delay: {typing_delay:.2f}s")
+        time.sleep(typing_delay) # Sleeping doesn't need context
 
-        # 4. Post the actual message event via InteractionCoordinator
-        print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Executing 'speak' action with message: {final_message}")
-        self.interaction_coordinator.handle_internal_trigger(
-            event_type="new_message",
-            source=agent_id, # Agent's unique ID is the source
-            content={"text": final_message, "sender_name": agent_name} # Include name for display
-        )
+        # <<< Wrap the DB-accessing part in app_context >>>
+        with app.app_context():
+            try:
+                print(f"{log_prefix}: Executing 'speak' action with message: {final_message}")
+                # <<< This call triggers DB access via add_event >>>
+                self.interaction_coordinator.handle_internal_trigger(
+                    session_id=session_id,
+                    event_type="new_message",
+                    source=agent_id,
+                    content={"text": final_message, "sender_name": agent_name}
+                )
+            except Exception as e:
+                # Log error if handle_internal_trigger fails within context
+                print(f"!!! ERROR [{log_prefix}]: Failed during handle_internal_trigger: {e}")
+                traceback.print_exc()
+        # <<< Context is torn down here >>>
 
-        # 5. Broadcast idle status after speaking
+        # Post idle status (No context needed)
         self.interaction_coordinator.post_event_to_clients(
-             event_type="agent_status",
-             source=agent_id,
-             content={"status": "idle", "agent_name": agent_name},
-             is_internal=True
-        )
+             session_id=session_id, event_type="agent_status", source=agent_id,
+             content={"status": "idle", "agent_name": agent_name}, is_internal=True)
 
 
-    def execute(self, agent_id: str, agent_name: str, action: str, selected_thought_details: Dict, phase_context: Dict, history: List[Dict]):
-        """Executes the selected action for the agent."""
-        print(f"--- BEHAVIOR_EXECUTOR: Received execution request for {agent_name} - Action: {action}")
+    def execute(self, session_id: str, agent_id: str, agent_name: str, action: str, selected_thought_details: Dict, phase_context: Dict, history: List[Dict]):
+        """Executes the selected action for the agent within a session."""
+        log_prefix = f"--- BEHAVIOR_EXECUTOR [{agent_name} - {session_id}]"
+        print(f"{log_prefix}: Received execution request - Action: {action}")
+
         if action == "speak":
             if not selected_thought_details:
-                print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Error - 'speak' action requested without thought details. Skipping.")
-                # Ensure agent goes idle if speak fails early
+                print(f"{log_prefix}: Error - 'speak' action requested without thought details. Skipping.")
+                # Post idle status (No context needed)
                 self.interaction_coordinator.post_event_to_clients(
-                     event_type="agent_status", source=agent_id,
+                     session_id=session_id, event_type="agent_status", source=agent_id,
                      content={"status": "idle", "agent_name": agent_name}, is_internal=True)
                 return
 
-            # Run generation and simulation in a separate thread
+            # Starting the thread doesn't need context itself
             thread = threading.Thread(
                 target=self._simulate_typing_and_speak,
-                args=(agent_id, agent_name, selected_thought_details, phase_context, history),
+                args=(session_id, agent_id, agent_name, selected_thought_details, phase_context, history),
                 daemon=True
             )
             thread.start()
 
         elif action == "listen":
-            print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Executing 'listen' action (no operation).")
-            # Set status to idle immediately
+            print(f"{log_prefix}: Executing 'listen' action (no operation).")
+            # Post idle status (No context needed)
             self.interaction_coordinator.post_event_to_clients(
-                 event_type="agent_status",
-                 source=agent_id,
-                 content={"status": "idle", "agent_name": agent_name},
-                 is_internal=True
-            )
+                 session_id=session_id, event_type="agent_status", source=agent_id,
+                 content={"status": "idle", "agent_name": agent_name}, is_internal=True)
         else:
-            print(f"--- BEHAVIOR_EXECUTOR [{agent_name}]: Unknown action '{action}'.")
-            # Set status to idle
+            print(f"{log_prefix}: Unknown action '{action}'.")
+            # Post idle status (No context needed)
             self.interaction_coordinator.post_event_to_clients(
-                 event_type="agent_status",
-                 source=agent_id,
-                 content={"status": "idle", "agent_name": agent_name},
-                 is_internal=True
-            )
+                 session_id=session_id, event_type="agent_status", source=agent_id,
+                 content={"status": "idle", "agent_name": agent_name}, is_internal=True)

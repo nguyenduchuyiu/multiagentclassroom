@@ -5,136 +5,142 @@ import json
 import uuid
 import time
 import random
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from core.conversation_history import ConversationHistory
-from core.response_orchestrator import ResponseOrchestrator
-# BehaviorExecutor is mainly called by ResponseOrchestrator, but IC might need it for direct actions?
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from core.response_orchestrator import ResponseOrchestrator
 
 class InteractionCoordinator:
     def __init__(self, conversation_history: ConversationHistory):
         self.conv_history = conversation_history
-        # These will be set after initialization by app.py to avoid circular dependencies during init
-        self.response_orchestrator: ResponseOrchestrator = None
-        # self.behavior_executor: BehaviorExecutor = None # Maybe not needed directly
+        self.response_orchestrator: Optional['ResponseOrchestrator'] = None
+        # <<< SSE queues are now nested: {session_id: {client_id: Queue}} >>>
+        self._sse_queues: Dict[str, Dict[str, queue.Queue]] = {}
+        self._lock = threading.Lock() # Lock protects the _sse_queues structure
+        print("--- INT_COORD: Initialized (Session Aware).")
 
-        self._sse_queues: Dict[str, queue.Queue] = {}
-        self._lock = threading.Lock() # Lock for SSE queues
-
-        print("--- INT_COORD: Initialized.")
-
-    def set_orchestrator(self, orchestrator: ResponseOrchestrator):
+    def set_orchestrator(self, orchestrator: 'ResponseOrchestrator'):
          print("--- INT_COORD: Setting Response Orchestrator.")
          self.response_orchestrator = orchestrator
 
-    # --- SSE Client Management (Similar to old EventManager) ---
-    def add_sse_client(self, client_id: str) -> queue.Queue:
+    # --- SSE Client Management (Session Aware) ---
+    def add_sse_client(self, session_id: str, client_id: str) -> Optional[queue.Queue]:
+        """Adds an SSE client queue for a specific session."""
         q = queue.Queue()
         with self._lock:
-            self._sse_queues[client_id] = q
-            print(f"--- INT_COORD: SSE client added: {client_id}")
+            # <<< Ensure session entry exists >>>
+            if session_id not in self._sse_queues:
+                self._sse_queues[session_id] = {}
+            # <<< Add client to the session >>>
+            self._sse_queues[session_id][client_id] = q
+            print(f"--- INT_COORD [{session_id}]: SSE client added: {client_id}")
         return q
 
-    def remove_sse_client(self, client_id: str):
+    def remove_sse_client(self, session_id: str, client_id: str):
+         """Removes an SSE client queue for a specific session."""
          with self._lock:
-             if client_id in self._sse_queues:
-                 try:
-                      self._sse_queues[client_id].put_nowait(None) # Signal stop
-                 except queue.Full: pass
-                 except Exception as e: print(f"--- INT_COORD WARN: Error putting None to queue for {client_id}: {e}")
-                 del self._sse_queues[client_id]
-                 print(f"--- INT_COORD: SSE client removed: {client_id}")
+             # <<< Check session and client existence >>>
+             if session_id in self._sse_queues and client_id in self._sse_queues[session_id]:
+                 q = self._sse_queues[session_id].pop(client_id, None)
+                 if q:
+                     try:
+                          q.put_nowait(None) # Signal stop
+                     except queue.Full: pass
+                     except Exception as e: print(f"--- INT_COORD WARN [{session_id}]: Error putting None to queue for {client_id}: {e}")
+                 print(f"--- INT_COORD [{session_id}]: SSE client removed: {client_id}")
+                 # <<< Clean up session entry if no clients left >>>
+                 if not self._sse_queues[session_id]:
+                     del self._sse_queues[session_id]
+                     print(f"--- INT_COORD [{session_id}]: No clients left, removed session entry.")
 
-    def post_event_to_clients(self, event_type: str, source: str, content: Dict, is_internal: bool = False):
-        """Posts an event to all connected SSE clients."""
-        # Decide if this event should be broadcast (e.g., don't broadcast internal thinking steps)
-        if event_type not in ["new_message", "agent_status"]: # Only broadcast messages and status for now
-             # print(f"--- INT_COORD: Skipping broadcast for internal/non-UI event type: {event_type}")
+    def post_event_to_clients(self, session_id: str, event_type: str, source: str, content: Dict, is_internal: bool = False):
+        """Posts an event to all connected SSE clients for a specific session."""
+        # <<< Filter broadcast based on type >>>
+        if event_type not in ["new_message", "agent_status", "system_message", "error"]:
              return
 
-        print(f"--- INT_COORD: Broadcasting SSE event: Type={event_type}, Source={source}")
-        # Structure the data payload for SSE
+        print(f"--- INT_COORD [{session_id}]: Broadcasting SSE event: Type={event_type}, Source={source}")
         sse_data = {
-            "event_id": str(uuid.uuid4()), # Unique ID for the SSE transmission itself
+            "event_id": str(uuid.uuid4()),
             "timestamp": int(time.time() * 1000),
             "event_type": event_type,
             "source": source,
             "content": content,
+            "session_id": session_id # Include session_id in payload
         }
-        sse_payload = {"event": event_type, "data": sse_data} # Wrap for SSE format
+        sse_payload = {"event": event_type, "data": sse_data}
 
-        client_ids_to_broadcast = []
+        client_queues_to_broadcast = []
         with self._lock:
-            client_ids_to_broadcast = list(self._sse_queues.keys())
+            # <<< Get queues only for the target session >>>
+            session_queues = self._sse_queues.get(session_id, {})
+            client_queues_to_broadcast = list(session_queues.values())
 
-        if not client_ids_to_broadcast:
-            # print("--- INT_COORD: No active SSE clients.")
+        if not client_queues_to_broadcast:
             return
 
-        for client_id in client_ids_to_broadcast:
-            q = None
-            with self._lock:
-                q = self._sse_queues.get(client_id)
-            if q:
-                try:
-                    q.put_nowait(sse_payload)
-                except queue.Full:
-                    print(f"!!! WARNING [InteractionCoordinator]: SSE queue full for client {client_id}. Event lost.")
-                except Exception as e:
-                    print(f"!!! ERROR [InteractionCoordinator]: Error putting event to queue for {client_id}: {e}")
+        for q in client_queues_to_broadcast:
+            try:
+                q.put_nowait(sse_payload)
+            except queue.Full:
+                print(f"!!! WARNING [InteractionCoordinator - {session_id}]: SSE queue full for a client. Event lost.")
+            except Exception as e:
+                print(f"!!! ERROR [InteractionCoordinator - {session_id}]: Error putting event to a client queue: {e}")
 
+    # --- Trigger Handling (Session Aware) ---
+    # <<< Add session_id parameter >>>
+    def handle_external_trigger(self, session_id: str, event_type: str, source: str, content: Dict):
+        """Handles triggers from outside (e.g., user message) for a specific session."""
+        print(f"--- INT_COORD [{session_id}]: Received EXTERNAL trigger: Type={event_type}, Source={source}")
+        # <<< Use session_id when adding event >>>
+        logged_event = self.conv_history.add_event(session_id, event_type, source, content)
+        if not logged_event: return
 
-    # --- Trigger Handling ---
-    def handle_external_trigger(self, event_type: str, source: str, content: Dict):
-        """Handles triggers from outside the core loop (e.g., user message)."""
-        print(f"--- INT_COORD: Received EXTERNAL trigger: Type={event_type}, Source={source}")
-        # 1. Log the event immediately
-        logged_event = self.conv_history.add_event(event_type, source, content)
+        # <<< Use session_id when posting to clients >>>
+        self.post_event_to_clients(session_id, event_type, source, content)
 
-        # 2. Broadcast to clients (if relevant type)
-        self.post_event_to_clients(event_type, source, content)
-
-        # 3. Trigger the Response Orchestrator to potentially generate an AI response
         if self.response_orchestrator:
-             # Apply a small random delay before triggering response to feel more natural
-             # delay = random.uniform(0.1, 0.5)
-             # time.sleep(delay) # Consider if blocking here is okay, or use Timer
-             self.response_orchestrator.process_event(logged_event)
+             # <<< Pass session_id to process_event >>>
+             self.response_orchestrator.process_event(session_id=session_id, triggering_event=logged_event)
         else:
-             print("--- INT_COORD: Warning - Response Orchestrator not set. Cannot process event further.")
+             print(f"--- INT_COORD [{session_id}]: Warning - Response Orchestrator not set.")
 
+    # <<< Add session_id parameter >>>
+    def handle_internal_trigger(self, session_id: str, event_type: str, source: str, content: Dict):
+        """Handles triggers from within the system (e.g., agent speaking) for a specific session."""
+        print(f"--- INT_COORD [{session_id}]: Received INTERNAL trigger: Type={event_type}, Source={source}")
 
-    def handle_internal_trigger(self, event_type: str, source: str, content: Dict):
-        """Handles triggers from within the system (e.g., agent finished speaking)."""
-        print(f"--- INT_COORD: Received INTERNAL trigger: Type={event_type}, Source={source}")
-        # 1. Log the event
-        # Decide if *all* internal events need logging, maybe based on type
-        # For now, log messages generated internally
-        if event_type == "new_message":
-             logged_event = self.conv_history.add_event(event_type, source, content)
-             # Apply random pause *before* broadcasting the AI message
-             # delay = random.uniform(0.2, 1.0)
-             # print(f"--- INT_COORD: Applying random pause before posting AI message: {delay:.2f}s")
-             # time.sleep(delay) # Blocking delay, consider Timer if IC needs to be responsive
+        logged_event = None # Keep track if event was logged
+        if event_type in ["new_message", "system_message", "phase_transition"]:
+             # <<< Use session_id when adding event >>>
+             logged_event = self.conv_history.add_event(session_id, event_type, source, content)
+             if not logged_event: return
 
-             # Broadcast the NEW message generated internally
-             self.post_event_to_clients(event_type, source, content)
+             # <<< Use session_id when posting to clients >>>
+             self.post_event_to_clients(session_id, event_type, source, content)
 
-             # IMPORTANT: Decide if an internal message should *also* trigger the response orchestrator
-             # Usually, an agent speaking shouldn't immediately trigger another round of thinking
-             # unless it's a specific multi-turn action. For now, we DON'T trigger RO here.
-             # if self.response_orchestrator:
-             #     self.response_orchestrator.process_event(logged_event)
+             # Decide if internal event triggers further response
+             if event_type == 'new_message' and self.response_orchestrator and logged_event:
+                time.sleep(2) # wait prevent thinking too fast - be a good listener :)
+                self.response_orchestrator.process_event(session_id=session_id, triggering_event=logged_event)
+                print(f"--- INT_COORD [{session_id}]: Triggering orchestrator in response to internal message from {source}")
         else:
-             # Handle other internal events (logging, status updates, etc.)
-             # Maybe broadcast some internal events like 'evaluation_complete' if needed for UI?
-             print(f"--- INT_COORD: Handling internal event type {event_type} (currently no action/broadcast).")
-
+            # Handle non-logged internal events like agent_status
+            if event_type == "agent_status":
+                 # <<< Use session_id when posting to clients >>>
+                self.post_event_to_clients(session_id, event_type, source, content, is_internal=True)
+            else:
+                print(f"--- INT_COORD [{session_id}]: Handling internal event type {event_type} (no DB log/broadcast).")
 
     def cleanup(self):
-        # Clean up resources if needed (e.g., stop timers)
+        # Logic remains the same, iterates through the nested structure
         print("--- INT_COORD: Cleanup initiated.")
-        # Signal all SSE clients to stop
-        client_ids = list(self._sse_queues.keys())
-        for client_id in client_ids:
-             self.remove_sse_client(client_id)
+        with self._lock:
+            all_session_ids = list(self._sse_queues.keys())
+            for session_id in all_session_ids:
+                 client_ids = list(self._sse_queues.get(session_id, {}).keys())
+                 for client_id in client_ids:
+                      self.remove_sse_client(session_id, client_id) # Method handles nested removal
+            self._sse_queues.clear()
         print("--- INT_COORD: Cleanup complete.")

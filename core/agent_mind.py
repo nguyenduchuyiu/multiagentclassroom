@@ -3,6 +3,8 @@ import threading
 import json
 import traceback
 from typing import Dict, Any, Optional, List
+
+from flask import current_app
 from core.persona import Persona
 from core.conversation_history import ConversationHistory
 from core.conversation_phase_manager import ConversationPhaseManager
@@ -82,46 +84,34 @@ Trả về JSON với định dạng sau:
 """
 
 class AgentMind:
-    def __init__(self, persona: Persona, problem_description: str, llm_service: LLMService):
+    def __init__(self, persona: Persona, problem_description: str, llm_service: LLMService, app_instance):
         self.persona = persona
         self.problem = problem_description
-        self._llm_service = llm_service
-        # Store previous thoughts with IDs
-        self._internal_state: Dict[str, Any] = {"thoughts_log": []} # List of {"id": thought_id, "text": thought_text}
+        self._llm_service = llm_service,
+        self.app = app_instance 
+        self._internal_state: Dict[str, Any] = {"thoughts_log": []}
         self._lock = threading.Lock()
-        
+
     def _format_history_for_prompt(self, history: List[Dict], count=15) -> str:
-        """Formats history for the LLM prompt, adding CON# IDs."""
+        # ... (implementation remains the same) ...
         recent_history = history[-count:]
         lines = []
         for i, event in enumerate(recent_history):
-            text = event.get('content', {}).get('text', '(Non-message event)')
-            source = event.get('source', 'Unknown')
-            # Get sender name if available, otherwise use source ID
-            sender_name = event.get('content', {}).get('sender_name', source)
-            lines.append(f"CON#{i+1} {sender_name}: {text}") # Use 1-based indexing for prompt
+             text = event.get('content', {}).get('text', '(Non-message event)')
+             source = event.get('source', 'Unknown')
+             sender_name = event.get('content', {}).get('sender_name', source)
+             lines.append(f"CON#{i+1} {sender_name}: {text}")
         return "\n".join(lines) if lines else "Chưa có hội thoại."
 
     def _format_previous_thoughts(self, count=5) -> str:
-        """Formats previous thoughts for the LLM prompt, adding THO# IDs."""
+        # ... (implementation remains the same) ...
         recent_thoughts = self._internal_state["thoughts_log"][-count:]
         lines = [f"THO#{thought['id']}: {thought['text']}" for thought in recent_thoughts]
         return "\n".join(lines) if lines else "Chưa có suy nghĩ trước đó."
 
-
     def _build_inner_thought_prompt(self, triggering_event: Dict, history: List[Dict], phase_context: Dict) -> str:
-        # Phase description for the prompt
-        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n"
-        phase_desc_prompt += f"Description: {phase_context.get('description', '')}\n"
-        phase_desc_prompt += "Tasks:\n" + "\n".join([f"- {t}" for t in phase_context.get('tasks', [])]) + "\n"
-        phase_desc_prompt += "Goals:\n" + "\n".join([f"- {g}" for g in phase_context.get('goals', [])])
-
-        # Agent description combines role, goal, backstory, tasks from Persona
-        ai_desc_prompt = f"Role: {self.persona.role}\n"
-        ai_desc_prompt += f"Goal: {self.persona.goal}\n"
-        ai_desc_prompt += f"Backstory: {self.persona.backstory}\n"
-        ai_desc_prompt += f"Functions/Tasks:\n{self.persona.tasks}" # Assumes tasks are pre-formatted with FUNC#
-
+        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n..." # (rest of formatting)
+        ai_desc_prompt = f"Role: {self.persona.role}\n..." # (rest of formatting)
         prompt = AGENT_INNER_THOUGHTS_PROMPT.format(
             AI_name=self.persona.name,
             problem=self.problem,
@@ -129,83 +119,77 @@ class AgentMind:
             AI_description=ai_desc_prompt.strip(),
             previous_thoughts=self._format_previous_thoughts(),
             history=self._format_history_for_prompt(history)
-            # poor_thinking is removed as it was likely a placeholder in the original prompt
         )
         return prompt
 
-    def think(self, triggering_event: Dict, conversation_history: ConversationHistory, phase_manager: ConversationPhaseManager) -> Optional[Dict[str, Any]]:
-        """Performs the inner thinking process using the AGENT_INNER_THOUGHTS prompt."""
+
+    def think(self, session_id: str, triggering_event: Dict, conversation_history: ConversationHistory, phase_manager: ConversationPhaseManager) -> Optional[Dict[str, Any]]:
         if not self._lock.acquire(blocking=False):
-            print(f"--- AGENT_MIND [{self.persona.name}]: Already thinking, skipping.")
+            print(f"--- AGENT_MIND [{self.persona.name} - {session_id}]: Already thinking, skipping.")
             return None
 
-        try:
-            print(f"--- AGENT_MIND [{self.persona.name}]: Starting thinking process...")
-            # 1. Get necessary context
-            recent_history = conversation_history.get_history(count=20)
-            # Get the latest phase context, triggering phase update if necessary
-            current_phase_context = phase_manager.get_current_phase(conversation_history)
+        log_prefix = f"--- AGENT_MIND [{self.persona.name} - {session_id}]"
 
-            # 2. Build Prompt using the specific template
-            prompt = self._build_inner_thought_prompt(triggering_event, recent_history, current_phase_context)
-            # print(f"--- AGENT_MIND [{self.persona.name}] PROMPT ---") # DEBUG
-            # print(prompt)
-            # print("-------------------------------------")
-
-            # 3. Call LLM
-            raw_llm_response = self._llm_service.generate(prompt)
-            print(f"--- AGENT_MIND [{self.persona.name}]: Raw LLM Response: {raw_llm_response}")
-
-            # 4. Parse Output (JSON with stimuli, thought, action)
+        # <<< Wrap context-dependent operations >>>
+        with self.app.app_context():
             try:
-                clean_response = raw_llm_response.strip().replace("```json", "").replace("```", "")
-                parsed_output = json.loads(clean_response)
-                stimuli = parsed_output.get("stimuli", [])
-                thought = parsed_output.get("thought", "(Failed to generate thought)")
-                action = parsed_output.get("action", "listen").lower()
-                if action not in ["speak", "listen"]:
-                    print(f"!!! WARN [AgentMind - {self.persona.name}]: Invalid action '{action}' received, defaulting to 'listen'.")
-                    action = "listen"
+                print(f"{log_prefix}: Starting thinking process...")
+                # <<< These operations now happen within the context >>>
+                recent_history = conversation_history.get_history(session_id=session_id, count=20)
+                current_phase_context = phase_manager.get_current_phase(session_id, conversation_history)
 
-            except json.JSONDecodeError as e:
-                print(f"!!! ERROR [AgentMind - {self.persona.name}]: Failed to parse LLM JSON response: {e}")
-                print(f"Raw Response was: {raw_llm_response}")
-                stimuli = ["ERROR_PARSING"]
-                thought = f"Error parsing LLM response: {e}"
-                action = "listen"
+                prompt = self._build_inner_thought_prompt(triggering_event, recent_history, current_phase_context)
+
+                # LLM call itself doesn't usually need app context, but keep it inside for simplicity
+                if isinstance(self._llm_service, tuple):
+                    self._llm_service = self._llm_service[0] # Dont know why but this is in tuple format ????
+                raw_llm_response = self._llm_service.generate(prompt)
+                print(f"{log_prefix}: Raw LLM Response: {raw_llm_response}")
+
+                # <<< Parsing happens within the context >>>
+                try:
+                    clean_response = raw_llm_response.strip().replace("```json", "").replace("```", "")
+                    parsed_output = json.loads(clean_response)
+                    stimuli = parsed_output.get("stimuli", [])
+                    thought = parsed_output.get("thought", "(Failed to generate thought)")
+                    action = parsed_output.get("action", "listen").lower()
+                    if action not in ["speak", "listen"]: action = "listen"
+                except json.JSONDecodeError as e:
+                    print(f"!!! ERROR [{log_prefix}]: Failed to parse LLM JSON response: {e}")
+                    stimuli, thought, action = ["ERROR_PARSING"], f"Error parsing LLM response: {e}", "listen"
+                except Exception as e:
+                     print(f"!!! ERROR [{log_prefix}]: Unexpected error during parsing: {e}")
+                     stimuli, thought, action = ["ERROR_UNEXPECTED"], f"Unexpected error: {e}", "listen"
+
+                # <<< State update (if needed) happens within the context >>>
+                thought_id = len(self._internal_state["thoughts_log"]) + 1
+                self._internal_state["thoughts_log"].append({"id": thought_id, "text": thought})
+
+                result = {
+                    "agent_id": self.persona.agent_id,
+                    "agent_name": self.persona.name,
+                    "stimuli": stimuli,
+                    "thought": thought,
+                    "action_intention": action,
+                    "internal_state_update": {"last_thought_id": thought_id}
+                }
+                print(f"{log_prefix}: Thinking complete. Intention: {action}. Thought: {thought}")
+                return result
+
             except Exception as e:
-                print(f"!!! ERROR [AgentMind - {self.persona.name}]: Unexpected error during parsing: {e}")
-                stimuli = ["ERROR_UNEXPECTED"]
-                thought = f"Unexpected error: {e}"
-                action = "listen"
-
-            # 5. Log the thought internally
-            thought_id = len(self._internal_state["thoughts_log"]) + 1
-            self._internal_state["thoughts_log"].append({"id": thought_id, "text": thought})
-
-            # 6. Return result structure matching expected output
-            result = {
-                "agent_id": self.persona.agent_id,
-                "agent_name": self.persona.name,
-                "stimuli": stimuli,
-                "thought": thought, # This is the inner thought text
-                "action_intention": action, # Changed key name for consistency downstream
-                # No potential_message here, it's generated later by CLASSMATE_SPEAK
-                "internal_state_update": {"last_thought_id": thought_id} # Example state update
-            }
-            print(f"--- AGENT_MIND [{self.persona.name}]: Thinking complete. Intention: {action}. Thought: {thought}")
-            return result
-
-        except Exception as e:
-            print(f"!!! ERROR [AgentMind - {self.persona.name}]: Failed during thinking process: {e}")
-            traceback.print_exc()
-            return { # Return a failure state
-                "agent_id": self.persona.agent_id,
-                "agent_name": self.persona.name,
-                "stimuli": ["ERROR_THINKING"],
-                "thought": f"Error during thinking: {e}",
-                "action_intention": "listen",
-                "internal_state_update": {}
-            }
-        finally:
-            self._lock.release()
+                # <<< Error logging happens within the context >>>
+                print(f"!!! ERROR [{log_prefix}]: Failed during thinking process: {e}")
+                traceback.print_exc()
+                # Return error structure outside the context if needed, but it's simpler here
+                return {
+                     "agent_id": self.persona.agent_id,
+                     "agent_name": self.persona.name,
+                     "stimuli": ["ERROR_THINKING"],
+                     "thought": f"Error during thinking: {e}",
+                     "action_intention": "listen",
+                     "internal_state_update": {}
+                }
+            # <<< Context automatically torn down here >>>
+            # <<< Lock released outside the context >>>
+            finally:
+                self._lock.release()

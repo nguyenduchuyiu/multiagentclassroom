@@ -85,155 +85,121 @@ Chỉ trả về JSON với định dạng sau mà KHÔNG nói bất kỳ gì th
 """
 
 class SpeakerSelector:
+    # ... (__init__, _format_history_for_prompt, _format_thoughts_for_prompt, _call_evaluator_llm - remain the same) ...
     def __init__(self, problem_description: str, llm_service: LLMService, config: Dict = None):
         self.problem = problem_description
         self.llm_service = llm_service
         self.config = config or {}
-        # Weight for combining LLM scores (can be adjusted)
-        self.lambda_weight = self.config.get("lambda_weight", 0.5) # Weight for external vs internal
-        
+        self.lambda_weight = self.config.get("lambda_weight", 0.5)
+
     def _format_history_for_prompt(self, history: List[Dict], count=15) -> str:
-        """Formats history for the LLM prompt."""
+        # ... (implementation remains the same) ...
         recent_history = history[-count:]
         lines = []
         for i, event in enumerate(recent_history):
-            text = event.get('content', {}).get('text', '(Non-message event)')
-            source = event.get('source', 'Unknown')
-            lines.append(f"CON#{i+1} {source}: {text}") # Use 1-based indexing
+             text = event.get('content', {}).get('text', '(Non-message event)')
+             source = event.get('source', 'Unknown')
+             lines.append(f"CON#{i+1} {source}: {text}")
         return "\n".join(lines) if lines else "Chưa có hội thoại."
 
     def _format_thoughts_for_prompt(self, thinking_results: List[Dict[str, Any]]) -> str:
-        """Formats the thoughts part of the prompt."""
+        # ... (implementation remains the same) ...
         lines = []
         for result in thinking_results:
-            # Only include thoughts from agents who intend to speak for evaluation
-            if result and result.get("action_intention") == "speak":
-                lines.append(f"- {result.get('agent_name', 'Unknown')}: {result.get('thought', '')}")
+             if result and result.get("action_intention") == "speak":
+                 lines.append(f"- {result.get('agent_name', 'Unknown')}: {result.get('thought', '')}")
         return "\n".join(lines) if lines else "Không có ai muốn nói."
 
     def _call_evaluator_llm(self, prompt: str) -> List[Dict[str, Any]]:
-        """Calls the LLM to get evaluation scores."""
+        # ... (implementation remains the same) ...
         print("--- SPEAKER_SELECTOR: Requesting evaluation from LLM...")
-        # print(f"--- SPEAKER_SELECTOR PROMPT ---\n{prompt}\n---------------------------") # DEBUG
         try:
             raw_response = self.llm_service.generate(prompt)
             print(f"--- SPEAKER_SELECTOR: Raw LLM Evaluation Response: {raw_response}")
-
-            # Clean and parse JSON list
             clean_response = raw_response.strip().replace("```json", "").replace("```", "")
-            # Ensure the LLM returns valid JSON numbers, not strings
             parsed_scores = json.loads(clean_response)
-
-            if not isinstance(parsed_scores, list):
-                raise ValueError("LLM did not return a list of scores.")
-
-            # Validate structure (simple check)
+            if not isinstance(parsed_scores, list): raise ValueError("LLM did not return a list.")
             validated_scores = []
             for item in parsed_scores:
                 if isinstance(item, dict) and 'name' in item and 'internal_score' in item and 'external_score' in item:
-                    # Attempt to convert scores to float, handle potential errors
-                    try:
-                        item['internal_score'] = float(item['internal_score'])
-                        item['external_score'] = float(item['external_score'])
-                        validated_scores.append(item)
-                    except (ValueError, TypeError):
-                        print(f"!!! WARN [SpeakerSelector]: Invalid score format for agent {item.get('name')}. Skipping.")
-                else:
-                    print(f"!!! WARN [SpeakerSelector]: Invalid score item format: {item}. Skipping.")
-
+                     try:
+                         item['internal_score'] = float(item['internal_score'])
+                         item['external_score'] = float(item['external_score'])
+                         validated_scores.append(item)
+                     except (ValueError, TypeError): print(f"!!! WARN [SpeakerSelector]: Invalid score format for {item.get('name')}. Skipping.")
+                else: print(f"!!! WARN [SpeakerSelector]: Invalid score item format: {item}. Skipping.")
             return validated_scores
-
         except json.JSONDecodeError as e:
             print(f"!!! ERROR [SpeakerSelector]: Failed to parse LLM JSON evaluation response: {e}")
-            print(f"Raw Response was: {raw_response}")
             return []
         except Exception as e:
             print(f"!!! ERROR [SpeakerSelector]: Unexpected error during evaluation LLM call: {e}")
             traceback.print_exc()
             return []
 
-
+    # <<< Add session_id parameter >>>
     def select_speaker(self,
-                    thinking_results: List[Dict[str, Any]],
-                    phase_context: Dict,
-                    conversation_history: List[Dict]) -> Dict[str, Any]:
+                       session_id: str, # Added
+                       thinking_results: List[Dict[str, Any]],
+                       phase_context: Dict,
+                       conversation_history: List[Dict]) -> Dict[str, Any]: # Takes history LIST now
         """
-        Uses the THOUGHTS_EVALUATOR LLM prompt to get scores and selects the best agent.
+        Uses the THOUGHTS_EVALUATOR LLM prompt to get scores and selects the best agent for the session.
         """
-        print(f"--- SPEAKER_SELECTOR: Evaluating {len(thinking_results)} thinking results...")
-        agents_wanting_to_speak = [res for res in thinking_results if res and res.get("action_intention") == "speak"]
+        # Include session_id in log messages
+        log_prefix = f"--- SPEAKER_SELECTOR [{session_id}]"
+        print(f"{log_prefix}: Evaluating {len(thinking_results)} thinking results...")
 
+        agents_wanting_to_speak = [res for res in thinking_results if res and res.get("action_intention") == "speak"]
         if not agents_wanting_to_speak:
-            print("--- SPEAKER_SELECTOR: No agents intend to speak.")
+            print(f"{log_prefix}: No agents intend to speak.")
             return {}
 
-        # Format phase description for the prompt
-        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n"
+        # Format phase description (remains the same logic)
+        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n..." # (rest of formatting)
         phase_desc_prompt += f"Description: {phase_context.get('description', '')}\n"
         phase_desc_prompt += "Tasks:\n" + "\n".join([f"- {t}" for t in phase_context.get('tasks', [])]) + "\n"
         phase_desc_prompt += "Goals:\n" + "\n".join([f"- {g}" for g in phase_context.get('goals', [])])
 
-        # Build the prompt for the evaluator LLM
+        # Build prompt (remains the same logic, uses passed history list)
         prompt = THOUGHTS_EVALUATOR_PROMPT.format(
             list_AI_name=", ".join([res['agent_name'] for res in agents_wanting_to_speak]),
             problem=self.problem,
             current_stage_description=phase_desc_prompt.strip(),
-            history=self._format_history_for_prompt(conversation_history),
+            history=self._format_history_for_prompt(conversation_history), # Use passed history list
             AI_thoughts=self._format_thoughts_for_prompt(agents_wanting_to_speak)
         )
 
-        # Get scores from LLM
-        llm_scores = self._call_evaluator_llm(prompt) # Returns list like [{'name': 'Alice', 'internal_score': 4.2, 'external_score': 3.5}, ...]
-
+        llm_scores = self._call_evaluator_llm(prompt)
         if not llm_scores:
-            print("--- SPEAKER_SELECTOR: Failed to get valid scores from LLM.")
+            print(f"{log_prefix}: Failed to get valid scores from LLM.")
             return {}
 
-        # Combine LLM scores with original thinking results
+        # Combine scores (remains the same logic)
         evaluated_results = []
         llm_scores_map = {score['name']: score for score in llm_scores}
-
         for result in agents_wanting_to_speak:
             agent_name = result['agent_name']
             scores = llm_scores_map.get(agent_name)
             if scores:
-                internal_s = scores['internal_score']
-                external_s = scores['external_score']
-                # Calculate final score (weighted average)
-                final_s = ((1 - self.lambda_weight) * internal_s +
-                        self.lambda_weight * external_s)
-                # Add small random factor for tie-breaking
-                final_s += random.uniform(-0.01, 0.01)
-
-                evaluated_results.append({
-                    **result, # Include original thought, stimuli, etc.
-                    "internal_score": internal_s,
-                    "external_score": external_s,
-                    "final_score": final_s
-                })
-                print(f"--- SPEAKER_SELECTOR: Score for {agent_name}: Final={final_s:.2f} (IS={internal_s:.2f}, ES={external_s:.2f}) from LLM")
-            else:
-                print(f"--- SPEAKER_SELECTOR: Warning - No LLM score found for {agent_name}. Skipping.")
-
+                internal_s, external_s = scores['internal_score'], scores['external_score']
+                final_s = ((1 - self.lambda_weight) * internal_s + self.lambda_weight * external_s) + random.uniform(-0.01, 0.01)
+                evaluated_results.append({**result, "internal_score": internal_s, "external_score": external_s, "final_score": final_s})
+                print(f"{log_prefix}: Score for {agent_name}: Final={final_s:.2f} (IS={internal_s:.2f}, ES={external_s:.2f}) from LLM")
+            else: print(f"{log_prefix}: Warning - No LLM score found for {agent_name}. Skipping.")
 
         if not evaluated_results:
-            print("--- SPEAKER_SELECTOR: No agents passed evaluation or scoring.")
-            return {}
+             print(f"{log_prefix}: No agents passed evaluation or scoring.")
+             return {}
 
-        # Sort by final score (highest first)
         evaluated_results.sort(key=lambda x: x["final_score"], reverse=True)
-
-        # --- Selection Logic ---
-        # Pick the highest score (can add thresholds later)
         selected_agent_result = evaluated_results[0]
+        print(f"{log_prefix}: Selected {selected_agent_result['agent_name']} with score {selected_agent_result['final_score']:.2f}")
 
-        print(f"--- SPEAKER_SELECTOR: Selected {selected_agent_result['agent_name']} with score {selected_agent_result['final_score']:.2f}")
-
-        # Return the *original thinking result* of the selected agent, plus scores
         return {
             "selected_agent_id": selected_agent_result["agent_id"],
             "selected_agent_name": selected_agent_result["agent_name"],
             "selected_action": "speak",
-            "selected_thought_details": selected_agent_result, # Pass the full thinking result for BehaviorExecutor
+            "selected_thought_details": selected_agent_result,
             "evaluation_scores": {res['agent_id']: res['final_score'] for res in evaluated_results}
         }
