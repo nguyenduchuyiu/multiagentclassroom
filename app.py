@@ -1,56 +1,101 @@
-# app.py
+# app.py (Refactored - With Flexible User Handling)
 from flask import Flask, render_template, request, Response, jsonify
 from flask_cors import CORS
 import uuid
 import json
 import queue
 import atexit
+import os
+import traceback # Added for better error logging
+from dotenv import load_dotenv
 
-# Import core components
-from core.conversation import Conversation
-from core.event_manager import EventManager
-from utils.agent_loader import AgentLoader
+# Load environment variables
+load_dotenv()
+
+# Import New Core Components
+from core.conversation_history import ConversationHistory
+from core.interaction_coordinator import InteractionCoordinator
+from core.response_orchestrator import ResponseOrchestrator
+from core.agent_manager import AgentManager
+from core.speaker_selector import SpeakerSelector
+from core.behavior_executor import BehaviorExecutor
+from core.conversation_phase_manager import ConversationPhaseManager
+from services.llm_service import LLMService
+from utils.loaders import load_problem_context
 
 app = Flask(__name__)
 CORS(app)
 
-# Core components initialization
-conversation = Conversation()
-event_manager = EventManager()
+# --- Constants & Configuration ---
+PERSONA_CONFIG_PATH = "config/personas.yaml"
+PHASE_CONFIG_PATH = "config/phases.yaml"
+PROBLEM_CONTEXT_PATH = "config/problem_context.yaml" 
+# --- Load Problem Context ---
+print("--- APP: Loading Problem Context ---")
+problem_context_data = load_problem_context(PROBLEM_CONTEXT_PATH)
+if not problem_context_data:
+    print(f"!!! FATAL ERROR: Could not load problem context from {PROBLEM_CONTEXT_PATH}. Exiting.")
+    exit(1) # Exit if problem context is essential and failed to load
 
-# Agent Initialization
-agent_loader = AgentLoader("config/agents.yaml", "config/tasks.yaml", event_manager, conversation)
-agents = agent_loader.get_agents()
+PROBLEM_DESCRIPTION = problem_context_data['problem']
+SOLUTION_DESCRIPTION = problem_context_data['solution'] # Solution is also loaded
 
-# Agent cleanup on exit
-def cleanup_agents():
-    print("--- APP: Cleaning up agents before exit ---")
-    for agent in agents.values():
-        if hasattr(agent, 'cleanup'): # Check if cleanup method exists
-             agent.cleanup()
-atexit.register(cleanup_agents)
+# --- Initialize Core Components ---
+print("--- APP: Initializing Core Components ---")
+try:
+    conversation_history = ConversationHistory()
+    llm_service = LLMService(model="gemini-2.0-flash", temperature=0.5) # Adjust model as needed
+    phase_manager = ConversationPhaseManager(PHASE_CONFIG_PATH, PROBLEM_DESCRIPTION, llm_service)
+    agent_manager = AgentManager(PERSONA_CONFIG_PATH, PROBLEM_DESCRIPTION, llm_service)
+    speaker_selector = SpeakerSelector(PROBLEM_DESCRIPTION, llm_service)
+    interaction_coordinator = InteractionCoordinator(conversation_history)
+    behavior_executor = BehaviorExecutor(interaction_coordinator, PROBLEM_DESCRIPTION, llm_service, agent_manager)
+    response_orchestrator = ResponseOrchestrator(
+        conversation_history=conversation_history,
+        phase_manager=phase_manager,
+        agent_manager=agent_manager,
+        speaker_selector=speaker_selector,
+        behavior_executor=behavior_executor,
+        interaction_coordinator=interaction_coordinator,
+        problem_description=PROBLEM_DESCRIPTION,
+    )
+    interaction_coordinator.set_orchestrator(response_orchestrator)
+    print("--- APP: Core Components Initialized Successfully ---")
+except Exception as e:
+     print(f"!!! FATAL ERROR during app initialization: {e}")
+     traceback.print_exc()
+     exit(1)
 
+# --- Agent/System Cleanup on Exit ---
+def cleanup_system():
+    print("--- APP: Cleaning up system before exit ---")
+    if agent_manager: agent_manager.cleanup()
+    if interaction_coordinator: interaction_coordinator.cleanup()
+    print("--- APP: Cleanup complete ---")
+atexit.register(cleanup_system)
 
-# --- Routes ---
+# --- Flask Routes ---
 
 @app.route('/')
 def index():
-    # Prepare participant list for the template
-    # Agents are added based on the loader
+    # Prepare participant list for the template (AI agents only)
     participant_list = []
-    for agent_name, agent in agents.items():
-        participant_list.append({
-            'id': agent.agent_id,
-            'name': agent.agent_name,
-            'avatar_initial': agent.agent_name[0].upper() if agent.agent_name else 'A'
-        })
-    # Note: The 'Human'/'Bạn' participant is hardcoded in the HTML template
-    return render_template('index.html', participants=participant_list)
+    if agent_manager:
+         for agent_id, agent_mind in agent_manager.agents.items():
+             persona = agent_mind.persona
+             participant_list.append({
+                 'id': persona.agent_id,
+                 'name': persona.name,
+                 'avatar_initial': persona.name[0].upper() if persona.name else 'A'
+             })
+    # <<< Pass the problem description to the template >>>
+    return render_template('index.html',
+                           participants=participant_list,
+                           problem_description=PROBLEM_DESCRIPTION)
 
 @app.route('/history')
 def history():
-    # Returns the list of message dictionaries
-    return jsonify(conversation.get_history())
+    return jsonify(conversation_history.get_history())
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
@@ -58,90 +103,80 @@ def send_message():
     if not data or 'text' not in data:
         return jsonify({"error": "Message text is required"}), 400
 
-    user_message_text = data.get('text').strip()
+    user_message_text = data.get('text', '').strip()
+    # <<< Get sender_name from payload, default to 'User' if not provided >>>
+    sender_name = data.get('sender_name', 'User').strip()
+    if not sender_name: sender_name = 'User' # Fallback
+
+    # <<< Generate a simple user ID based on the name (adjust if needed) >>>
+    sender_id = f"user-{sender_name.lower().replace(' ', '-')}"
+
     if not user_message_text:
          return jsonify({"error": "Message text cannot be empty"}), 400
 
-    # <<< Get sender_name from payload, default to 'Human' if not provided >>>
-    sender_name = data.get('sender_name', 'Human').strip()
-    # Basic validation for sender name (optional)
-    if not sender_name:
-        sender_name = 'Human' # Fallback if empty string provided
+    print(f"--- APP: Received message from '{sender_name}' ({sender_id}): {user_message_text}")
 
-    print(f"--- APP: Received message from '{sender_name}': {user_message_text}")
+    # Trigger InteractionCoordinator with the dynamic user info
+    interaction_coordinator.handle_external_trigger(
+        event_type="new_message",
+        source=sender_id, # Use the generated/dynamic ID
+        content={"text": user_message_text, "sender_name": sender_name} # Pass the name
+    )
 
-    # <<< Use the sender_name when adding the message >>>
-    user_message = conversation.add_message(sender_name, user_message_text)
-
-    # <<< Add sender_name to the broadcast payload for consistency (although JS primarily uses local name for user) >>>
-    # This might be useful if multiple browser windows were connected as different users
-    user_message['sender_name'] = sender_name
-
-    # Broadcast the message (EventManager handles SSE)
-    # originating_agent_id is None because this is not from an agent
-    event_manager.broadcast_event("new_message", user_message, originating_agent_id=None)
-
-    return jsonify({"status": "Message received", "sender_used": sender_name}), 200 # Echo back sender used
+    return jsonify({"status": "Message received and processing initiated", "sender_used": sender_name}), 200
 
 @app.route('/stream')
 def stream():
+    # SSE stream endpoint (remains the same logic)
     client_id = str(uuid.uuid4())
-    sse_queue = event_manager.add_sse_client(client_id)
+    sse_queue = interaction_coordinator.add_sse_client(client_id)
     if sse_queue is None:
          return Response("Could not establish stream.", status=500)
-    print(f"SSE client connected: {client_id}")
+    print(f"--- APP: SSE client connected: {client_id}")
 
     def event_generator():
         try:
             while True:
                 event_data = None
                 try:
-                    # Use timeout to periodically check connection and send keep-alive
-                    event_data = sse_queue.get(timeout=1) # 20 second timeout
+                    event_data = sse_queue.get(timeout=1)
                 except queue.Empty:
-                    # Send keep-alive comment to prevent timeout
                     yield ": keep-alive\n\n"
-                    continue # Continue loop to wait for next event
+                    continue
+                if event_data is None: break
 
-                if event_data is None: # Signal to stop
-                    print(f"--- APP: Stop signal received for SSE client {client_id}")
-                    break
-
-                # Prepare data string (ensure JSON for dict/list)
                 if isinstance(event_data.get('data'), (dict, list)):
                     data_str = json.dumps(event_data['data'])
                 else:
                     data_str = str(event_data.get('data', ''))
 
-                # Format SSE message
                 sse_event_type = event_data.get('event', 'message')
                 sse_message = f"event: {sse_event_type}\ndata: {data_str}\n\n"
-                # print(f"--- APP: Sending SSE to {client_id}: {sse_event_type}") # Debug log
                 yield sse_message
-
         except GeneratorExit:
-            # Client disconnected
             print(f"--- APP: SSE client disconnected (GeneratorExit): {client_id}")
         except Exception as e:
              print(f"!!! ERROR in SSE generator for {client_id}: {e}")
+             traceback.print_exc()
         finally:
-            # Clean up the client queue
-            print(f"--- APP: Removing SSE client: {client_id}")
-            event_manager.remove_sse_client(client_id)
+            print(f"--- APP: Removing SSE client from InteractionCoordinator: {client_id}")
+            interaction_coordinator.remove_sse_client(client_id)
 
-    # Create the Flask response for SSE
     response = Response(event_generator(), mimetype='text/event-stream')
     response.headers['Cache-Control'] = 'no-cache'
-    response.headers['X-Accel-Buffering'] = 'no' # Important for proxies like Nginx
+    response.headers['X-Accel-Buffering'] = 'no'
     response.headers['Connection'] = 'keep-alive'
     return response
 
 if __name__ == '__main__':
-    # Add initial system message if history is empty
-    if not conversation.get_history():
-         # Use 'System' as the sender for system messages
-         initial_message = conversation.add_message("System", "Chào mừng! Vui lòng nhập tên của bạn để bắt đầu.")
-         # Add sender_name for consistency if needed by any client logic
-         initial_message['sender_name'] = 'System'
+    # Add initial system message - now includes the loaded problem description
+    if not conversation_history.get_history():
+         initial_text = f"Chào mừng các bạn! Chúng ta hãy cùng giải bài toán sau:\n\n{PROBLEM_DESCRIPTION}\n\nBắt đầu với giai đoạn 1: Tìm hiểu đề bài nhé!"
+         initial_content = {"text": initial_text, "sender_name": "System"}
+         interaction_coordinator.handle_internal_trigger(
+             event_type="system_message",
+             source="System",
+             content=initial_content
+         )
 
-    app.run(debug=True, threaded=True, use_reloader=False) # threaded=True is important
+    app.run(debug=True, threaded=True, use_reloader=False)

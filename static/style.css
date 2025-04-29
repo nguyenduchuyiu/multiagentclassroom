@@ -679,3 +679,18 @@ li.participant.status-typing {
     .participant-name { font-size: 0.95rem;}
     .participant-status { font-size: 0.8em;}
 }
+
+.problem-description {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 0.95em;
+    line-height: 1.5;
+    /* Ensure block math displays correctly */
+    text-align: left;
+}
+
+.problem-description p { /* Add margin to paragraphs if needed */
+    margin-bottom: 0.5em;
+}

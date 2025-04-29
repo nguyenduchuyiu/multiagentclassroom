@@ -6,6 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Trò Chuyện AI</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- MathJax Configuration (Optional but recommended for math) -->
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true
+          },
+          options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            ignoreHtmlClass: 'tex2jax_ignore',
+            processHtmlClass: 'tex2jax_process'
+          }
+        };
+    </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -43,14 +58,23 @@
 
             <!-- Info Panel -->
             <div class="info-panel">
-                <!-- Progress Section (Keep as is) -->
+                <!-- <<< Problem Description Section >>> -->
+                <div>
+                    <div class="section-title"><i class="fas fa-book-open"></i> Bài Toán</div>
+                    <div class="problem-description" id="problemDisplay">
+                        <!-- Problem description will be rendered here by Jinja -->
+                        {{ problem_description | safe }} {# Use safe filter ONLY if you trust the source or sanitize it #}
+                        {# Alternatively, let JS handle MathJax rendering #}
+                    </div>
+                </div>
+                <!-- Progress Section (Placeholder - needs JS update logic if used) -->
                 <div>
                     <div class="section-title"><i class="fas fa-chart-line"></i> Tiến Trình</div>
                     <div class="stage-info">
                         <div class="current-stage" id="currentStage">Khởi tạo</div>
                         <div class="stage-description" id="stageDescription">Bắt đầu cuộc trò chuyện</div>
                         <div class="stage-progress">
-                            <div class="progress-container"><span>1</span> <span>2</span> <span>3</span> <span>4</span> <span>5</span></div>
+                            <div class="progress-container"><span>1</span> <span>2</span> <span>3</span> <span>4</span></div> {# Adjusted stages #}
                             <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
                         </div>
                     </div>
@@ -62,8 +86,9 @@
                         <i class="fas fa-users"></i> Người Tham Gia
                     </div>
                     <ul class="participants" id="participantsList">
-                        <!-- Human Participant (Fixed) - JS will update name/avatar -->
-                        <li class="participant user-participant" data-agent-name="Human"> {# Keep Human initially #}
+                        <!-- Static User Participant - JS will update name/avatar -->
+                        <!-- REMOVED data-agent-name="Human" -->
+                        <li class="participant user-participant">
                             <div class="participant-avatar">BẠN</div> {# JS updates this #}
                             <div class="participant-info">
                                 <div class="participant-name">Bạn</div> {# JS updates this #}
@@ -71,13 +96,13 @@
                             </div>
                         </li>
 
-                        <!-- Dynamic Agent Participants (Keep as before) -->
+                        <!-- Dynamic Agent Participants -->
                         {% if participants %}
                             {% for agent in participants %}
                             {% set agent_css_name = agent.name|lower|replace('[^a-z0-9]+', '-') %}
                             <li class="participant agent-participant status-idle"
                                 data-agent-id="{{ agent.id }}"
-                                data-agent-name="{{ agent.name }}">
+                                data-agent-name="{{ agent.name }}"> {# Use agent.name here #}
                                 <div class="participant-avatar">{{ agent.avatar_initial }}</div>
                                 <div class="participant-info">
                                     <div class="participant-name">{{ agent.name }}</div>
@@ -94,7 +119,7 @@
                     </ul>
                 </div>
 
-                <!-- Statistics Section (Keep as is) -->
+                <!-- Statistics Section -->
                  <div>
                     <div class="section-title"><i class="fas fa-info-circle"></i> Thống Kê</div>
                     <div class="stats">
@@ -102,14 +127,14 @@
                             <div class="stat-value" id="messageCount">0</div>
                             <div class="stat-label">Tin nhắn</div>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="turnCount">0</div>
-                            <div class="stat-label">Lượt</div>
-                        </div>
+                        {# <div class="stat-card"> #}
+                        {#    <div class="stat-value" id="turnCount">0</div> #}
+                        {#    <div class="stat-label">Lượt</div> #}
+                        {# </div> #}
                     </div>
                 </div>
 
-                <!-- Controls Section (Keep as is) -->
+                <!-- Controls Section -->
                  <div class="controls">
                     <button class="control-btn restart" id="restartBtn" title="Bắt đầu lại cuộc trò chuyện">
                         <i class="fas fa-redo"></i> Khởi Động Lại

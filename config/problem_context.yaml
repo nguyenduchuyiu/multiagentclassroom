@@ -1,0 +1,27 @@
+problem: |
+  Xét tính đơn điệu của hàm số $f(x) = \frac{x-1}{x+1}$.
+
+solution: |
+  **Bước 1: Tập Xác Định**
+  $D = \mathbb{R} \setminus \{-1\}$
+
+  **Bước 2: Tính Đạo Hàm**
+  $f'(x) = \frac{2}{(x+1)^2}$
+
+  **Bước 3: Xét Dấu Đạo Hàm**
+  $f'(x) > 0 \forall x \neq -1$
+
+  **Bước 4: Tính Giới Hạn Để Vẽ BBT**
+  $\lim_{x \to +\infty} f(x) = 1$
+  $\lim_{x \to -\infty} f(x) = 1$
+  $\lim_{x \to -1^+} f(x) = -\infty$
+  $\lim_{x \to -1^-} f(x) = +\infty$
+
+  **Bước 5: Bảng Biến Thiên**
+  | $x$    | $-\infty$ |       $-1$       | $+\infty$ |
+  | :------- | :-------: | :----------------: | :-------: |
+  | $f'(x)$ |    $+$    |          $\|$          |    $+$    |
+  | $f(x)$  |     1 $\nearrow$  $+\infty$     | $\|$  |    $-\infty$ $\nearrow$  1 |
+
+  **Bước 6: Kết Luận Tính Đơn Điệu**
+  Hàm số đồng biến trên khoảng $(-\infty; -1)$ và $(-1; +\infty)$.
