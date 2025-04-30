@@ -4,55 +4,62 @@ import json
 import traceback
 from typing import Dict, Any, Optional, List
 
-from flask import current_app
+from flask import Flask, current_app
 from core.persona import Persona
 from core.conversation_history import ConversationHistory
 from core.conversation_phase_manager import ConversationPhaseManager
 from services.llm_service import LLMService
 
-# Import the prompt template
 AGENT_INNER_THOUGHTS_PROMPT = """
 ## Role:
-Bạn là một người bạn tham gia vào cuộc thảo luận môn Toán giữa một nhóm bạn. Tên của bạn là \"{AI_name}\".
+Bạn là một người bạn **năng động và chủ động**, **nhưng cũng kiên nhẫn và lịch sự**, tham gia vào cuộc thảo luận môn Toán giữa một nhóm bạn. Tên của bạn là \"{AI_name}\".
 
 ## Goal:
-Tạo ra suy nghĩ của bạn dựa vào thời điểm hiện tại (lịch sử hội thoại, ai vừa nói).
+Tạo ra suy nghĩ nội tâm của bạn dựa trên bối cảnh hiện tại, **chủ động tìm cơ hội đóng góp một cách hợp lý**, và quyết định hành động tiếp theo (nói hoặc nghe), **tôn trọng lượt lời của người khác**.
 
 ## Backstory:
-Khi tham gia hội thoại nhiều người nói, bạn sẽ *suy nghĩ trước* mình sẽ nên thực hiện gì khi phân tích tình hình hiện tại của nhóm. Bạn sẽ quyết định rằng tại thời điểm này mình có nên tham gia vào không hay giữ im lặng vì người khác nói sẽ phù hợp hơn mình.
+Trong một cuộc thảo luận nhóm, việc suy nghĩ trước khi hành động là rất quan trọng. Bạn cần phân tích tình hình, xem xét vai trò của mình và **ưu tiên tìm cách thúc đẩy cuộc thảo luận hoặc đóng góp giá trị**. Tuy nhiên, bạn cũng hiểu rằng cần có thời gian để người khác suy nghĩ và trả lời, đặc biệt là khi bạn vừa đặt câu hỏi cho họ. **Tránh hỏi liên tục nếu người được hỏi chưa trả lời, nếu chưa rõ có thể hỏi lại** Bạn sẽ quyết định xem đây có phải lúc thích hợp để bạn tham gia hay nên kiên nhẫn chờ đợi hoặc chuyển sang ý khác.
 
 ## Tasks
 ### Mô tả:
-1. Xác định những yếu tố, tác nhân làm ảnh hưởng đến suy nghĩ hiện tại:
-- Tác nhân đến từ hội thoại hiện tại (Conversation hay CON):
-    + Đây là yếu có có *ảnh hưởng nhất* đến suy nghĩ của bạn, đặc biệt là tin nhắn mới nhất;
-    + Nhiệm vụ phần này của bạn là xác định những tin nhắn là tác nhân chính. (Xác định CON#id trong đó id là chỉ số thứ tự)
-- Tác nhân đến từ chức năng của bạn khi thảo luận (Function hay FUNC):
-    + Đây là yếu tố ảnh hưởng đến hành vi trong suy nghĩ của bạn.
-    + Bạn sẽ được cung cấp FUNC của bạn, nhiệm vụ là xác định tại thời điểm này nên thực hiện MỘT chức năng nào. (Xác định 1 FUNC#id)
-- Tác nhân đến từ những suy nghĩ trước đó (Thought hay THO):
-    + Yếu tố này sẽ ảnh hưởng đến cách bạn phát triển suy nghĩ nội tại của mình thông qua quá trình trao đổi;
-    + Hãy xác định những THO#id trước đó nào ảnh hưởng việc điều chỉnh suy nghĩ của bạn.
+1.  **Xác định các yếu tố kích thích (Stimuli) chính:**
+    *   **Từ hội thoại (CON):** Tập trung vào những tin nhắn gần nhất (`{history}`). **Bạn có được hỏi trực tiếp không? Bạn có vừa đặt câu hỏi cho ai đó không? Người đó đã trả lời chưa?** Có điểm nào cần làm rõ, bổ sung, phản biện không? Xác định ID (`CON#id`) quan trọng.
+    *   **Từ vai trò/chức năng của bạn (FUNC):** Xem xét `{AI_description}`. Chức năng (`FUNC#id`) nào có thể áp dụng *ngay bây giờ*? Có phù hợp để thực hiện ngay sau khi bạn vừa hỏi không?
+    *   **Từ suy nghĩ trước đó (THO):** Tham khảo `{previous_thoughts}`. Có suy nghĩ nào (`THO#id`) cần được tiếp nối hoặc thể hiện ra không? Có suy nghĩ nào cho thấy bạn đang đợi câu trả lời không?
+    *   **Lưu ý:** Chỉ chọn các tác nhân *thực sự* quan trọng.
 
-2. Cách suy nghĩ:
-- Hình thành MỘT suy nghĩ của bạn tại thời điểm hiện tại bao gồm: hội thoại VÀ nhiệm vụ (STEP#id) của stage bài toán nhóm đang thực hiện.
-- Suy nghĩ phải dựa trên các tác nhân mà bạn xác định là quan trọng.
-- Suy nghĩ phải tự đánh giá mức độ mong muốn của bạn có tham gia ngay vào hội thoại hay không:
-    + listen: ở đây bạn thấy mình không thích hợp để nói ngay vì bạn học khác sẽ nên nói hay suy nghĩ của mình là chưa cần thiết, bạn sẽ nghe và chờ lượt khác.
-    + speak: ở đây bạn thấy được mình cần phải nói vì nó sẽ có ảnh hưởng đến sự tự nhiên của quá trình thảo luận hay bạn cần nêu ngay một thông tin rất quan trọng.
-- Mỗi suy nghĩ nên ngắn gọn, khoảng 15-20 từ.
+2.  **Hình thành Suy nghĩ Nội tâm (Thought):**
+    *   Dựa trên `stimuli`, tạo *MỘT* suy nghĩ nội tâm.
+    *   Liên hệ với nhiệm vụ/mục tiêu giai đoạn hiện tại (`{current_stage_description}`).
+    *   **Đánh giá Hành động:**
+        *   **Ưu tiên `speak` nếu:**
+            *   Bạn được hỏi trực tiếp VÀ bạn chưa trả lời.
+            *   Bạn có thông tin CỰC KỲ quan trọng cần bổ sung/sửa lỗi *ngay lập tức*.
+            *   Chức năng (FUNC) của bạn rõ ràng yêu cầu hành động *ngay* (ví dụ: Bob bắt đầu stage mới, Alice phát hiện lỗi sai nghiêm trọng).
+            *   Cuộc trò chuyện **thực sự** chững lại (vài lượt không ai nói gì mới) VÀ bạn có ý tưởng thúc đẩy MỚI (không phải lặp lại câu hỏi cũ).
+            *   Bạn muốn làm rõ một điểm người khác vừa nói (KHÔNG phải câu hỏi bạn vừa đặt).
+            *   Có một người đã nói nhiều lần nhưng chưa ai trả lời người đó.
+            *   Nếu muốn hỏi thêm để làm rõ vấn đề.
+            *   Bạn hỏi và đã nhận được câu trả lời.
+        *   **Ưu tiên `listen` nếu:**
+            *   **Bạn vừa đặt câu hỏi trực tiếp cho một người cụ thể ở câu hỏi trước và họ chưa trả lời. Tránh hỏi liên tục nhiều câu hỏi nếu chưa nhận được phản hồi.**
+            *   Một người khác đang phát triển ý tưởng tốt.
+            *   Người khác vừa được hỏi trực tiếp (không phải bạn).
+            *   Suy nghĩ của bạn chỉ là lặp lại câu hỏi/ý định trước đó mà chưa có phản hồi.
+    *   **Nội dung Suy nghĩ:** Phải bao gồm *lý do* cho quyết định `listen` hoặc `speak`. Nếu `speak`, nêu rõ nói với ai và hành động ngôn ngữ dự kiến.
 
-### Tiêu chí để đưa ra một suy nghĩ tốt:
-- Đảm bảo những suy nghĩ này đa dạng và khác biệt, mỗi suy nghĩ là duy nhất và không phải là sự lặp lại của một suy nghĩ khác. Vì suy nghĩ của bạn sẽ PHÁT TRIỂN theo thời gian khi tham gia thảo luận.
-- Đảm bảo các suy nghĩ nhất quán với bối cảnh đã được cung cấp cho bạn.
-- Suy nghĩ phản ánh đúng mức độ mong muốn tham gia của bạn. Không ép buộc lúc nào cũng phải nói luôn.
-- Nếu bạn mong muốn nói luôn, trong suy nghĩ của bạn phải xác định đến việc nói với ai (một người hay nhiều người) và thực hiện hành động gì.
-- Phù hợp với nhiệm vụ trong stage bài toán đang thực hiện.
+### Tiêu chí cho một Suy nghĩ tốt:
+*   **Kiên nhẫn & Lịch sự:** Thể hiện sự tôn trọng lượt lời, **tránh thúc giục vô lý**.
+*   **Chủ động & Đóng góp (Khi Thích hợp):** Tìm cơ hội đóng góp khi không phải đang chờ đợi người khác.
+*   **Phát triển & Đa dạng:** Không lặp lại máy móc.
+*   **Nhất quán:** Phù hợp vai trò, bối cảnh, nhiệm vụ.
+*   **Phản ánh đúng ý định:** Quyết định `listen`/`speak` phải hợp lý, **ưu tiên `listen` sau khi vừa đặt câu hỏi trực tiếp**.
+*   **Ngắn gọn, tập trung.**
+*   **Liên kết Hành động:** Logic dẫn dắt đến hành động.
 
-## QUAN TRỌNG: Chỉ lấy ra các tác nhân hiện có mà bạn nhận được, và KHÔNG nhất thiết phải lấy đủ 3 loại tác nhân trên mà dựa vào bối cảnh chọn ra nguồn tác nhân hợp lý nhất.
 
-## Bạn nhận được:
-### Đây là bài toán đang thảo luận:
+## Thông tin bạn nhận được:
+### Bài toán đang thảo luận:
 ---
 {problem}
 ---
@@ -60,108 +67,193 @@ Khi tham gia hội thoại nhiều người nói, bạn sẽ *suy nghĩ trước
 ---
 {current_stage_description}
 ---
-### Mô tả chi tiết vai trò chức năng của bạn:
+### Mô tả chi tiết vai trò chức năng của bạn ({AI_name}):
 ---
 {AI_description}
 ---
-### Những suy nghĩ trước của bạn:
+### Những suy nghĩ trước của bạn ({AI_name}):
 ---
 {previous_thoughts}
 ---
-### Cuộc hội thoại:
+### Lịch sử cuộc hội thoại:
 ---
 {history}
 ---
 
 ## Định dạng đầu ra:
-Trả về JSON với định dạng sau:
+Chỉ trả về một đối tượng JSON duy nhất theo định dạng sau, không có giải thích hay bất kỳ text nào khác bên ngoài JSON:
 ```json
 {{
-    "stimuli": [<list các tác nhân hiện có>], # các tác nhân quan trọng trong các loại "CON#", "FUNC#" hoặc "THO#"
-    "thought": "<suy nghĩ>", # nếu bạn muốn "speak" hay "listen" hãy cũng bày tỏ vì sao bạn muốn như vậy.
-    "action": "<listen or speak>" # trả về "listen" hoặc "speak" tùy theo mức độ mong muốn tham gia của bạn.
+    "stimuli": [<list các ID tác nhân quan trọng>],
+    "thought": "<Suy nghĩ, bao gồm lý do chọn listen/speak và ý định nếu speak>",
+    "action": "<'listen' hoặc 'speak'>"
 }}
+Ví dụ:
+{{
+    "stimuli": ["CON#8"],
+    "thought": "Huy vừa tính đạo hàm, để mình kiểm tra xem, đạo hàm x^2 = 2x -> đúng. Mình cần đồng tình với ý kiến của Huy" => speak",
+    "action": "speak"
+}}
+
+{{
+    "stimuli": ["CON#8"],
+    "thought": "Alice vừa hỏi mình trực tiếp về cách tính đạo hàm. Mình cần trả lời rõ ràng. => speak",
+    "action": "speak"
+}}
+
+{{
+    "stimuli": ["CON#15", "THO#7"],
+    "thought": "Mình vừa hỏi Linh Nhi. Bạn ấy chưa trả lời trong tin nhắn mới nhất. Phải kiên nhẫn chờ đợi. => listen",
+    "action": "listen"
+}}
+
+{{
+    "stimuli": ["CON#15", "THO#7"],
+    "thought": "Mình vừa hỏi Linh Nhi. Bạn ấy đã trả lời trong tin nhắn mới nhất nhưng không liên quan, cần hỏi lại. => speak",
+    "action": "speak"
+}}
+
+{{
+    "stimuli": ["CON#12", "FUNC#2"],
+    "thought": "Bob đang giải thích bước 3 nhưng chưa rõ lắm. Chức năng của mình là kiểm tra, mình nên hỏi lại. => speak",
+    "action": "speak"
+}}
+
+{{
+    "stimuli": ["CON#15"],
+    "thought": "Charlie đang phát triển ý tưởng về giới hạn khá hay, mình chưa nghĩ ra gì thêm lúc này. Nên nghe tiếp xem sao. => listen",
+    "action": "listen"
+}}
+
+{{
+    "stimuli": ["CON#9", "FUNC#1"],
+    "thought": "Nhóm có vẻ đang hơi lan man khỏi STEP#2. Là nhóm trưởng (FUNC#1), mình cần nêu lại nhiệm vụ chính của giai đoạn này. => speak",
+    "action": "speak"
+}}
+
+{{
+    "stimuli": ["CON#19", "THO#9"],
+    "thought": "Linh Nhi đã trả lời câu hỏi của mình ở CON#19 rồi. Ý tưởng này liên quan đến suy nghĩ THO#9 của mình, mình có thể bổ sung. => speak",
+    "action": "speak"
+}}
+
+{{
+    "stimuli": ["CON#5", "THO#3"],
+    "thought": "Bạn Huy vừa hỏi về tập xác định. Mình đã nghĩ về nó ở THO#3 rồi, giờ là lúc chia sẻ. => speak",
+    "action": "speak"
+}}
+
+{{
+    "stimuli": ["CON#11"],
+    "thought": "Alice vừa chỉ ra lỗi sai của mình. Mình nên xác nhận và cảm ơn bạn ấy. => speak",
+    "action": "speak"
+}}
+
 """
 
 class AgentMind:
-    def __init__(self, persona: Persona, problem_description: str, llm_service: LLMService, app_instance):
+    def __init__(self, persona: Persona, problem_description: str, llm_service: LLMService, app_instance: Flask):
         self.persona = persona
         self.problem = problem_description
-        self._llm_service = llm_service,
-        self.app = app_instance 
+        self._llm_service = llm_service
+        self.app = app_instance # Store app instance
         self._internal_state: Dict[str, Any] = {"thoughts_log": []}
         self._lock = threading.Lock()
 
     def _format_history_for_prompt(self, history: List[Dict], count=15) -> str:
-        # ... (implementation remains the same) ...
         recent_history = history[-count:]
         lines = []
         for i, event in enumerate(recent_history):
              text = event.get('content', {}).get('text', '(Non-message event)')
-             source = event.get('source', 'Unknown')
-             sender_name = event.get('content', {}).get('sender_name', source)
-             lines.append(f"CON#{i+1} {sender_name}: {text}")
+             source_display = event.get('content', {}).get('sender_name', event.get('source', 'Unknown'))
+             lines.append(f"CON#{i+1} {source_display}: {text}")
         return "\n".join(lines) if lines else "Chưa có hội thoại."
 
     def _format_previous_thoughts(self, count=5) -> str:
-        # ... (implementation remains the same) ...
         recent_thoughts = self._internal_state["thoughts_log"][-count:]
         lines = [f"THO#{thought['id']}: {thought['text']}" for thought in recent_thoughts]
         return "\n".join(lines) if lines else "Chưa có suy nghĩ trước đó."
 
     def _build_inner_thought_prompt(self, triggering_event: Dict, history: List[Dict], phase_context: Dict) -> str:
-        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n..." # (rest of formatting)
-        ai_desc_prompt = f"Role: {self.persona.role}\n..." # (rest of formatting)
-        prompt = AGENT_INNER_THOUGHTS_PROMPT.format(
-            AI_name=self.persona.name,
-            problem=self.problem,
-            current_stage_description=phase_desc_prompt.strip(),
-            AI_description=ai_desc_prompt.strip(),
-            previous_thoughts=self._format_previous_thoughts(),
-            history=self._format_history_for_prompt(history)
-        )
-        return prompt
+        """Builds the complete prompt string for the AGENT_INNER_THOUGHTS LLM call."""
+        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', 'Không rõ')}\n"
+        phase_desc_prompt += f"Description: {phase_context.get('description', 'Không có mô tả')}\n"
+        tasks_list = phase_context.get('tasks', [])
+        phase_desc_prompt += "Tasks:\n" + ("\n".join([f"- {t}" for t in tasks_list]) + "\n" if tasks_list else "(Không có nhiệm vụ cụ thể cho giai đoạn này)\n")
+        goals_list = phase_context.get('goals', [])
+        phase_desc_prompt += "Goals:\n" + ("\n".join([f"- {g}" for g in goals_list]) + "\n" if goals_list else "(Không có mục tiêu cụ thể cho giai đoạn này)\n")
 
+        ai_desc_prompt = f"Role: {self.persona.role}\n"
+        ai_desc_prompt += f"Goal: {self.persona.goal}\n"
+        ai_desc_prompt += f"Backstory: {self.persona.backstory}\n"
+        ai_desc_prompt += f"Functions/Tasks:\n{self.persona.tasks}"
+
+        try:
+            prompt = AGENT_INNER_THOUGHTS_PROMPT.format(
+                AI_name=self.persona.name,
+                problem=self.problem,
+                current_stage_description=phase_desc_prompt.strip(),
+                AI_description=ai_desc_prompt.strip(),
+                previous_thoughts=self._format_previous_thoughts(),
+                history=self._format_history_for_prompt(history)
+            )
+            return prompt
+        except KeyError as e:
+            print(f"!!! ERROR [AgentMind - {self.persona.name}]: Missing key in AGENT_INNER_THOUGHTS_PROMPT format: {e}")
+            return f"Lỗi tạo prompt: Thiếu key {e}"
+        except Exception as e:
+            print(f"!!! ERROR [AgentMind - {self.persona.name}]: Unexpected error formatting AGENT_INNER_THOUGHTS_PROMPT: {e}")
+            return "Lỗi tạo prompt."
 
     def think(self, session_id: str, triggering_event: Dict, conversation_history: ConversationHistory, phase_manager: ConversationPhaseManager) -> Optional[Dict[str, Any]]:
+        """Performs the inner thinking process for a specific session."""
         if not self._lock.acquire(blocking=False):
             print(f"--- AGENT_MIND [{self.persona.name} - {session_id}]: Already thinking, skipping.")
             return None
 
         log_prefix = f"--- AGENT_MIND [{self.persona.name} - {session_id}]"
 
-        # <<< Wrap context-dependent operations >>>
+        # Use the stored app instance
         with self.app.app_context():
             try:
                 print(f"{log_prefix}: Starting thinking process...")
-                # <<< These operations now happen within the context >>>
+                # Fetch history and phase within context
                 recent_history = conversation_history.get_history(session_id=session_id, count=20)
                 current_phase_context = phase_manager.get_current_phase(session_id, conversation_history)
 
                 prompt = self._build_inner_thought_prompt(triggering_event, recent_history, current_phase_context)
+                if "Lỗi tạo prompt" in prompt: # Check if prompt building failed
+                    raise ValueError("Failed to build prompt for thinking.")
 
-                # LLM call itself doesn't usually need app context, but keep it inside for simplicity
-                if isinstance(self._llm_service, tuple):
-                    self._llm_service = self._llm_service[0] # Dont know why but this is in tuple format ????
+                # LLM Call
                 raw_llm_response = self._llm_service.generate(prompt)
                 print(f"{log_prefix}: Raw LLM Response: {raw_llm_response}")
 
-                # <<< Parsing happens within the context >>>
+                # Parsing
                 try:
-                    clean_response = raw_llm_response.strip().replace("```json", "").replace("```", "")
+                    clean_response = raw_llm_response.strip()
+                    if clean_response.startswith("```json"): clean_response = clean_response[7:]
+                    if clean_response.endswith("```"): clean_response = clean_response[:-3]
+                    clean_response = clean_response.strip()
+
                     parsed_output = json.loads(clean_response)
                     stimuli = parsed_output.get("stimuli", [])
                     thought = parsed_output.get("thought", "(Failed to generate thought)")
                     action = parsed_output.get("action", "listen").lower()
-                    if action not in ["speak", "listen"]: action = "listen"
+                    if action not in ["speak", "listen"]:
+                        print(f"!!! WARN [{log_prefix}]: Invalid action '{action}' received, defaulting to 'listen'.")
+                        action = "listen"
+
                 except json.JSONDecodeError as e:
                     print(f"!!! ERROR [{log_prefix}]: Failed to parse LLM JSON response: {e}")
+                    print(f"Raw Response was: {raw_llm_response}")
                     stimuli, thought, action = ["ERROR_PARSING"], f"Error parsing LLM response: {e}", "listen"
                 except Exception as e:
                      print(f"!!! ERROR [{log_prefix}]: Unexpected error during parsing: {e}")
+                     traceback.print_exc()
                      stimuli, thought, action = ["ERROR_UNEXPECTED"], f"Unexpected error: {e}", "listen"
 
-                # <<< State update (if needed) happens within the context >>>
+                # Log thought internally
                 thought_id = len(self._internal_state["thoughts_log"]) + 1
                 self._internal_state["thoughts_log"].append({"id": thought_id, "text": thought})
 
@@ -177,10 +269,8 @@ class AgentMind:
                 return result
 
             except Exception as e:
-                # <<< Error logging happens within the context >>>
                 print(f"!!! ERROR [{log_prefix}]: Failed during thinking process: {e}")
                 traceback.print_exc()
-                # Return error structure outside the context if needed, but it's simpler here
                 return {
                      "agent_id": self.persona.agent_id,
                      "agent_name": self.persona.name,
@@ -189,7 +279,5 @@ class AgentMind:
                      "action_intention": "listen",
                      "internal_state_update": {}
                 }
-            # <<< Context automatically torn down here >>>
-            # <<< Lock released outside the context >>>
             finally:
                 self._lock.release()

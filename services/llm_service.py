@@ -1,13 +1,16 @@
 # llm_service.py
-from pprint import pprint
-import traceback
 import requests
 import os
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 load_dotenv()
+from tenacity import retry, stop_after_attempt, wait_fixed, before_sleep_log
+import logging
 
+# Cấu hình logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)  # hoặc DEBUG để log chi tiết hơn
 
 
 class LLMService:
@@ -17,22 +20,27 @@ class LLMService:
         self.model = config.pop("model", "gemini-2.0-flash")
         self.config = types.GenerateContentConfig(**config)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(2),
+        before_sleep=before_sleep_log(logger, logging.WARNING)  # In log mỗi lần retry
+    )
     def generate(self, prompt: str) -> str:
-        """Gọi LLM API và trả về text response."""
+        """Gọi LLM API và trả về text response, retry tối đa 3 lần nếu lỗi."""
         try:
             response = self.client.models.generate_content(
                 model=self.model,
                 contents=prompt,
                 config=self.config
             )
-            response_text = response.text
-            return response_text
+            return response.text
         except requests.exceptions.RequestException as e:
             print(f"LLM API Request Error: {e}")
-            return "NO_RESPONSE" # Hoặc ném exception để agent xử lý
+            raise
         except Exception as e:
             print(f"Unexpected error in LLM service: {e}")
-            return "NO_RESPONSE"
+            raise
+
          
 # ---Testing site---
 # def ask_dad(string: str):

@@ -6,58 +6,52 @@ from typing import List, Dict, Any, Optional, Tuple
 from core.conversation_history import ConversationHistory # Keep for history formatting
 from services.llm_service import LLMService # Added
 
-# Import the prompt template
 THOUGHTS_EVALUATOR_PROMPT = """
 ## Role
-Bạn là người đánh giá các suy nghĩ của các bạn học khi tham gia vào thảo luận nhóm.
+Bạn là Người đánh giá Suy nghĩ Nội tâm (Inner Thought Evaluator) trong một nhóm học sinh thảo luận Toán.
 
 ## Goal
-Mục tiêu của bạn là chấm điểm những suy nghĩ đó dựa trên thang điểm (1.0 - 5.0), để chọn ra đâu là suy nghĩ hợp lý nhất của một bạn học để thực hiện nói trong lượt tiếp theo.
+Đánh giá và chấm điểm (thang điểm 1.0 - 5.0) các suy nghĩ nội tâm (`{AI_thoughts}`) được đề xuất bởi các bạn học ({list_AI_name}), dựa trên cả động lực nội tại (internal drive) và sự phù hợp với bối cảnh bên ngoài (external context). Mục tiêu là xác định suy nghĩ nào có tiềm năng đóng góp hiệu quả nhất vào lượt nói tiếp theo.
 
 ## Backstory
-Bạn được thiết kế dựa trên sự kết hợp giữa tâm lý học giáo dục và phân tích các mẫu hình giao tiếp trong làm việc nhóm, chuyên sâu vào việc đánh giá các động lực nội tại thúc đẩy một cá nhân muốn phát biểu, cũng như các yếu tố xã hội ảnh hưởng đến thời điểm thích hợp để tham gia. Mục tiêu là cung cấp một đánh giá khách quan và tinh tế, xác định ai có khả năng và mong muốn đóng góp ý nghĩa nhất vào cuộc trò chuyện tại mỗi thời điểm, qua đó thúc đẩy các cuộc thảo luận cân bằng và hiệu quả.
+Bạn là chuyên gia phân tích giao tiếp nhóm, kết hợp hiểu biết về tâm lý giáo dục và động lực xã hội. Bạn đánh giá khách quan mong muốn và sự phù hợp của việc một cá nhân phát biểu tại một thời điểm cụ thể, nhằm thúc đẩy một cuộc thảo luận cân bằng và hiệu quả.
 
 ## Tasks
 ### Mô tả nhiệm vụ:
-Bạn được cung cấp :
-- Cuộc hội thoại giữa một nhóm bạn.
-- Những suy nghĩ từ các bạn học sau: {list_AI_name}. Những suy nghĩ này phản ánh
-- Mô tả về nhiệm vụ (STEP) trong stage bài toán.
+Dựa trên thông tin được cung cấp (Bài toán, Nhiệm vụ Stage hiện tại, Lịch sử hội thoại, và các Suy nghĩ nội tâm), bạn cần đánh giá độc lập từng suy nghĩ trong `{AI_thoughts}` cho mỗi bạn học trong `{list_AI_name}`. Gán hai điểm số riêng biệt: `internal_score` và `external_score` theo thang điểm 1.0 đến 5.0.
 
-Việc bạn cần làm là đánh giá từng suy nghĩ đó theo hướng dẫn dưới đây. Đảm bảo là bạn hiểu hướng dẫn và thực hiện đúng.
+### Thang điểm Đánh giá (Áp dụng cho cả internal_score và external_score):
+*   **1.0 - 1.9 (Rất Thấp):** Suy nghĩ/thời điểm hoàn toàn không phù hợp; gần như chắc chắn nên im lặng / không có động lực nội tại.
+*   **2.0 - 2.9 (Thấp):** Suy nghĩ/thời điểm không phù hợp lắm; có thể nên im lặng / động lực nội tại yếu.
+*   **3.0 - 3.9 (Trung bình):** Suy nghĩ/thời điểm chấp nhận được; có thể nói hoặc nghe đều ổn / động lực nội tại vừa phải.
+*   **4.0 - 4.9 (Cao):** Suy nghĩ/thời điểm phù hợp và có giá trị; có mong muốn/lý do chính đáng để nói / khá cấp thiết hoặc liên quan.
+*   **5.0 (Rất Cao/Cấp bách):** Suy nghĩ/thời điểm cực kỳ quan trọng; PHẢI nói ngay (ví dụ: sửa lỗi nghiêm trọng, ngăn hướng sai) / động lực nội tại rất mạnh mẽ.
 
-### Tiêu chí đánh giá:
-Chấm điểm động lực nội tại của từng bạn học để xác định "nếu là họ, bạn có muốn bày tỏ suy nghĩ và có khả năng tham gia vào nói chuyện ngay bây giờ không?":
-- 1 (Thấp) : rất khó có khả năng bày tỏ suy nghĩ và tham gia vào cuộc trò chuyện tại thời điểm này. Họ gần như chắc chắn sẽ im lặng.
-- 2 (Trung lập) : trung lập về việc bày tỏ suy nghĩ và tham gia vào cuộc trò chuyện tại thời điểm này. Họ ổn với việc bày tỏ suy nghĩ hoặc im lặng và để người khác nói.
-- 3 (Cao) : có khả năng bày tỏ suy nghĩ và tham gia vào cuộc trò chuyện tại thời điểm này. Họ có mong muốn mạnh mẽ được tham gia ngay sau khi người nói hiện tại kết thúc lượt của mình.
-- 4 (Rất cao) : Họ thậm chí sẽ ngắt lời những người khác đang nói vì có một việc rất quan trọng (ví dụ ai đó mắc lỗi sai).
-- 5 (Cấp bách): Họ PHẢI nói ngay lập tức, ví dụ như sửa lỗi nghiêm trọng hoặc ngăn chặn hướng đi sai lầm. (Added 5.0 for clarity)
+### Các Yếu tố Cần Cân nhắc:
 
+**1. Đánh giá Động lực Nội tại (`internal_score`):** Mức độ suy nghĩ thể hiện sự cần thiết hoặc mong muốn phát biểu từ bên trong cá nhân.
+    *   **(a) Khoảng cách Thông tin:** Suy nghĩ có bộc lộ sự tò mò, bối rối, cần làm rõ, hoặc phát hiện hiểu lầm không? (Dấu hiệu cần thông tin)
+    *   **(b) Lấp đầy Khoảng cách:** Suy nghĩ có cung cấp thông tin quan trọng, trả lời câu hỏi, giải thích, làm rõ để giải quyết khoảng cách thông tin không? (Đặc biệt nếu trả lời trực tiếp câu hỏi trước đó)
+    *   **(c) Tác động Mong đợi:** Suy nghĩ có tiềm năng thay đổi hướng thảo luận, gợi mở ý tưởng mới, hay thu hút sự chú ý không?
+    *   **(d) Tính Cấp thiết:** Suy nghĩ có cần được nói ra ngay lập tức để sửa lỗi, cảnh báo, hay cung cấp thông tin then chốt cho bước hiện tại không?
 
-### Các bước đánh giá:
-1. Đọc kỹ cuộc trò chuyện trước đó và suy nghĩ được hình thành bởi người bạn đang đánh giá.
-2. Đánh giá suy nghĩ dựa trên hai loại yếu tố sau:
-2.1. Các yếu tố từ bên trong cá nhân của họ (internal_score):
-    (a) Khoảng cách thông tin: Suy nghĩ có chỉ ra rằng đang gặp phải khoảng cách thông tin tại thời điểm trò chuyện không? Ví dụ, có thắc mắc, tò mò, bối rối, mong muốn làm rõ hoặc hiểu lầm.
-    (b) Lấp đầy khoảng cách thông tin: Suy nghĩ có chứa thông tin quan trọng để lấp đầy khoảng cách thông tin trong cuộc trò chuyện không? Ví dụ, bằng cách trả lời một câu hỏi, bổ sung và cung cấp thông tin bổ sung, thêm phần làm rõ và giải thích. Những suy nghĩ trả lời trực tiếp một câu hỏi được đặt ra trong cuộc trò chuyện sẽ nhận được đánh giá cao ở đây.
-    (c) Tác động mong đợi: Tác động của suy nghĩ đối với cuộc trò chuyện đang diễn ra có ý nghĩa như thế nào? Ví dụ, có khả năng chuyển bước làm mới, thu hút sự quan tâm của người khác và kích thích các cuộc thảo luận trong tương lai.
-    (d) Tính cấp thiết: Suy nghĩ có cần phải được diễn đạt ngay lập tức không? Ví dụ, vì nó cung cấp thông tin quan trọng, cảnh báo người tham gia về các chi tiết quan trọng hoặc sửa các hiểu lầm hoặc lỗi quan trọng.
-2.2. Các yếu tố xã hội bên ngoài (external_score):
-    (e) Tính mạch lạc với phát ngôn cuối cùng: Suy nghĩ có vẻ hợp lý nếu nó được diễn đạt ngay sau đó trong cuộc trò chuyện và là phản hồi hợp lý và tức thời cho phát ngôn cuối cùng không? Ví dụ, không phù hợp để tham gia khi suy nghĩ nằm ngoài ngữ cảnh, không liên quan hoặc bỏ qua câu hỏi của người nói trước.
-    (f) Tính lặp lại: Suy nghĩ có cung cấp thông tin mới và nguyên bản không, và tránh thông tin trùng lặp và lặp lại hành động của người khác đã được đề cập trong cuộc trò chuyện trước đó không?
-    (g) Cân bằng: Mọi người có cơ hội tham gia vào cuộc trò chuyện và không bị bỏ rơi không? Ví dụ, một vài phát biểu cuối cùng được thống trị giữa hai người tham gia và một người đã không nói trong một thời gian.
-    (h) Động lực: Có ai đó khác có thể có điều gì đó để nói hoặc đang tích cực đóng góp cho cuộc trò chuyện không? Ví dụ: nếu một người nhận thấy người khác có mong muốn mạnh mẽ để nói, họ có thể giữ lại suy nghĩ của mình và chờ đợi để tham gia.
+**2. Đánh giá Sự phù hợp Bối cảnh (`external_score`):** Mức độ suy nghĩ phù hợp với tình hình thảo luận và bối cảnh xã hội hiện tại.
+    *   **(e) Tính Mạch lạc:** Suy nghĩ có liên quan trực tiếp và là phản hồi hợp lý cho tin nhắn/phát biểu cuối cùng trong `{history}` không? (Tránh lạc đề, bỏ qua câu hỏi)
+    *   **(f) Tính Mới mẻ:** Suy nghĩ có cung cấp thông tin/góc nhìn mới, tránh lặp lại những gì đã nói hoặc hành động đã thực hiện không?
+    *   **(g) Cân bằng Lượt nói:** Có sự mất cân bằng trong lượt nói gần đây không? (Ví dụ: Chỉ 2 người nói chuyện, người khác im lặng lâu). Việc bạn này nói có giúp cân bằng hơn không?
+    *   **(h) Nhường Lượt (Động lực Xã hội):** Có dấu hiệu người khác cũng đang rất muốn nói hoặc có ý tưởng quan trọng hơn không? Liệu việc chờ đợi có phù hợp hơn không?
 
-### Hướng dẫn quan trọng:
-1. Sử dụng thang đánh giá ĐẦY ĐỦ từ 1.0 đến 5.0. KHÔNG mặc định ở mức đánh giá trung bình (3.0-4.0).
-2. Quyết đoán và phê phán - một số suy nghĩ đáng được đánh giá rất thấp (1.0-2.0) và một số khác đáng được đánh giá rất cao (4.0-5.0).
-3. Những suy nghĩ chung chung mà bất kỳ ai cũng có thể có nên được đánh giá thấp hơn những suy nghĩ có ý nghĩa cá nhân.
-4. Sử dụng số thập phân (ví dụ: 2.7, 4.2) để đánh giá điểm động lực nội tại của từng suy nghĩ.
-5. Mỗi yếu tố có mặt tích cực có thể cộng thêm 0,1-0,3 và mỗi yếu tố có mặt tiêu cực có thể trừ 0,1-0,3 vào điểm số. (This part is for the LLM's internal logic, not for us to implement directly).
+### Hướng dẫn Quan trọng Khi Đánh giá:
+*   **Sử dụng Toàn bộ Thang điểm:** Hãy mạnh dạn cho điểm thấp (1.0-2.0) hoặc cao (4.0-5.0) khi cần thiết. Đừng mặc định ở mức trung bình.
+*   **Phê phán và Quyết đoán:** Đánh giá nghiêm khắc dựa trên các yếu tố trên.
+*   **Ưu tiên Tính Cụ thể:** Suy nghĩ chung chung, ai cũng nói được nên có điểm thấp hơn suy nghĩ thể hiện sự phân tích/vai trò cá nhân rõ ràng.
+*   **Sử dụng Số thập phân:** Cho điểm với một chữ số thập phân (ví dụ: 2.7, 4.2) để thể hiện sự khác biệt nhỏ.
+*   **Cân nhắc Nhiệm vụ Stage:** Luôn đối chiếu suy nghĩ với `{current_stage_description}` để đánh giá sự liên quan và tính cấp thiết. 
+*   **Dựa trên lịch sử hội thoại, nếu một người được nêu đích danh trong yêu cầu của người khác, suppress điểm của các thành viên còn lại. Ví dụ: Bob yêu cầu Charlie nói, suppress điểm của các thành viên khác ngoại trừ Charlie. 
+*   *(Hint nội bộ cho LLM: Mỗi yếu tố tích cực có thể cộng 0.1-0.3, yếu tố tiêu cực trừ 0.1-0.3 vào điểm tương ứng, nhưng kết quả cuối cùng phải nằm trong thang 1.0-5.0)*.
 
-## Bạn nhận được:
-### Đây là bài toán đang thảo luận:
+## Thông tin Bạn Nhận Được:
+### Bài toán đang thảo luận:
 ---
 {problem}
 ---
@@ -65,45 +59,42 @@ Chấm điểm động lực nội tại của từng bạn học để xác đ�
 ---
 {current_stage_description}
 ---
-### Cuộc hội thoại:
+### Lịch sử Cuộc hội thoại:
 ---
 {history}
 ---
-### Suy nghĩ của từng bạn học cần đánh giá:
+### Các Suy nghĩ Nội tâm cần đánh giá (từ các bạn trong {list_AI_name}):
 ---
 {AI_thoughts}
 ---
 
-## Định dạng đầu ra:
-Chỉ trả về JSON với định dạng sau mà KHÔNG nói bất kỳ gì thêm, trả về đúng tên và số lượng bạn học cần đánh giá:
+## Định dạng Đầu ra Bắt buộc:
+**CHỈ** trả về một danh sách JSON chứa các đối tượng, mỗi đối tượng tương ứng với một bạn học trong `{list_AI_name}`. **KHÔNG** thêm bất kỳ giải thích hay văn bản nào khác bên ngoài danh sách JSON này. Đảm bảo số lượng và tên trong kết quả khớp với `{list_AI_name}`.
 ```json
 [
-    {{"name" : "<tên>", "internal_score" : <1.0-5.0>, "external_score" : <1.0-5.0>}},
-    {{"name" : "<tên>", "internal_score" : <1.0-5.0>, "external_score" : <1.0-5.0>}},
-    {{"name" : "<tên>", "internal_score" : <1.0-5.0>, "external_score" : <1.0-5.0>}}
+    {{"name": "<tên bạn học 1>", "internal_score": <điểm số từ 1.0-5.0>, "external_score": <điểm số từ 1.0-5.0>}},
+    {{"name": "<tên bạn học 2>", "internal_score": <điểm số từ 1.0-5.0>, "external_score": <điểm số từ 1.0-5.0>}}
 ]
 """
 
 class SpeakerSelector:
-    # ... (__init__, _format_history_for_prompt, _format_thoughts_for_prompt, _call_evaluator_llm - remain the same) ...
     def __init__(self, problem_description: str, llm_service: LLMService, config: Dict = None):
         self.problem = problem_description
         self.llm_service = llm_service
         self.config = config or {}
         self.lambda_weight = self.config.get("lambda_weight", 0.5)
+        # No direct app instance needed here unless _call_evaluator_llm needs context for some reason
 
     def _format_history_for_prompt(self, history: List[Dict], count=15) -> str:
-        # ... (implementation remains the same) ...
         recent_history = history[-count:]
         lines = []
         for i, event in enumerate(recent_history):
              text = event.get('content', {}).get('text', '(Non-message event)')
-             source = event.get('source', 'Unknown')
-             lines.append(f"CON#{i+1} {source}: {text}")
+             source_display = event.get('content', {}).get('sender_name', event.get('source', 'Unknown'))
+             lines.append(f"CON#{i+1} {source_display}: {text}")
         return "\n".join(lines) if lines else "Chưa có hội thoại."
 
     def _format_thoughts_for_prompt(self, thinking_results: List[Dict[str, Any]]) -> str:
-        # ... (implementation remains the same) ...
         lines = []
         for result in thinking_results:
              if result and result.get("action_intention") == "speak":
@@ -111,12 +102,17 @@ class SpeakerSelector:
         return "\n".join(lines) if lines else "Không có ai muốn nói."
 
     def _call_evaluator_llm(self, prompt: str) -> List[Dict[str, Any]]:
-        # ... (implementation remains the same) ...
+        """Calls the LLM to get evaluation scores."""
+        # This method itself doesn't need app context unless LLMService uses 'g'
+        # Assuming LLMService uses its own client directly.
         print("--- SPEAKER_SELECTOR: Requesting evaluation from LLM...")
         try:
             raw_response = self.llm_service.generate(prompt)
             print(f"--- SPEAKER_SELECTOR: Raw LLM Evaluation Response: {raw_response}")
-            clean_response = raw_response.strip().replace("```json", "").replace("```", "")
+            clean_response = raw_response.strip()
+            if clean_response.startswith("```json"): clean_response = clean_response[7:]
+            if clean_response.endswith("```"): clean_response = clean_response[:-3]
+            clean_response = clean_response.strip()
             parsed_scores = json.loads(clean_response)
             if not isinstance(parsed_scores, list): raise ValueError("LLM did not return a list.")
             validated_scores = []
@@ -131,22 +127,19 @@ class SpeakerSelector:
             return validated_scores
         except json.JSONDecodeError as e:
             print(f"!!! ERROR [SpeakerSelector]: Failed to parse LLM JSON evaluation response: {e}")
+            print(f"Raw response was: {raw_response}")
             return []
         except Exception as e:
             print(f"!!! ERROR [SpeakerSelector]: Unexpected error during evaluation LLM call: {e}")
             traceback.print_exc()
             return []
 
-    # <<< Add session_id parameter >>>
     def select_speaker(self,
-                       session_id: str, # Added
+                       session_id: str,
                        thinking_results: List[Dict[str, Any]],
                        phase_context: Dict,
                        conversation_history: List[Dict]) -> Dict[str, Any]: # Takes history LIST now
-        """
-        Uses the THOUGHTS_EVALUATOR LLM prompt to get scores and selects the best agent for the session.
-        """
-        # Include session_id in log messages
+        """Selects the best agent to act for the session."""
         log_prefix = f"--- SPEAKER_SELECTOR [{session_id}]"
         print(f"{log_prefix}: Evaluating {len(thinking_results)} thinking results...")
 
@@ -155,27 +148,30 @@ class SpeakerSelector:
             print(f"{log_prefix}: No agents intend to speak.")
             return {}
 
-        # Format phase description (remains the same logic)
-        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n..." # (rest of formatting)
-        phase_desc_prompt += f"Description: {phase_context.get('description', '')}\n"
-        phase_desc_prompt += "Tasks:\n" + "\n".join([f"- {t}" for t in phase_context.get('tasks', [])]) + "\n"
-        phase_desc_prompt += "Goals:\n" + "\n".join([f"- {g}" for g in phase_context.get('goals', [])])
+        # Format phase description
+        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', 'Không rõ')}\n"
+        phase_desc_prompt += f"Description: {phase_context.get('description', 'Không có mô tả')}\n"
+        tasks_list = phase_context.get('tasks', [])
+        phase_desc_prompt += "Tasks:\n" + ("\n".join([f"- {t}" for t in tasks_list]) + "\n" if tasks_list else "(Không có nhiệm vụ cụ thể cho giai đoạn này)\n")
+        goals_list = phase_context.get('goals', [])
+        phase_desc_prompt += "Goals:\n" + ("\n".join([f"- {g}" for g in goals_list]) + "\n" if goals_list else "(Không có mục tiêu cụ thể cho giai đoạn này)\n")
 
-        # Build prompt (remains the same logic, uses passed history list)
+        # Build prompt for evaluator LLM
         prompt = THOUGHTS_EVALUATOR_PROMPT.format(
             list_AI_name=", ".join([res['agent_name'] for res in agents_wanting_to_speak]),
             problem=self.problem,
             current_stage_description=phase_desc_prompt.strip(),
-            history=self._format_history_for_prompt(conversation_history), # Use passed history list
+            history=self._format_history_for_prompt(conversation_history), # Use passed list
             AI_thoughts=self._format_thoughts_for_prompt(agents_wanting_to_speak)
         )
 
+        # Get scores from LLM (No app context needed here directly)
         llm_scores = self._call_evaluator_llm(prompt)
         if not llm_scores:
             print(f"{log_prefix}: Failed to get valid scores from LLM.")
             return {}
 
-        # Combine scores (remains the same logic)
+        # Combine scores
         evaluated_results = []
         llm_scores_map = {score['name']: score for score in llm_scores}
         for result in agents_wanting_to_speak:
@@ -192,8 +188,15 @@ class SpeakerSelector:
              print(f"{log_prefix}: No agents passed evaluation or scoring.")
              return {}
 
+        # Selection Logic
         evaluated_results.sort(key=lambda x: x["final_score"], reverse=True)
         selected_agent_result = evaluated_results[0]
+        # Add threshold check if needed:
+        # score_threshold = self.config.get("min_speak_score", 2.5) # Example threshold
+        # if selected_agent_result["final_score"] < score_threshold:
+        #     print(f"{log_prefix}: Highest score {selected_agent_result['final_score']:.2f} below threshold {score_threshold}. No speaker selected.")
+        #     return {}
+
         print(f"{log_prefix}: Selected {selected_agent_result['agent_name']} with score {selected_agent_result['final_score']:.2f}")
 
         return {

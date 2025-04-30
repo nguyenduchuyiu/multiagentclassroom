@@ -24,7 +24,7 @@ class ResponseOrchestrator:
                  behavior_executor: BehaviorExecutor,
                  interaction_coordinator: 'InteractionCoordinator',
                  problem_description: str,
-                 app_instance):
+                 app_instance: Flask): # Added app_instance
         self.conv_history = conversation_history
         self.phase_manager = phase_manager
         self.agent_manager = agent_manager
@@ -32,39 +32,45 @@ class ResponseOrchestrator:
         self.behavior_executor = behavior_executor
         self.interaction_coordinator = interaction_coordinator
         self.problem = problem_description
-        self.app = app_instance 
+        self.app = app_instance # Store app instance
         self._lock = threading.Lock()
 
     def _process_in_thread(self, session_id: str, triggering_event: Dict):
+        """The actual processing logic running in a separate thread with app context."""
         acquired = self._lock.acquire(blocking=False)
         if not acquired:
              print(f"--- RESP_ORCH [{session_id}]: Orchestrator busy. Skipping event {triggering_event['event_id']}.")
              return
 
-        # <<< Wrap context-dependent operations >>>
+        # Use the stored app instance to push context
         with self.app.app_context():
             try:
-                print(f"--- RESP_ORCH [{session_id}]: Starting processing for event: {triggering_event['event_id']} ({triggering_event['event_type']})")
+                log_prefix = f"--- RESP_ORCH [{session_id}]"
+                print(f"{log_prefix}: Starting processing for event: {triggering_event['event_id']} ({triggering_event['event_type']})")
                 start_time = time.time()
 
-                # --- Core Logic (Now within app context) ---
+                # Get Phase Context (needs context for DB access)
                 current_phase_context = self.phase_manager.get_current_phase(session_id, self.conv_history)
+                # Get History (needs context for DB access)
                 current_history = self.conv_history.get_history(session_id=session_id)
 
+                # Trigger Parallel Thinking (AgentManager needs context pushed in its threads)
                 thinking_results = self.agent_manager.request_thinking(
                     session_id=session_id,
                     triggering_event=triggering_event,
-                    conversation_history=self.conv_history,
-                    phase_manager=self.phase_manager
+                    conversation_history=self.conv_history, # Pass history object
+                    phase_manager=self.phase_manager # Pass phase manager object
                 )
 
+                # Evaluate Thoughts & Select Speaker (needs context for DB access)
                 selection = self.speaker_selector.select_speaker(
                     session_id=session_id,
                     thinking_results=thinking_results,
                     phase_context=current_phase_context,
-                    conversation_history=current_history
+                    conversation_history=current_history # Pass the list
                 )
 
+                # Trigger Execution (BehaviorExecutor needs context pushed in its threads)
                 if selection and selection.get("selected_agent_id"):
                     self.behavior_executor.execute(
                         session_id=session_id,
@@ -76,19 +82,18 @@ class ResponseOrchestrator:
                         history=current_history
                     )
                 else:
-                    print(f"--- RESP_ORCH [{session_id}]: No agent selected to speak for this event.")
+                    print(f"{log_prefix}: No agent selected to speak for this event.")
 
                 end_time = time.time()
-                print(f"--- RESP_ORCH [{session_id}]: Finished processing event {triggering_event['event_id']}. Duration: {end_time - start_time:.2f}s")
+                print(f"{log_prefix}: Finished processing event {triggering_event['event_id']}. Duration: {end_time - start_time:.2f}s")
 
             except Exception as e:
-                # Log error within the context if possible
-                print(f"!!! ERROR [ResponseOrchestrator - {session_id}]: Failed during processing event {triggering_event.get('event_id', 'N/A')}: {e}")
+                print(f"!!! ERROR [{log_prefix}]: Failed during processing event {triggering_event.get('event_id', 'N/A')}: {e}")
                 traceback.print_exc()
             finally:
-                 self._lock.release() # Release lock regardless of context success/failure
+                 self._lock.release()
 
     def process_event(self, session_id: str, triggering_event: Dict):
-        # The thread creation remains the same
+        """Starts the response generation flow in a separate thread."""
         thread = threading.Thread(target=self._process_in_thread, args=(session_id, triggering_event,), daemon=True)
         thread.start()

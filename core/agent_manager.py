@@ -14,16 +14,22 @@ class AgentManager:
     def __init__(self, persona_config_path: str, problem_description: str, llm_service: LLMService, app_instance: Flask):
         self.problem = problem_description
         self.llm_service = llm_service
-        self.app = app_instance 
+        self.app = app_instance # Store app instance
         self.agents: Dict[str, AgentMind] = self._load_agents(persona_config_path)
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=len(self.agents) or 1)
+        # Adjust max_workers if needed, default to number of agents
+        num_workers = len(self.agents) if self.agents else 1
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=num_workers)
+        print(f"--- AGENT_MGR: Initialized with {len(self.agents)} agents and {num_workers} workers.")
 
     def _load_agents(self, config_path: str) -> Dict[str, AgentMind]:
         agents = {}
         try:
             personas = load_personas_from_yaml(config_path)
+            if not personas:
+                 print(f"!!! WARN [AgentManager]: No personas loaded from {config_path}.")
+                 return {}
             for agent_id, persona in personas.items():
-                # <<< Add Debug Print >>>
+                 # Pass self.app to AgentMind constructor
                  agents[agent_id] = AgentMind(persona, self.problem, self.llm_service, self.app)
                  print(f"--- AGENT_MGR: Loaded AgentMind for {persona.name} ({agent_id})")
         except Exception as e:
@@ -37,23 +43,24 @@ class AgentManager:
     def get_agent_mind(self, agent_id: str) -> AgentMind | None:
         return self.agents.get(agent_id)
 
-
-    # <<< Add session_id parameter >>>
     def request_thinking(self,
-                         session_id: str, # Added
+                         session_id: str,
                          triggering_event: Dict,
                          conversation_history: ConversationHistory,
                          phase_manager: ConversationPhaseManager) -> List[Dict[str, Any]]:
-        """
-        Triggers the thinking process for all agents in parallel for a specific session.
-        """
-        print(f"--- AGENT_MGR [{session_id}]: Requesting thinking for all agents regarding event: {triggering_event['event_id']}")
+        """Triggers the thinking process for all agents in parallel for a specific session."""
+        log_prefix = f"--- AGENT_MGR [{session_id}]"
+        print(f"{log_prefix}: Requesting thinking for all agents regarding event: {triggering_event['event_id']}")
         futures = []
+        if not self.agents:
+            print(f"{log_prefix}: No agents loaded to request thinking from.")
+            return []
+
         for agent_id, agent_mind in self.agents.items():
-            # <<< Pass session_id to agent_mind.think >>>
+            # Pass session_id to agent_mind.think
             future = self.executor.submit(
                 agent_mind.think,
-                session_id=session_id, # Pass session id
+                session_id=session_id,
                 triggering_event=triggering_event,
                 conversation_history=conversation_history,
                 phase_manager=phase_manager
@@ -61,21 +68,22 @@ class AgentManager:
             futures.append(future)
 
         results = []
+        # Wait for all futures to complete
         for future in concurrent.futures.as_completed(futures):
             try:
                 result = future.result()
                 if result:
                     results.append(result)
             except Exception as e:
-                # Include session_id in error log
-                print(f"!!! ERROR [AgentManager - {session_id}]: Agent thinking task failed: {e}")
-                traceback.print_exc()
+                print(f"!!! ERROR [{log_prefix}]: Agent thinking task failed: {e}")
+                traceback.print_exc() # Print full traceback for thread errors
 
-        print(f"--- AGENT_MGR [{session_id}]: Collected {len(results)} thinking results.")
+        print(f"{log_prefix}: Collected {len(results)} thinking results.")
         return results
 
     def cleanup(self):
-        # ... (remains the same) ...
+        """Shuts down the thread pool executor."""
         print("--- AGENT_MGR: Shutting down thread pool executor...")
+        # Wait for pending tasks to complete before shutting down
         self.executor.shutdown(wait=True)
         print("--- AGENT_MGR: Executor shut down.")

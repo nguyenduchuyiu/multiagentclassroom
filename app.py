@@ -51,7 +51,6 @@ SOLUTION_DESCRIPTION = problem_context_data['solution']
 print("--- APP: Initializing Core Components ---")
 try:
     conversation_history = ConversationHistory()
-    # Using gemini-1.5-flash as per original request, adjust if needed
     llm_service = LLMService(model="gemini-2.0-flash", temperature=1)
     phase_manager = ConversationPhaseManager(PHASE_CONFIG_PATH, PROBLEM_DESCRIPTION, llm_service, app_instance=app)
     agent_manager = AgentManager(PERSONA_CONFIG_PATH, PROBLEM_DESCRIPTION, llm_service, app_instance=app)
