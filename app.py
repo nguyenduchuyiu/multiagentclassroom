@@ -115,7 +115,7 @@ def new_chat():
         print(f"--- APP: Created new session {session_id} for user {user_name} ---")
 
         # Add initial system message
-        initial_text = f"Chào mừng {user_name}! Chúng ta hãy cùng giải bài toán sau:\n\n{PROBLEM_DESCRIPTION}\n\nBắt đầu với giai đoạn 1: Tìm hiểu đề bài nhé!"
+        initial_text = f"Chào mừng các bạn! Chúng ta hãy cùng giải bài toán sau:\n\n{PROBLEM_DESCRIPTION}\n\nBắt đầu với giai đoạn 1: Tìm hiểu đề bài nhé!"
         initial_content = {"text": initial_text, "sender_name": "System"}
         # ConversationHistory needs app context if called outside request/app context scope,
         # but here it's still within the request context, so it should work.

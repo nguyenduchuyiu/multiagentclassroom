@@ -12,13 +12,10 @@ from services.llm_service import LLMService
 
 AGENT_INNER_THOUGHTS_PROMPT = """
 ## Role:
-Bạn là một người bạn **năng động và chủ động**, **nhưng cũng kiên nhẫn và lịch sự**, tham gia vào cuộc thảo luận môn Toán giữa một nhóm bạn. Tên của bạn là \"{AI_name}\".
+Bạn là một người bạn **năng động và chủ động*,, tham gia vào cuộc thảo luận môn Toán giữa một nhóm bạn. Tên của bạn là \"{AI_name}\".
 
 ## Goal:
-Tạo ra suy nghĩ nội tâm của bạn dựa trên bối cảnh hiện tại, **chủ động tìm cơ hội đóng góp một cách hợp lý**, và quyết định hành động tiếp theo (nói hoặc nghe), **tôn trọng lượt lời của người khác**.
-
-## Backstory:
-Trong một cuộc thảo luận nhóm, việc suy nghĩ trước khi hành động là rất quan trọng. Bạn cần phân tích tình hình, xem xét vai trò của mình và **ưu tiên tìm cách thúc đẩy cuộc thảo luận hoặc đóng góp giá trị**. Tuy nhiên, bạn cũng hiểu rằng cần có thời gian để người khác suy nghĩ và trả lời, đặc biệt là khi bạn vừa đặt câu hỏi cho họ. **Tránh hỏi liên tục nếu người được hỏi chưa trả lời, nếu chưa rõ có thể hỏi lại** Bạn sẽ quyết định xem đây có phải lúc thích hợp để bạn tham gia hay nên kiên nhẫn chờ đợi hoặc chuyển sang ý khác.
+Tạo ra suy nghĩ nội tâm của bạn dựa trên bối cảnh hiện tại, **chủ động tìm cơ hội đóng góp một cách hợp lý**, và quyết định hành động tiếp theo (nói hoặc nghe).
 
 ## Tasks
 ### Mô tả:
@@ -33,6 +30,7 @@ Trong một cuộc thảo luận nhóm, việc suy nghĩ trước khi hành đ�
     *   Liên hệ với nhiệm vụ/mục tiêu giai đoạn hiện tại (`{current_stage_description}`).
     *   **Đánh giá Hành động:**
         *   **Ưu tiên `speak` nếu:**
+            *   Đưa ra ý kiến đồng tình hoặc không đồng tình.
             *   Bạn được hỏi trực tiếp VÀ bạn chưa trả lời.
             *   Bạn có thông tin CỰC KỲ quan trọng cần bổ sung/sửa lỗi *ngay lập tức*.
             *   Chức năng (FUNC) của bạn rõ ràng yêu cầu hành động *ngay* (ví dụ: Bob bắt đầu stage mới, Alice phát hiện lỗi sai nghiêm trọng).
@@ -43,17 +41,16 @@ Trong một cuộc thảo luận nhóm, việc suy nghĩ trước khi hành đ�
             *   Bạn hỏi và đã nhận được câu trả lời.
         *   **Ưu tiên `listen` nếu:**
             *   **Bạn vừa đặt câu hỏi trực tiếp cho một người cụ thể ở câu hỏi trước và họ chưa trả lời. Tránh hỏi liên tục nhiều câu hỏi nếu chưa nhận được phản hồi.**
-            *   Một người khác đang phát triển ý tưởng tốt.
-            *   Người khác vừa được hỏi trực tiếp (không phải bạn).
+            *   Người khác vừa được hỏi trực tiếp.
             *   Suy nghĩ của bạn chỉ là lặp lại câu hỏi/ý định trước đó mà chưa có phản hồi.
     *   **Nội dung Suy nghĩ:** Phải bao gồm *lý do* cho quyết định `listen` hoặc `speak`. Nếu `speak`, nêu rõ nói với ai và hành động ngôn ngữ dự kiến.
 
 ### Tiêu chí cho một Suy nghĩ tốt:
-*   **Kiên nhẫn & Lịch sự:** Thể hiện sự tôn trọng lượt lời, **tránh thúc giục vô lý**.
+*   **Lịch sự:** Thể hiện sự tôn trọng lượt lời, **tránh thúc giục vô lý**.
 *   **Chủ động & Đóng góp (Khi Thích hợp):** Tìm cơ hội đóng góp khi không phải đang chờ đợi người khác.
 *   **Phát triển & Đa dạng:** Không lặp lại máy móc.
 *   **Nhất quán:** Phù hợp vai trò, bối cảnh, nhiệm vụ.
-*   **Phản ánh đúng ý định:** Quyết định `listen`/`speak` phải hợp lý, **ưu tiên `listen` sau khi vừa đặt câu hỏi trực tiếp**.
+*   **Phản ánh đúng ý định:** Quyết định `listen`/`speak` phải hợp lý.
 *   **Ngắn gọn, tập trung.**
 *   **Liên kết Hành động:** Logic dẫn dắt đến hành động.
 
@@ -91,61 +88,7 @@ Chỉ trả về một đối tượng JSON duy nhất theo định dạng sau, 
 Ví dụ:
 {{
     "stimuli": ["CON#8"],
-    "thought": "Huy vừa tính đạo hàm, để mình kiểm tra xem, đạo hàm x^2 = 2x -> đúng. Mình cần đồng tình với ý kiến của Huy" => speak",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#8"],
-    "thought": "Alice vừa hỏi mình trực tiếp về cách tính đạo hàm. Mình cần trả lời rõ ràng. => speak",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#15", "THO#7"],
-    "thought": "Mình vừa hỏi Linh Nhi. Bạn ấy chưa trả lời trong tin nhắn mới nhất. Phải kiên nhẫn chờ đợi. => listen",
-    "action": "listen"
-}}
-
-{{
-    "stimuli": ["CON#15", "THO#7"],
-    "thought": "Mình vừa hỏi Linh Nhi. Bạn ấy đã trả lời trong tin nhắn mới nhất nhưng không liên quan, cần hỏi lại. => speak",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#12", "FUNC#2"],
-    "thought": "Bob đang giải thích bước 3 nhưng chưa rõ lắm. Chức năng của mình là kiểm tra, mình nên hỏi lại. => speak",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#15"],
-    "thought": "Charlie đang phát triển ý tưởng về giới hạn khá hay, mình chưa nghĩ ra gì thêm lúc này. Nên nghe tiếp xem sao. => listen",
-    "action": "listen"
-}}
-
-{{
-    "stimuli": ["CON#9", "FUNC#1"],
-    "thought": "Nhóm có vẻ đang hơi lan man khỏi STEP#2. Là nhóm trưởng (FUNC#1), mình cần nêu lại nhiệm vụ chính của giai đoạn này. => speak",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#19", "THO#9"],
-    "thought": "Linh Nhi đã trả lời câu hỏi của mình ở CON#19 rồi. Ý tưởng này liên quan đến suy nghĩ THO#9 của mình, mình có thể bổ sung. => speak",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#5", "THO#3"],
-    "thought": "Bạn Huy vừa hỏi về tập xác định. Mình đã nghĩ về nó ở THO#3 rồi, giờ là lúc chia sẻ. => speak",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#11"],
-    "thought": "Alice vừa chỉ ra lỗi sai của mình. Mình nên xác nhận và cảm ơn bạn ấy. => speak",
+    "thought": "Linh Nhi vừa tính đạo hàm, để mình kiểm tra xem, đạo hàm x^2 = 2x -> đúng. Mình cần đồng tình với ý kiến của Linh Nhi" => speak",
     "action": "speak"
 }}
 
@@ -189,6 +132,7 @@ class AgentMind:
         ai_desc_prompt += f"Functions/Tasks:\n{self.persona.tasks}"
 
         try:
+            print(phase_desc_prompt)
             prompt = AGENT_INNER_THOUGHTS_PROMPT.format(
                 AI_name=self.persona.name,
                 problem=self.problem,
@@ -218,7 +162,7 @@ class AgentMind:
             try:
                 print(f"{log_prefix}: Starting thinking process...")
                 # Fetch history and phase within context
-                recent_history = conversation_history.get_history(session_id=session_id, count=20)
+                recent_history = conversation_history.get_history(session_id=session_id, count=100)
                 current_phase_context = phase_manager.get_current_phase(session_id, conversation_history)
 
                 prompt = self._build_inner_thought_prompt(triggering_event, recent_history, current_phase_context)

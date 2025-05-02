@@ -14,6 +14,7 @@ from core.behavior_executor import BehaviorExecutor
 
 if TYPE_CHECKING:
     from core.interaction_coordinator import InteractionCoordinator
+#TODO: trigger phase manager first to provide context to agents.
 
 class ResponseOrchestrator:
     def __init__(self,

@@ -39,7 +39,7 @@ Dựa trên suy nghĩ nội tâm **hiện tại** của bạn (`{inner_thought}`
 4.  **Chuẩn bị JSON Output:** Tạo một đối tượng JSON chứa suy nghĩ chuẩn bị (`internal_thought`) và lời nói cuối cùng (`spoken_message`).
 
 ## Behavior Guidelines (QUAN TRỌNG)
-*   **Tự nhiên & Súc tích:** Nói ngắn gọn như trong trò chuyện thực tế. Tránh văn viết, lý thuyết dài dòng. Dưới 30 từ.
+*   **Tự nhiên & Súc tích:** Nói ngắn gọn như trong trò chuyện thực tế. Tránh văn viết, lý thuyết dài dòng.
 *   **Tránh Lặp lại:** Không nhắc lại y nguyên điều người khác vừa nói.
 *   **Hạn chế Câu hỏi Cuối câu:** Đừng *luôn luôn* kết thúc bằng câu hỏi "?".
 *   **Đa dạng Hành động Nói:** Linh hoạt sử dụng các kiểu nói khác nhau.
@@ -149,9 +149,9 @@ class BehaviorExecutor:
                 if clean_response.endswith("```"): clean_response = clean_response[:-3]
                 clean_response = clean_response.strip()
                 parsed_output = json.loads(clean_response)
-                internal_thought_summary = parsed_output.get("internal_thought_summary", "(Lỗi)")
+                internal_thought = parsed_output.get("internal_thought", "(Lỗi)")
                 final_message = parsed_output.get("spoken_message", "").strip()
-                print(f"{log_prefix}: Parsed Internal Thought Summary: {internal_thought_summary}")
+                print(f"{log_prefix}: Parsed Internal Thought: {internal_thought}")
                 if not final_message:
                     print(f"!!! WARN [{log_prefix}]: LLM returned empty 'spoken_message'.")
                     return ""
@@ -159,12 +159,12 @@ class BehaviorExecutor:
             except Exception as parse_err: # Catch JSONDecodeError and others
                 print(f"!!! ERROR [{log_prefix}]: Failed to parse LLM JSON Speak response: {parse_err}")
                 print(f"Raw response was: {raw_response}")
-                return "(Lỗi: Định dạng trả lời từ AI không đúng)"
+                return "..."
 
         except Exception as e:
             print(f"!!! ERROR [{log_prefix}]: Failed during final message generation LLM call: {e}")
             traceback.print_exc()
-            return "(Lỗi: Không thể tạo câu trả lời)"
+            return "🤓"
 
     def _simulate_typing_and_speak(self, session_id: str, agent_id: str, agent_name: str, thought_details: Dict, phase_context: Dict, history: List[Dict]):
         """Generates message, simulates typing, and posts the message for a session."""

@@ -9,6 +9,7 @@ from database.database import get_db
 from services.llm_service import LLMService
 from utils.loaders import load_phases_from_yaml
 
+
 STAGE_MANAGER_PROMPT = """
 ## Role:
 Bạn là Giám sát viên Quy trình (Process Supervisor), chuyên theo dõi tiến độ làm việc nhóm của học sinh cấp 3 giải bài toán Toán.
