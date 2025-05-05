@@ -281,6 +281,17 @@ def stream(session_id):
     response.headers['Connection'] = 'keep-alive'
     return response
 
+import os
+
+with app.app_context():
+    db_path = os.path.join(app.root_path, 'chat_sessions.db')
+    if not os.path.exists(db_path):
+        print("--- APP: Database not found, initializing...")
+        from database import init_db
+        init_db()
+    else:
+        print("--- APP: Database already exists.")
+
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True, use_reloader=False)
