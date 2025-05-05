@@ -251,7 +251,7 @@ def stream(session_id):
                     event_data = None
                     try:
                         # Use a slightly longer timeout to reduce keep-alive frequency if needed
-                        event_data = sse_queue.get(timeout=20)
+                        event_data = sse_queue.get(timeout=1)
                     except queue.Empty:
                         yield ": keep-alive\n\n"
                         continue
