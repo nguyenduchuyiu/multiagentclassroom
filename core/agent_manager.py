@@ -48,22 +48,17 @@ class AgentManager:
                          triggering_event: Dict,
                          conversation_history: ConversationHistory,
                          phase_manager: ConversationPhaseManager) -> List[Dict[str, Any]]:
-        """Triggers the thinking process for all agents in parallel for a specific session."""
+        """Triggers thinking, passing task status."""
         log_prefix = f"--- AGENT_MGR [{session_id}]"
-        print(f"{log_prefix}: Requesting thinking for all agents regarding event: {triggering_event['event_id']}")
+        print(f"{log_prefix}: Requesting thinking for all agents (Event: {triggering_event['event_id']})")
         futures = []
-        if not self.agents:
-            print(f"{log_prefix}: No agents loaded to request thinking from.")
-            return []
-
         for agent_id, agent_mind in self.agents.items():
-            # Pass session_id to agent_mind.think
             future = self.executor.submit(
                 agent_mind.think,
                 session_id=session_id,
                 triggering_event=triggering_event,
                 conversation_history=conversation_history,
-                phase_manager=phase_manager
+                phase_manager=phase_manager,
             )
             futures.append(future)
 

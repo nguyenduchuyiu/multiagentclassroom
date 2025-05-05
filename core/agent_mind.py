@@ -26,6 +26,10 @@ Tạo ra suy nghĩ nội tâm của bạn dựa trên bối cảnh hiện tại,
     *   **Lưu ý:** Chỉ chọn các tác nhân *thực sự* quan trọng.
 
 2.  **Hình thành Suy nghĩ Nội tâm (Thought):**
+
+2. Cách suy nghĩ:
+    *   **QUAN TRỌNG:** Xem xét `Trạng thái Nhiệm vụ Hiện tại` dưới đây để biết nhiệm vụ nào ([ ] chưa làm, [X] đã làm) và tập trung vào nhiệm vụ tiếp theo chưa hoàn thành. Đừng đề xuất lại việc đã làm.
+    *   Suy nghĩ phải tự đánh giá mức độ mong muốn của bạn có tham gia ngay vào hội thoại hay không (listen/speak).
     *   Dựa trên `stimuli`, tạo *MỘT* suy nghĩ nội tâm.
     *   Liên hệ với nhiệm vụ/mục tiêu giai đoạn hiện tại (`{current_stage_description}`).
     *   **Đánh giá Hành động:**
@@ -55,8 +59,8 @@ Tạo ra suy nghĩ nội tâm của bạn dựa trên bối cảnh hiện tại,
 *   **Liên kết Hành động:** Logic dẫn dắt đến hành động.
 
 
-## Thông tin bạn nhận được:
-### Bài toán đang thảo luận:
+## Bạn nhận được:
+### Đây là bài toán đang thảo luận:
 ---
 {problem}
 ---
@@ -64,15 +68,19 @@ Tạo ra suy nghĩ nội tâm của bạn dựa trên bối cảnh hiện tại,
 ---
 {current_stage_description}
 ---
-### Mô tả chi tiết vai trò chức năng của bạn ({AI_name}):
+### Trạng thái Nhiệm vụ Hiện tại:
+---
+{task_status_prompt}
+---
+### Mô tả chi tiết vai trò chức năng của bạn:
 ---
 {AI_description}
 ---
-### Những suy nghĩ trước của bạn ({AI_name}):
+### Những suy nghĩ trước của bạn:
 ---
 {previous_thoughts}
 ---
-### Lịch sử cuộc hội thoại:
+### Cuộc hội thoại:
 ---
 {history}
 ---
@@ -117,26 +125,20 @@ class AgentMind:
         lines = [f"THO#{thought['id']}: {thought['text']}" for thought in recent_thoughts]
         return "\n".join(lines) if lines else "Chưa có suy nghĩ trước đó."
 
-    def _build_inner_thought_prompt(self, triggering_event: Dict, history: List[Dict], phase_context: Dict) -> str:
-        """Builds the complete prompt string for the AGENT_INNER_THOUGHTS LLM call."""
-        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', 'Không rõ')}\n"
-        phase_desc_prompt += f"Description: {phase_context.get('description', 'Không có mô tả')}\n"
-        tasks_list = phase_context.get('tasks', [])
-        phase_desc_prompt += "Tasks:\n" + ("\n".join([f"- {t}" for t in tasks_list]) + "\n" if tasks_list else "(Không có nhiệm vụ cụ thể cho giai đoạn này)\n")
-        goals_list = phase_context.get('goals', [])
-        phase_desc_prompt += "Goals:\n" + ("\n".join([f"- {g}" for g in goals_list]) + "\n" if goals_list else "(Không có mục tiêu cụ thể cho giai đoạn này)\n")
+    def _build_inner_thought_prompt(self, triggering_event: Dict, history: List[Dict], phase_context: Dict, task_status_prompt: str) -> str:
+        # Format phase description (excluding tasks now, as they are in status)
+        phase_desc_prompt = f"Stage {phase_context.get('id', 'N/A')}: {phase_context.get('name', '')}\n"
+        phase_desc_prompt += f"Description: {phase_context.get('description', '')}\n"
+        phase_desc_prompt += "Goals:\n" + "\n".join([f"- {g}" for g in phase_context.get('goals', [])])
 
-        ai_desc_prompt = f"Role: {self.persona.role}\n"
-        ai_desc_prompt += f"Goal: {self.persona.goal}\n"
-        ai_desc_prompt += f"Backstory: {self.persona.backstory}\n"
-        ai_desc_prompt += f"Functions/Tasks:\n{self.persona.tasks}"
-
+        ai_desc_prompt = f"Role: {self.persona.role}\n..." # (rest of AI desc)
         try:
-            print(phase_desc_prompt)
             prompt = AGENT_INNER_THOUGHTS_PROMPT.format(
                 AI_name=self.persona.name,
                 problem=self.problem,
                 current_stage_description=phase_desc_prompt.strip(),
+                # <<< Add task_status_prompt >>>
+                task_status_prompt=task_status_prompt,
                 AI_description=ai_desc_prompt.strip(),
                 previous_thoughts=self._format_previous_thoughts(),
                 history=self._format_history_for_prompt(history)
@@ -149,7 +151,7 @@ class AgentMind:
             print(f"!!! ERROR [AgentMind - {self.persona.name}]: Unexpected error formatting AGENT_INNER_THOUGHTS_PROMPT: {e}")
             return "Lỗi tạo prompt."
 
-    def think(self, session_id: str, triggering_event: Dict, conversation_history: ConversationHistory, phase_manager: ConversationPhaseManager) -> Optional[Dict[str, Any]]:
+    def think(self, session_id: str, triggering_event: Dict, conversation_history: ConversationHistory, phase_manager: ConversationPhaseManager) -> Optional[Dict[str, Any]]:        
         """Performs the inner thinking process for a specific session."""
         if not self._lock.acquire(blocking=False):
             print(f"--- AGENT_MIND [{self.persona.name} - {session_id}]: Already thinking, skipping.")
@@ -163,11 +165,14 @@ class AgentMind:
                 print(f"{log_prefix}: Starting thinking process...")
                 # Fetch history and phase within context
                 recent_history = conversation_history.get_history(session_id=session_id, count=100)
-                current_phase_context = phase_manager.get_current_phase(session_id, conversation_history)
+                current_phase_context = phase_manager.get_phase_context(session_id, conversation_history)
 
-                prompt = self._build_inner_thought_prompt(triggering_event, recent_history, current_phase_context)
-                if "Lỗi tạo prompt" in prompt: # Check if prompt building failed
-                    raise ValueError("Failed to build prompt for thinking.")
+                prompt = self._build_inner_thought_prompt(
+                    triggering_event,
+                    recent_history,
+                    current_phase_context, # Pass the whole context dict
+                    current_phase_context.get("task_status_prompt", "Lỗi: Không có trạng thái nhiệm vụ.") # Extract status from context
+                )
 
                 # LLM Call
                 raw_llm_response = self._llm_service.generate(prompt)

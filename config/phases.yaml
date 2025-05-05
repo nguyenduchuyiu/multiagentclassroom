@@ -1,56 +1,64 @@
-"1": 
-  
-  stage: "1" 
-  name: "Tìm hiểu đề bài"
-  description: |
-    Xác định ẩn số và dữ liệu (giả thuyết – kết luận).
-    Nhận diện yêu cầu: tìm hay chứng minh gì?
-    (Nếu bài toán đơn giản, có thể bỏ qua phân tích chi tiết.)
+# config/phases.yaml
+"1":
+  stage: "1"
+  name: "Tìm hiểu đề bài."
+  description: "Tìm hiểu nội dung đề bài..."
   tasks:
-    - "Liệt kê ẩn số, dữ kiện đầu bài và mục tiêu cần đạt."
-    - "Khi hoàn thành, chuyển sang giai đoạn 'Lập kế hoạch'."
-  goals: 
-    - "Xác định đây là bài toán xét tính đơn điệu của hàm số bậc nhất trên bậc nhất."
-
-"2": 
-  stage: "2"
-  name: "Lập kế hoạch"
-  description: |
-    Đề xuất phương pháp giải tổng quát mà không thực hiện chi tiết.
-    Nhìn bài toán dưới nhiều góc độ: kiến thức, công cụ, đánh giá tính khả thi.
-  tasks:
-    - "Phân tích và nhận xét ít nhất một phương pháp khả thi."
-    - "Khi thỏa thuận, chuyển sang giai đoạn 'Thực hiện giải'."
-  goals: 
-    - "Thống nhất dùng đạo hàm để xét tính đơn điệu và lập bảng biến thiên."
-
-"3": 
-  stage: "3"
-  name: "Thực hiện giải"
-  description: |
-    Triển khai các bước giải đã thống nhất, kèm đánh giá kết quả từng bước.
-  tasks:
-    - "Tính đạo hàm f'(x) và xét dấu từng khoảng." 
-    - "Lập bảng biến thiên."                      
-    - "Sau khi hoàn tất, chuyển sang giai đoạn 'Kết luận'."
+    - id: "1.1" # Unique ID: phase.task_index
+      description: "Tìm hiểu bài toán cho những gì? Đâu là ẩn? Đâu là dữ liệu? và Bài toán yêu cầu tìm hay chứng minh điều gì? (Chỉ cần nêu và nhận xét chứ không cần đi chi tiết vào)"
+    - id: "1.2"
+      description: "Khi đã giải quyết được câu các nhiệm vụ trên và nắm được các mục tiêu, đề nghị cả nhóm sang bước mới là \"Lên kế hoạch\"."
   goals:
-    - "Tính đúng đạo hàm và xét dấu."
-    - "Nhận diện khoảng đồng biến, nghịch biến qua bảng biến thiên."
+    - "Nhận biết đây là dạng bài toán xét tính đơn điệu của hàm số bậc nhất trên bậc nhất"
 
-"4": 
-  stage: "4"
-  name: "Kết luận"
-  description: |
-    Tóm tắt quy trình giải và đánh giá hiệu quả phương pháp.
-    Rút ra nguyên tắc chung cho dạng toán.
+"2":
+  stage: "2"
+  name: "Lập kế hoạch giải bài."
+  description: "Đưa ra kế hoạch giải bài..."
   tasks:
-    - "Tóm tắt các bước chính."
-    - "Đánh giá ưu nhược điểm."
-    - "Khái quát nguyên tắc giải:" 
-    - |                          
-      1. Xác định tập xác định D.
-      2. Tính f'(x), tìm điểm khảo sát.
-      3. Xét dấu và lập bảng biến thiên.
-      4. Kết luận khoảng đồng/ nghịch biến.
-  goals: 
-    - "Hoàn thiện kết luận và kết thúc thảo luận."
+    - id: "2.1"
+      description: "Đề xuất phương pháp giải bài từ quan sát đánh giá bài toán. Nhận xét, phân tích một phương pháp cụ thể xem khả thi không. Tuy nhiên CHƯA cần thực hiện cụ thể, chi tiết."
+    - id: "2.2"
+      description: "Khi đã giải quyết được câu các nhiệm vụ trên và nắm được các mục tiêu, đề nghị cả nhóm sang bước mới là \"Thực hiện giải bài cụ thể\"."
+  goals:
+    - "Thống nhất được cách làm phổ biến nhất là dùng đạo hàm để xét tính đơn điệu và vẽ bảng biến thiên."
+
+"3":
+  stage: "3"
+  name: "Thực hiện giải bài."
+  description: "Thực hiện cụ thể các bước làm..."
+  tasks:
+    - id: "3.1"
+      description: "Bước 1: Tìm Tập Xác Định D = R \\ {-1}" # Example breakdown
+    - id: "3.2"
+      description: "Bước 2: Tính Đạo Hàm f'(x) = 2/(x+1)^2"
+    - id: "3.3"
+      description: "Bước 3: Xét Dấu Đạo Hàm f'(x) > 0"
+    - id: "3.4"
+      description: "Bước 4: Tính Giới Hạn (lim)"
+    - id: "3.5"
+      description: "Bước 5: Lập Bảng Biến Thiên"
+    - id: "3.6"
+      description: "Bước 6: Kết Luận Tính Đơn Điệu"
+    - id: "3.7" # Task for transition
+      description: "Khi đã giải quyết được đầy đủ các bước làm của lời giải trên, đề nghị cả nhóm sang quá trình cuối là \"Kết luận và dánh giá cả bài làm\"."
+  goals:
+    - "Tính đạo hàm và xét dấu đúng."
+    - "Nhận biết tính đơn điệu..."
+    - "Sử dụng bảng biến thiên..."
+
+"4":
+  stage: "4"
+  name: "Kết luận."
+  description: "Kết luận lại quá trình làm bài và đánh giá kết quả."
+  tasks:
+    - id: "4.1"
+      description: "Tóm tắt những bước chính đã làm."
+    - id: "4.2"
+      description: "Đánh giá phương pháp đã làm."
+    - id: "4.3"
+      description: "Rút ra được nguyên tắc làm bài."
+    - id: "4.4"
+      description: "Khi đã giải quyết được câu các nhiệm vụ trên và nắm được các mục tiêu, kết thúc bài toán ở đây và kết thúc thảo luận."
+  goals:
+    - "Rút ra được nguyên tắc làm dạng này như sau:\nBước 1: Tìm tập xác định D...\nBước 4: Nêu kết luận..."

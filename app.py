@@ -3,7 +3,6 @@ import uuid
 import json
 import queue
 import atexit
-import os
 import traceback
 from dotenv import load_dotenv
 from flask import (
@@ -105,11 +104,17 @@ def new_chat():
 
     session_id = str(uuid.uuid4())
     db = database.get_db()
+    
+    initial_metadata = {
+        "status": "active",
+        "current_phase_id": "1", # Start at phase 1
+        "completed_tasks": {} # Store completed tasks per phase: {"phase_id": ["task_id1", "task_id2"]}
+    }
 
     try:
         db.execute(
             "INSERT INTO sessions (session_id, user_name, problem_description, current_phase_id, metadata) VALUES (?, ?, ?, ?, ?)",
-            (session_id, user_name, PROBLEM_DESCRIPTION, "1", json.dumps({"status": "active"})) # Use json.dumps for metadata adapter
+            (session_id, user_name, PROBLEM_DESCRIPTION, "1", json.dumps(initial_metadata)) # Use json.dumps for metadata adapter
         )
         db.commit()
         print(f"--- APP: Created new session {session_id} for user {user_name} ---")

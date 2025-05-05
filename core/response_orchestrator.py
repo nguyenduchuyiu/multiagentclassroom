@@ -51,16 +51,16 @@ class ResponseOrchestrator:
                 start_time = time.time()
 
                 # Get Phase Context (needs context for DB access)
-                current_phase_context = self.phase_manager.get_current_phase(session_id, self.conv_history)
+                current_phase_context = self.phase_manager.get_phase_context(session_id, self.conv_history)
                 # Get History (needs context for DB access)
                 current_history = self.conv_history.get_history(session_id=session_id)
-
+                
                 # Trigger Parallel Thinking (AgentManager needs context pushed in its threads)
                 thinking_results = self.agent_manager.request_thinking(
                     session_id=session_id,
                     triggering_event=triggering_event,
-                    conversation_history=self.conv_history, # Pass history object
-                    phase_manager=self.phase_manager # Pass phase manager object
+                    conversation_history=self.conv_history,
+                    phase_manager=self.phase_manager,
                 )
 
                 # Evaluate Thoughts & Select Speaker (needs context for DB access)
