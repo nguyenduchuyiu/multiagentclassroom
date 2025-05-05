@@ -137,12 +137,12 @@ class AgentMind:
                 AI_name=self.persona.name,
                 problem=self.problem,
                 current_stage_description=phase_desc_prompt.strip(),
-                # <<< Add task_status_prompt >>>
                 task_status_prompt=task_status_prompt,
                 AI_description=ai_desc_prompt.strip(),
                 previous_thoughts=self._format_previous_thoughts(),
                 history=self._format_history_for_prompt(history)
             )
+            print(prompt)
             return prompt
         except KeyError as e:
             print(f"!!! ERROR [AgentMind - {self.persona.name}]: Missing key in AGENT_INNER_THOUGHTS_PROMPT format: {e}")

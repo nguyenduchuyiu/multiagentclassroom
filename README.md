@@ -1,39 +1,45 @@
-# ChatCollab - Multi-Agent Collaborative Chat Framework
+# ChatCollab Refactored - Multi-Agent Collaborative Chat Framework
 
-[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Flask Version](https://img.shields.io/badge/flask-2.x%2B-green.svg)](https://flask.palletsprojects.com/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE) <!-- Add a LICENSE file -->
 
-ChatCollab là một framework ứng dụng web được xây dựng bằng Flask, cho phép mô phỏng các cuộc trò chuyện hợp tác giữa nhiều AI agent và người dùng. Các agent được định cấu hình thông qua file YAML, tương tác với nhau và với người dùng thông qua một giao diện chat, và sử dụng một dịch vụ LLM (Large Language Model) bên ngoài để tạo phản hồi. Cập nhật trạng thái và tin nhắn mới được truyền tải theo thời gian thực bằng Server-Sent Events (SSE).
+ChatCollab is a web application framework built with Flask, designed to simulate and facilitate structured, collaborative problem-solving conversations between multiple AI agents and a human user. Agents, defined by personas and tasks in YAML files, interact within distinct conversation phases, guided by an event-driven architecture. The system uses an external LLM service for agent intelligence and real-time Server-Sent Events (SSE) for UI updates. Session management with database persistence allows users to create and revisit conversations.
 
-(ChatCollab is a web application framework built with Flask that simulates collaborative conversations between multiple AI agents and a human user. Agents are configured via YAML files, interact with each other and the user through a chat interface, and utilize an external LLM service to generate responses. Real-time updates for new messages and agent statuses are delivered using Server-Sent Events (SSE).)
+## Key Concepts & Features
 
-## Features
-
-*   **Multi-Agent Simulation:** Hỗ trợ nhiều AI agent cùng tham gia vào một cuộc trò chuyện.
-*   **Configurable Agents:** Định nghĩa dễ dàng các agent (vai trò, mục tiêu, backstory, cấu hình LLM) thông qua file `config/agents.yaml`.
-*   **Task Assignment:** Định nghĩa các nhiệm vụ (tasks) cụ thể cho agent trong `config/tasks.yaml`.
-*   **Real-time Communication:** Sử dụng Server-Sent Events (SSE) để cập nhật giao diện người dùng ngay lập tức khi có tin nhắn mới hoặc trạng thái agent thay đổi.
-*   **LLM Integration:** Tích hợp với các dịch vụ LLM (Large Language Model) thông qua lớp trừu tượng `LLMService`.
-*   **Conversation Management:** Lưu trữ và truy xuất lịch sử cuộc trò chuyện.
-*   **Agent Status Tracking:** Hiển thị trạng thái hiện tại của agent (idle, thinking, typing) trên giao diện.
-*   **User Interaction:** Người dùng có thể tham gia trò chuyện, cung cấp tên của mình.
-*   **Web Interface:** Giao diện người dùng cơ bản được xây dựng bằng HTML, CSS, và JavaScript.
-*   **Thread-Safe Operations:** Sử dụng locks để đảm bảo an toàn khi nhiều agent hoạt động đồng thời.
+*   **Event-Driven Architecture:** Core interactions are managed through triggers and events handled by the `InteractionCoordinator`.
+*   **Multi-Agent Collaboration:** Supports multiple AI agents defined in `config/personas.yaml`.
+*   **Structured Conversation Flow:** Utilizes a `ConversationPhaseManager` to guide the discussion through predefined stages (defined in `config/phases.yaml`) based on the problem context and conversation history. Task completion within phases can be tracked.
+*   **Sophisticated Agent Logic (`AgentMind`):** Each agent performs an "inner thought" process based on its persona, conversation history, current phase, and assigned tasks before deciding to speak or listen.
+*   **Dynamic Speaker Selection (`SpeakerSelector`):** Evaluates agents' intentions to speak based on internal drive and external context appropriateness using LLM-based scoring, selecting the most suitable agent for the next turn.
+*   **Natural Interaction Simulation (`BehaviorExecutor`):** Executes agent actions (speaking) with simulated typing delays.
+*   **Session Management & Persistence:**
+    *   Users can create distinct chat sessions.
+    *   Sessions and event history are stored in an SQLite database (`chat_sessions.db`).
+    *   Allows revisiting past conversations.
+*   **Database Integration:** Uses Flask-SQLAlchemy patterns (via custom `database.py`) for managing the SQLite database.
+*   **Real-time Communication (SSE):** Server-Sent Events deliver new messages and agent status updates (`idle`, `thinking`, `typing`) instantly to the web interface.
+*   **LLM Integration:** Connects to Large Language Models (like Google Gemini) via `services/llm_service.py`.
+*   **Configurable Context:** Problem description and solution context loaded from `config/problem_context.yaml`.
+*   **Thread Safety:** Employs threading and locks for concurrent processing of agent thinking and actions.
+*   **Modular Design:** Core functionalities are separated into distinct components (Coordinator, Orchestrator, Managers, Selector, Executor) for better maintainability and extensibility.
 
 ## Technology Stack
 
-*   **Backend:** Python 3.9+, Flask, Flask-CORS
-*   **Frontend:** HTML5, CSS3, JavaScript (Vanilla)
+*   **Backend:** Python 3.10+, Flask, Flask-CORS
+*   **Database:** SQLite (managed via Flask context)
+*   **Frontend:** HTML5, CSS3, JavaScript (Vanilla), MathJax (for LaTeX rendering)
 *   **Configuration:** YAML (PyYAML)
 *   **Real-time:** Server-Sent Events (SSE)
-*   **LLM Interaction:** Abstracted via `services/llm_service.py` (requires specific LLM library like `openai`, `google-generativeai`, etc., depending on implementation)
+*   **LLM Interaction:** `google-generativeai` (or other, via `services/llm_service.py`)
+*   **Concurrency:** `threading`, `concurrent.futures`
 
 ## Setup and Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/nguyenduchuyiu/chatcollab_app
+    git clone https://github.com/nguyenduchuyiu/chatcollab_app 
     cd chatcollab_app
     ```
 
@@ -50,82 +56,78 @@ ChatCollab là một framework ứng dụng web được xây dựng bằng Flas
     ```bash
     pip install -r requirements.txt
     ```
+    *(Ensure `requirements.txt` includes Flask, Flask-CORS, google-generativeai, python-dotenv, PyYAML, requests, regex)*
 
 4.  **Configure Environment Variables:**
-    *   Copy the example environment file:
-        ```bash
-        cp .env.example .env
-        ```
-    *   Edit the `.env` file and add your LLM API key and any other necessary configuration for `LLMService`.
+    *   Create a `.env` file in the project root.
+    *   Add your Google Generative AI API key:
         ```dotenv
         # .env
-        # Example for OpenAI
-        LLM_API_KEY="your_openai_api_key_here"
-        # LLM_BASE_URL="your_custom_openai_compatible_endpoint" # Optional
-        # LLM_MODEL_NAME="gpt-3.5-turbo" # Default model used by LLMService if not in agents.yaml
-
-        # Example for other services might need different variables
-        # OTHER_LLM_API_KEY="your_other_key"
+        GOOGLE_API_KEY="YOUR_GOOGLE_API_KEY_HERE"
+        FLASK_SECRET_KEY="your-strong-random-secret-key-for-flash-messages" # Add a secret key
         ```
-    *   The `LLMService` class needs to be implemented to read these variables (e.g., using `os.getenv`).
 
-## Configuration
+5.  **Initialize the Database:**
+    *   Run the Flask command *once* to create the database schema:
+        ```bash
+        flask init-db
+        ```
+    *   This will create the `chat_sessions.db` file.
 
-1.  **Agents (`config/agents.yaml`):**
-    *   Define each agent by a unique name (e.g., `CoderAI`, `ManagerAI`).
-    *   Specify `role`, `goal`, `backstory` to form the agent's persona and system prompt.
-    *   Configure LLM parameters specific to the agent (e.g., `model`, `temperature`, `max_tokens`) which will be passed to `LLMService`. If not specified, `LLMService` might use defaults or environment variables.
+## Configuration Files
 
-2.  **Tasks (`config/tasks.yaml`):**
-    *   Define available tasks with a `description`.
-    *   Assign each task to an `agent` by name (matching a name in `agents.yaml`).
-    *   The agent's prompt includes its assigned tasks.
-
-3.  **LLM Service (`services/llm_service.py`):**
-    *   This class needs to be implemented to handle communication with your chosen LLM provider (OpenAI, Google Gemini, local model, etc.).
-    *   It should use the API key from environment variables and accept model/generation parameters.
+*   **`config/personas.yaml`:** Define AI agent personas (name, role, goal, backstory, tasks, model). The name here is used for display and matching.
+*   **`config/phases.yaml`:** Define the stages of the conversation. Each stage has a `name`, `description`, `tasks` (list of dicts with `id` and `description`), and `goals`. Task `id`s are used for tracking.
+*   **`config/problem_context.yaml`:** Defines the `problem` description and optionally the `solution` description, loaded at startup.
 
 ## Running the Application
 
 1.  **Ensure your virtual environment is activated.**
-2.  **Make sure the `.env` file is configured correctly.**
+2.  **Verify `.env` is configured and the database is initialized.**
 3.  **Start the Flask development server:**
     ```bash
     flask run
     # Or directly using python:
     # python app.py
     ```
-4.  **Open your web browser** and navigate to `http://127.0.0.1:5000` (or the address provided by Flask).
-5.  You will be prompted to enter your name.
-6.  Start chatting! Your messages will trigger the agents based on the `EventManager` logic.
+4.  **Open your web browser** and navigate to `http://127.0.0.1:5000` (or the address provided).
+5.  You will see a list of existing sessions (if any) and an option to start a new one.
+6.  Enter your name and click "Start New Chat".
+7.  You will be redirected to the chat interface for the newly created session.
 
-## How It Works
+## High-Level Workflow
 
-1.  **User Interaction:** The user enters a name (stored in localStorage) and sends messages via the web UI.
-2.  **Backend Receives Message:** The Flask `/send_message` endpoint receives the message text and the sender's name.
-3.  **Conversation Update:** The message is added to the `Conversation` log.
-4.  **Event Broadcast (User):** The `EventManager` broadcasts the new user message via SSE to all connected clients (including the sender's browser).
-5.  **Agent Triggering:** The `EventManager` also notifies all subscribed AI agents (except the sender, if it were an agent) about the new message.
-6.  **Agent Processing:** Each triggered agent (`BaseAgent` instance) runs its `process_new_event` method (typically in a separate thread):
-    *   Sets status to "thinking" (broadcast via SSE).
-    *   Calls `_think()`:
-        *   Retrieves recent history from `Conversation`.
-        *   Constructs a prompt using its system instruction, assigned tasks, conversation history, and potentially dynamic context.
-        *   Calls `_llm_service.generate()` with the prompt and agent-specific config.
-    *   Receives the response from the LLM.
-    *   Calls `_decide_action()` to determine if the response is actionable (not "NO_RESPONSE").
-    *   If actionable:
-        *   Sets status to "typing" (broadcast via SSE).
-        *   Simulates thinking/typing delays.
-        *   Adds its response message(s) to the `Conversation` log (using its `agent_id` as sender).
-        *   Broadcasts the new AI message(s) via `EventManager` (payload includes `agent_id` as `sender` and `agent_name` as `sender_name`).
-    *   Sets status back to "idle" (broadcast via SSE).
-7.  **Frontend Updates:** The JavaScript client receives `new_message` and `agent_status` events via SSE and updates the chat display and participant status list accordingly.
+1.  **User Accesses Root (`/`):** Sees the session list (`list_sessions.html`).
+2.  **User Starts New Chat:** Submits name via POST to `/chat/new`.
+    *   Backend creates a new session entry in the `sessions` table (with initial metadata).
+    *   Adds an initial system message event to the `events` table for this session.
+    *   Redirects user to `/chat/<new_session_id>`.
+3.  **User Enters Chat Page (`/chat/<session_id>`):**
+    *   Backend verifies session and renders `index.html`, passing session details and AI participant info.
+    *   Frontend (`chat_interface.js`) connects to `/stream/<session_id>`.
+    *   Frontend fetches initial history from `/history/<session_id>` and displays it.
+4.  **User Sends Message:** POST to `/send_message/<session_id>`.
+    *   Backend receives message, triggers `InteractionCoordinator.handle_external_trigger(session_id, ...)`.
+    *   `InteractionCoordinator`: Logs event to DB, broadcasts message via SSE to clients connected to *this session*, triggers `ResponseOrchestrator`.
+    *   `ResponseOrchestrator` (background thread, with app context):
+        *   Calls `ConversationPhaseManager.get_phase_context(session_id, ...)` (which gets DB state, calls LLM for signal, returns phase info + task status).
+        *   Calls `AgentManager.request_thinking(session_id, ..., task_status_prompt)` (spawns threads for each `AgentMind.think`).
+        *   `AgentMind.think` (background thread, with app context): Gets history/phase, builds prompt (incl. task status), calls LLM, returns thought/intention.
+        *   `ResponseOrchestrator`: Collects thinking results.
+        *   Calls `SpeakerSelector.select_speaker(session_id, ...)` (calls LLM evaluator, returns selected agent/action).
+        *   If an agent is selected: Calls `BehaviorExecutor.execute(session_id, ...)`.
+    *   `BehaviorExecutor` (spawns background thread):
+        *   Posts "typing" status via `InteractionCoordinator`.
+        *   Calls `_generate_final_message` (builds prompt, calls LLM).
+        *   Simulates typing delay (`time.sleep`).
+        *   Calls `InteractionCoordinator.handle_internal_trigger(session_id, ...)` (with app context) to log the agent's message to DB and broadcast via SSE.
+        *   Posts "idle" status via `InteractionCoordinator`.
+5.  **Frontend Updates:** Receives `new_message` and `agent_status` events via SSE for its specific session and updates the UI.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit pull requests or open issues. (Add more specific guidelines if desired).
+Contributions are welcome! Please open an issue to discuss major changes or submit a pull request for bug fixes/improvements.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. (Create a `LICENSE` file with the MIT license text).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

@@ -37,7 +37,7 @@ Bạn là một chuyên gia phân tích quy trình, tập trung vào việc quan
 ## Output Requirements:
 *   Chỉ trả về một đối tượng JSON duy nhất.
 *   JSON phải có hai khóa:
-    *   `explain`: Một chuỗi giải thích **ngắn gọn** (khoảng 5-15 từ) lý do bạn chọn tín hiệu đó, dựa trên bằng chứng từ hội thoại.
+    *   `explain`: Một chuỗi giải thích lý do bạn chọn tín hiệu đó, dựa trên bằng chứng từ hội thoại.
     *   `signal`: Một danh sách chứa đúng hai phần tử: một chuỗi số thứ tự (`"1"`, `"2"`, `"3"`, hoặc `"4"`) và chuỗi mô tả trạng thái tương ứng (`"Bắt đầu"`, `"Tiếp tục"`, `"Đưa ra tín hiệu kết thúc"`, `"Chuyển stage mới"`).
 *   **KHÔNG** bao gồm bất kỳ văn bản nào khác ngoài đối tượng JSON này.
 
@@ -212,8 +212,13 @@ class ConversationPhaseManager:
                 clean_response = raw_response.strip().replace("```json", "").replace("```", "").replace("{{", "{").replace("}}", "}")
                 parsed_output = json.loads(clean_response)
                 signal_data = parsed_output.get("signal")
-                if not isinstance(signal_data, list) or len(signal_data) != 2: raise ValueError("Invalid 'signal' format.")
-                signal_code, signal_text = signal_data
+                
+                if isinstance(signal_data, list) or len(signal_data) != 2:
+                    signal_code, signal_text = signal_data
+                else:
+                    signal_code, signal_text = None, None
+                    print("Error signal!")
+                    
                 determined_signal = signal_text
                 print(f"--- PHASE_MGR [{session_id}]: LLM Signal: {determined_signal} ({signal_code})")
 

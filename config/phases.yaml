@@ -4,7 +4,7 @@
   name: "Tìm hiểu đề bài."
   description: "Tìm hiểu nội dung đề bài..."
   tasks:
-    - id: "1.1" # Unique ID: phase.task_index
+    - id: "1.1"
       description: "Tìm hiểu bài toán cho những gì? Đâu là ẩn? Đâu là dữ liệu? và Bài toán yêu cầu tìm hay chứng minh điều gì? (Chỉ cần nêu và nhận xét chứ không cần đi chi tiết vào)"
     - id: "1.2"
       description: "Khi đã giải quyết được câu các nhiệm vụ trên và nắm được các mục tiêu, đề nghị cả nhóm sang bước mới là \"Lên kế hoạch\"."
@@ -29,7 +29,7 @@
   description: "Thực hiện cụ thể các bước làm..."
   tasks:
     - id: "3.1"
-      description: "Bước 1: Tìm Tập Xác Định D = R \\ {-1}" # Example breakdown
+      description: "Bước 1: Tìm Tập Xác Định D = R \\ {-1}" 
     - id: "3.2"
       description: "Bước 2: Tính Đạo Hàm f'(x) = 2/(x+1)^2"
     - id: "3.3"
@@ -40,7 +40,7 @@
       description: "Bước 5: Lập Bảng Biến Thiên"
     - id: "3.6"
       description: "Bước 6: Kết Luận Tính Đơn Điệu"
-    - id: "3.7" # Task for transition
+    - id: "3.7" 
       description: "Khi đã giải quyết được đầy đủ các bước làm của lời giải trên, đề nghị cả nhóm sang quá trình cuối là \"Kết luận và dánh giá cả bài làm\"."
   goals:
     - "Tính đạo hàm và xét dấu đúng."
