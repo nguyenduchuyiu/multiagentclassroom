@@ -1,133 +1,123 @@
-# ChatCollab Refactored - Multi-Agent Collaborative Chat Framework
+# MultiAgentClassroom - A Multi-Agent Framework for Interactive Learning & Discussion
 
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Flask Version](https://img.shields.io/badge/flask-2.x%2B-green.svg)](https://flask.palletsprojects.com/)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE) <!-- Add a LICENSE file -->
+**MultiAgentClassroom** is a Flask-based web application that creates a dynamic **virtual learning environment**. It enables real-time, structured discussions between **multiple AI agents** (acting as tutors, peers, or provocateurs) and human students. The framework is designed not just for collaborative problem-solving, but to facilitate **pedagogically-driven interactions**, including instruction, guided discovery, and reasoned debate. The core strength lies in its sophisticated **multi-agent system** that can be configured to simulate diverse classroom dynamics.
 
-ChatCollab is a web application framework built with Flask, designed to simulate and facilitate structured, collaborative problem-solving conversations between multiple AI agents and a human user. Agents, defined by personas and tasks in YAML files, interact within distinct conversation phases, guided by an event-driven architecture. The system uses an external LLM service for agent intelligence and real-time Server-Sent Events (SSE) for UI updates. Session management with database persistence allows users to create and revisit conversations.
+---
 
-## Key Concepts & Features
+## Core Multi-Agent Architecture for Educational Interactions
 
-*   **Event-Driven Architecture:** Core interactions are managed through triggers and events handled by the `InteractionCoordinator`.
-*   **Multi-Agent Collaboration:** Supports multiple AI agents defined in `config/personas.yaml`.
-*   **Structured Conversation Flow:** Utilizes a `ConversationPhaseManager` to guide the discussion through predefined stages (defined in `config/phases.yaml`) based on the problem context and conversation history. Task completion within phases can be tracked.
-*   **Sophisticated Agent Logic (`AgentMind`):** Each agent performs an "inner thought" process based on its persona, conversation history, current phase, and assigned tasks before deciding to speak or listen.
-*   **Dynamic Speaker Selection (`SpeakerSelector`):** Evaluates agents' intentions to speak based on internal drive and external context appropriateness using LLM-based scoring, selecting the most suitable agent for the next turn.
-*   **Natural Interaction Simulation (`BehaviorExecutor`):** Executes agent actions (speaking) with simulated typing delays.
-*   **Session Management & Persistence:**
-    *   Users can create distinct chat sessions.
-    *   Sessions and event history are stored in an SQLite database (`chat_sessions.db`).
-    *   Allows revisiting past conversations.
-*   **Database Integration:** Uses Flask-SQLAlchemy patterns (via custom `database.py`) for managing the SQLite database.
-*   **Real-time Communication (SSE):** Server-Sent Events deliver new messages and agent status updates (`idle`, `thinking`, `typing`) instantly to the web interface.
-*   **LLM Integration:** Connects to Large Language Models (like Google Gemini) via `services/llm_service.py`.
-*   **Configurable Context:** Problem description and solution context loaded from `config/problem_context.yaml`.
-*   **Thread Safety:** Employs threading and locks for concurrent processing of agent thinking and actions.
-*   **Modular Design:** Core functionalities are separated into distinct components (Coordinator, Orchestrator, Managers, Selector, Executor) for better maintainability and extensibility.
+MultiAgentClassroom's architecture is designed to support rich educational experiences within its **multi-agent system**:
 
-## Technology Stack
+1.  **The Virtual Classroom Interface & Backend Support:**
+    *   The **Frontend** (HTML/CSS/JS) serves as the student's interactive portal to the **multi-agent learning environment**, presenting discussions, agent contributions, and learning progress in real-time via Server-Sent Events (SSE).
+    *   The **Flask Backend** functions as the central facilitator, managing learning sessions, routing student input to the **multi-agent teaching team**, and broadcasting instructional or debated responses from the agents.
 
-*   **Backend:** Python 3.10+, Flask, Flask-CORS
-*   **Database:** SQLite (managed via Flask context)
-*   **Frontend:** HTML5, CSS3, JavaScript (Vanilla), MathJax (for LaTeX rendering)
-*   **Configuration:** YAML (PyYAML)
-*   **Real-time:** Server-Sent Events (SSE)
-*   **LLM Interaction:** `google-generativeai` (or other, via `services/llm_service.py`)
-*   **Concurrency:** `threading`, `concurrent.futures`
+2.  **The Multi-Agent Pedagogical Interaction Cycle:**
+    *   **Initiating Learning & Context Setting:** Student input (a question, a statement, a solution attempt) or a pre-programmed instructional cue initiates the cycle. The **Conversation State Manager** (integrating the Phase Manager & History) establishes the current educational context (e.g., current learning objective, phase of discussion, prior student understanding) for all participating AI agents.
+    *   **Concurrent Agent Pedagogical Reasoning:** This is where the **multi-agent system** models diverse teaching and learning roles. All configured AI agents, each operating under its YAML-defined **persona** (e.g., "Socratic Questioner," "Subject Matter Expert," "Supportive Peer," "Critical Thinker") and **instructional tasks**, independently use an LLM service. They formulate pedagogical responses, assess the student's input, and determine an initial intent to "speak" (to instruct, question, clarify, or challenge) or "listen" (to allow student reflection or peer interaction). This concurrent operation allows for adaptive and timely interventions.
+    *   **Coordinated Instructional Speaker Selection:** This vital **multi-agent coordination** phase ensures the most effective pedagogical intervention. The **Speaker Selector** (an LLM-assisted component) systematically evaluates the "speak" intentions proposed by active agents. It scores these proposals based on their alignment with the current learning objective, the student's needs, the agent's designated pedagogical role, and the overall instructional strategy. The agent with the most pedagogically sound and contextually relevant proposal is selected to interact with the student.
+    *   **Delivering the Instructional/Debate Response:** The selected agent, guided by the `BehaviorExecutor` and LLM, constructs its message. This message is carefully aligned with its pedagogical persona and the specific instructional goal that led to its selection by the **multi-agent system**.
+    *   **Sharing Knowledge and Perspectives:** The chosen agent's response is distributed via the **Interaction Coordinator** and SSE to the student and all other agents. This ensures that the student receives targeted input while the entire **multi-agent teaching team** remains aware of the evolving learning dialogue.
 
-## Setup and Installation
+3.  **Configuring the Educational Environment & Tracking Progress:**
+    *   **YAML Files (Defining Pedagogical Roles & Learning Flows):** These files are instrumental in shaping the **virtual classroom**.
+        *   `personas.yaml`: Define diverse AI agent roles (tutors, peers with different strengths, debate opponents) to create specific learning dynamics.
+        *   `phases.yaml`: Structure learning activities or debate stages, guiding the **multi-agent** and student interaction through a defined pedagogical sequence.
+        *   `problem_context.yaml`: Provides the subject matter, case study, or debate topic for the learning session.
+    *   **SQLite Database:** Serves as a record of student-agent interactions, learning pathways, and discussion history, potentially for later review or assessment.
+    *   **Environment Variables:** Securely manage API credentials.
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/nguyenduchuyiu/chatcollab_app 
-    cd chatcollab_app
+This cyclical process allows the **multi-agent system** to facilitate a structured, interactive, and adaptive learning experience, where AI agents contribute according to their defined pedagogical roles to guide and challenge the student.
+
+---
+
+## Guide to Designing Your Multi-Agent Learning Environment via YAML
+
+MultiAgentClassroom's YAML configuration empowers educators and designers to create tailored **virtual classroom** experiences:
+
+1.  **`config/personas.yaml` (Crafting Your AI Teaching Team & Student Peers):**
+    *   Define your **multiple AI agents** to fulfill specific educational roles:
+        *   `name`: Agent identifier.
+        *   `role`: Pedagogical function (e.g., "Math Tutor," "History Debater," "Socratic Guide," "Peer Collaborator").
+        *   `goal`: The primary educational objective for this agent (e.g., "To foster critical thinking," "To explain core concepts clearly," "To encourage student participation").
+        *   `backstory`: Defines its communication style (e.g., "inquisitive, patient," "analytical, direct") and personality.
+        *   `tasks`: Specific instructional strategies or types of interactions this agent will employ (e.g., "Ask probing questions," "Provide worked examples," "Offer counter-arguments," "Summarize student points").
+
+    *Example Snippet for a Pedagogical Multi-Agent Setup:*
+    ```yaml
+    SocraticTutor:
+      role: "Guides students through questioning to discover answers themselves."
+      goal: "To enhance critical thinking and self-discovery."
+      backstory:
+        style: "Inquisitive, patient, avoids giving direct answers."
+      tasks: |
+        - Ask probing questions related to the student's statement.
+        - Prompt student to elaborate on their reasoning.
+        - Highlight inconsistencies or assumptions in student's logic.
+    ConceptExplainerAgent:
+      role: "Clearly explains complex concepts related to the subject."
+      goal: "To ensure foundational understanding of key topics."
+      # ... other persona details
     ```
 
-2.  **Create and activate a virtual environment (recommended):**
+2.  **`config/phases.yaml` (Structuring Learning Activities & Discussions):**
+    *   Outline the stages of a learning module, debate, or problem-solving session. Each phase guides the **multi-agent teaching team** and the student:
+        *   `stage`: Phase ID.
+        *   `name`: Title of the learning stage (e.g., "Introduction to Topic," "Deep Dive Analysis," "Argument Formulation," "Rebuttal Round").
+        *   `description`: What the student and **AI agents** aim to accomplish.
+        *   `tasks`: Specific learning activities or discussion points.
+        *   `goals`: Learning outcomes or objectives for the phase.
+
+3.  **`config/problem_context.yaml` (Defining the Learning Material):**
+    *   Provides the subject matter content, case study, debate prompt, or problem that the **multi-agent system** and student will engage with.
+
+**Key Educational Advantage:** By modifying these YAML files, educators can design diverse **multi-agent learning scenarios**—from one-on-one AI tutoring to complex group debates with AI peers—tailoring the experience to specific learning objectives and pedagogical approaches without altering the core application.
+
+---
+
+## Installation & Running Your Multi-Agent Learning Environment
+
+1.  **Clone Repository**
+
+    ```bash
+    git clone https://github.com/nguyenduchuyiu/multiagentclassroom.git
+    cd multiagentclassroom # <--- Updated directory name assumption
+    ```
+
+2.  **Set Up Virtual Environment**
+
     ```bash
     python -m venv venv
-    # On Windows
-    .\venv\Scripts\activate
-    # On macOS/Linux
-    source venv/bin/activate
     ```
+    Activate:
+    *   macOS/Linux: `source venv/bin/activate`
+    *   Windows: `.\venv\Scripts\activate`
 
-3.  **Install dependencies:**
+3.  **Install Dependencies**
+
     ```bash
     pip install -r requirements.txt
     ```
-    *(Ensure `requirements.txt` includes Flask, Flask-CORS, google-generativeai, python-dotenv, PyYAML, requests, regex)*
 
-4.  **Configure Environment Variables:**
-    *   Create a `.env` file in the project root.
-    *   Add your Google Generative AI API key:
+4.  **Configure Environment Variables**
+    *   Copy `.env.example` to `.env`: `cp .env.example .env`
+    *   Edit `.env` with your credentials:
         ```dotenv
-        # .env
-        GOOGLE_API_KEY="YOUR_GOOGLE_API_KEY_HERE"
-        FLASK_SECRET_KEY="your-strong-random-secret-key-for-flash-messages" # Add a secret key
+        GOOGLE_API_KEY="YOUR_GOOGLE_API_KEY"
+        FLASK_SECRET_KEY="your-very-secret-flask-key"
         ```
 
-5.  **Initialize the Database:**
-    *   Run the Flask command *once* to create the database schema:
-        ```bash
-        flask init-db
-        ```
-    *   This will create the `chat_sessions.db` file.
+5.  **Initialize the Database**
+    (First time setup or schema changes)
+    ```bash
+    flask init-db
+    ```
 
-## Configuration Files
+6.  **Run the Application**
 
-*   **`config/personas.yaml`:** Define AI agent personas (name, role, goal, backstory, tasks, model). The name here is used for display and matching.
-*   **`config/phases.yaml`:** Define the stages of the conversation. Each stage has a `name`, `description`, `tasks` (list of dicts with `id` and `description`), and `goals`. Task `id`s are used for tracking.
-*   **`config/problem_context.yaml`:** Defines the `problem` description and optionally the `solution` description, loaded at startup.
-
-## Running the Application
-
-1.  **Ensure your virtual environment is activated.**
-2.  **Verify `.env` is configured and the database is initialized.**
-3.  **Start the Flask development server:**
     ```bash
     flask run
-    # Or directly using python:
-    # python app.py
     ```
-4.  **Open your web browser** and navigate to `http://127.0.0.1:5000` (or the address provided).
-5.  You will see a list of existing sessions (if any) and an option to start a new one.
-6.  Enter your name and click "Start New Chat".
-7.  You will be redirected to the chat interface for the newly created session.
+    Access via your browser at `http://127.0.0.1:5000`.
 
-## High-Level Workflow
-
-1.  **User Accesses Root (`/`):** Sees the session list (`list_sessions.html`).
-2.  **User Starts New Chat:** Submits name via POST to `/chat/new`.
-    *   Backend creates a new session entry in the `sessions` table (with initial metadata).
-    *   Adds an initial system message event to the `events` table for this session.
-    *   Redirects user to `/chat/<new_session_id>`.
-3.  **User Enters Chat Page (`/chat/<session_id>`):**
-    *   Backend verifies session and renders `index.html`, passing session details and AI participant info.
-    *   Frontend (`chat_interface.js`) connects to `/stream/<session_id>`.
-    *   Frontend fetches initial history from `/history/<session_id>` and displays it.
-4.  **User Sends Message:** POST to `/send_message/<session_id>`.
-    *   Backend receives message, triggers `InteractionCoordinator.handle_external_trigger(session_id, ...)`.
-    *   `InteractionCoordinator`: Logs event to DB, broadcasts message via SSE to clients connected to *this session*, triggers `ResponseOrchestrator`.
-    *   `ResponseOrchestrator` (background thread, with app context):
-        *   Calls `ConversationPhaseManager.get_phase_context(session_id, ...)` (which gets DB state, calls LLM for signal, returns phase info + task status).
-        *   Calls `AgentManager.request_thinking(session_id, ..., task_status_prompt)` (spawns threads for each `AgentMind.think`).
-        *   `AgentMind.think` (background thread, with app context): Gets history/phase, builds prompt (incl. task status), calls LLM, returns thought/intention.
-        *   `ResponseOrchestrator`: Collects thinking results.
-        *   Calls `SpeakerSelector.select_speaker(session_id, ...)` (calls LLM evaluator, returns selected agent/action).
-        *   If an agent is selected: Calls `BehaviorExecutor.execute(session_id, ...)`.
-    *   `BehaviorExecutor` (spawns background thread):
-        *   Posts "typing" status via `InteractionCoordinator`.
-        *   Calls `_generate_final_message` (builds prompt, calls LLM).
-        *   Simulates typing delay (`time.sleep`).
-        *   Calls `InteractionCoordinator.handle_internal_trigger(session_id, ...)` (with app context) to log the agent's message to DB and broadcast via SSE.
-        *   Posts "idle" status via `InteractionCoordinator`.
-5.  **Frontend Updates:** Receives `new_message` and `agent_status` events via SSE for its specific session and updates the UI.
-
-## Contributing
-
-Contributions are welcome! Please open an issue to discuss major changes or submit a pull request for bug fixes/improvements.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
