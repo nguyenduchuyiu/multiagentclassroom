@@ -142,7 +142,6 @@ class AgentMind:
                 previous_thoughts=self._format_previous_thoughts(),
                 history=self._format_history_for_prompt(history)
             )
-            print(prompt)
             return prompt
         except KeyError as e:
             print(f"!!! ERROR [AgentMind - {self.persona.name}]: Missing key in AGENT_INNER_THOUGHTS_PROMPT format: {e}")

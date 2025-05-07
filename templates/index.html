@@ -65,17 +65,28 @@
                 </div>
                 <!-- Progress -->
                 <div>
-                    <div class="section-title"><i class="fas fa-chart-line"></i> Tiến Trình</div>
+                    <div class="section-title"><i class="fas fa-tasks"></i> Tiến Trình</div>
                     <div class="stage-info">
-                        <div class="current-stage" id="currentStage">Khởi tạo</div>
-                        <div class="stage-description" id="stageDescription">Bắt đầu cuộc trò chuyện</div>
-                        <div class="stage-progress">
-                            <div class="progress-container"><span>1</span> <span>2</span> <span>3</span> <span>4</span></div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-                            </div>
+                        <span id="currentStage">Đang tải giai đoạn...</span>
+                        <p id="stageDescription">Mô tả giai đoạn sẽ xuất hiện ở đây.</p>
+                    </div>
+                    <div class="stage-progress">
+                        <div class="progress-label" id="progressLabel">
+                            Giai đoạn 1/4
+                            <span id="progressPercent" style="float:right"></span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
                         </div>
                     </div>
+                    <!-- NEW: Sub-tasks list -->
+                    <div class="sub-tasks-section">
+                        <h4 class="sub-tasks-title">Nhiệm vụ giai đoạn hiện tại:</h4>
+                        <ul class="sub-tasks-list" id="subTasksList">
+                            <li class="no-tasks">Đang tải nhiệm vụ...</li>
+                        </ul>
+                    </div>
+                    <!-- END NEW -->
                 </div>
 
                 <!-- Participants -->

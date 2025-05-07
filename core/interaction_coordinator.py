@@ -45,7 +45,9 @@ class InteractionCoordinator:
                      print(f"--- INT_COORD [{session_id}]: No clients left, removed session entry.")
 
     def post_event_to_clients(self, session_id: str, event_type: str, source: str, content: Dict, is_internal: bool = False, metadata: Optional[Dict] = None):
-        if event_type not in ["new_message", "agent_status", "system_message", "error"]:
+        allowed_event_types = ["new_message", "agent_status", "system_message", "error", "stage_update"]
+        if event_type not in allowed_event_types:
+             print(f"--- INT_COORD [{session_id}]: WARN - Event type '{event_type}' not in allowed list for SSE. Skipping broadcast.")
              return
 
         print(f"--- INT_COORD [{session_id}]: Broadcasting SSE event: Type={event_type}, Source={source}")

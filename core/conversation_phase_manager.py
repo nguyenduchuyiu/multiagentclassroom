@@ -20,6 +20,9 @@ Phân tích **lịch sử cuộc hội thoại** gần đây của nhóm, đối
 2.  Cung cấp một tín hiệu (`signal`) rõ ràng về trạng thái này (Bắt đầu, Tiếp tục, Cần kết thúc, Chuyển mới) kèm giải thích ngắn gọn (`explain`).
 3.  Xác định danh sách ID của các nhiệm vụ (`completed_task_ids`) từ giai đoạn hiện tại mà nhóm dường như đã hoàn thành dựa trên nội dung thảo luận.
 
+## Lưu ý quan trọng:
+**Chỉ được coi là hoàn thành giai đoạn hiện tại và chuyển sang giai đoạn tiếp theo khi TẤT CẢ các nhiệm vụ (task) của giai đoạn hiện tại đã hoàn thành** (tức là tất cả ID nhiệm vụ đều nằm trong `completed_task_ids`). Nếu còn bất kỳ nhiệm vụ nào chưa hoàn thành, không được chọn tín hiệu chuyển stage mới.
+
 ## Backstory:
 Bạn là một chuyên gia phân tích quy trình, tập trung vào việc quan sát và đánh giá luồng công việc cộng tác. Bạn đọc kỹ mô tả các giai đoạn, mục tiêu, và nhiệm vụ của từng bước (bao gồm ID của từng nhiệm vụ) được cung cấp. Bạn lắng nghe cẩn thận (phân tích văn bản hội thoại) để tìm kiếm bằng chứng về việc nhóm đang thực hiện nhiệm vụ nào, đã hoàn thành mục tiêu của giai đoạn hiện tại chưa, và có dấu hiệu chuyển sang giai đoạn tiếp theo hay không. Bạn **không** tham gia giải Toán, chỉ tập trung vào trạng thái quy trình và việc hoàn thành các nhiệm vụ được liệt kê.
 
@@ -35,8 +38,8 @@ Bạn là một chuyên gia phân tích quy trình, tập trung vào việc quan
     *   Bắt đầu đề cập/thực hiện các nhiệm vụ thuộc về giai đoạn *tiếp theo* (ngay cả khi mô tả giai đoạn hiện tại chưa cập nhật).
     *   Thảo luận lan man, không còn tập trung vào nhiệm vụ của **giai đoạn hiện tại** sau khi có vẻ đã hoàn thành.
 4.  **Xác định Trạng thái (Ưu tiên kiểm tra từ trên xuống dưới):**
-    *   **(4) Chuyển stage mới:** Nếu có bằng chứng rõ ràng nhóm đã *bắt đầu* thảo luận hoặc thực hiện nhiệm vụ của giai đoạn *kế tiếp*. => Chọn tín hiệu `["4", "Chuyển stage mới"]`.
-    *   **(3) Đưa ra tín hiệu kết thúc:** Nếu bằng chứng cho thấy nhóm *đã hoàn thành các mục tiêu/nhiệm vụ chính* của **giai đoạn hiện tại** VÀ *chưa* có dấu hiệu rõ ràng bắt đầu giai đoạn tiếp theo, HOẶC thảo luận bắt đầu lan man/dừng lại sau khi có vẻ đã xong. => Chọn tín hiệu `["3", "Đưa ra tín hiệu kết thúc"]`.
+    *   **(4) Chuyển stage mới:** **Chỉ chọn khi TẤT CẢ các nhiệm vụ của giai đoạn hiện tại đã hoàn thành** (tức là tất cả ID nhiệm vụ đều nằm trong `completed_task_ids`) **VÀ** có bằng chứng rõ ràng nhóm đã *bắt đầu* thảo luận hoặc thực hiện nhiệm vụ của giai đoạn *kế tiếp*. => Chọn tín hiệu `["4", "Chuyển stage mới"]`.
+    *   **(3) Đưa ra tín hiệu kết thúc:** Nếu bằng chứng cho thấy nhóm *đã hoàn thành tất cả các nhiệm vụ* của **giai đoạn hiện tại** (tức là tất cả ID nhiệm vụ đều nằm trong `completed_task_ids`) **nhưng chưa có dấu hiệu rõ ràng bắt đầu giai đoạn tiếp theo**, HOẶC thảo luận bắt đầu lan man/dừng lại sau khi đã xong. => Chọn tín hiệu `["3", "Đưa ra tín hiệu kết thúc"]`.
     *   **(1) Bắt đầu:** Nếu bằng chứng cho thấy nhóm *vừa mới bắt đầu* thảo luận/thực hiện các nhiệm vụ đặc trưng của **giai đoạn hiện tại** một cách rõ ràng. => Chọn tín hiệu `["1", "Bắt đầu"]`.
     *   **(2) Tiếp tục:** Nếu không rơi vào các trường hợp trên, tức là nhóm đang *trong quá trình* thảo luận, thực hiện các nhiệm vụ của **giai đoạn hiện tại** một cách tích cực. => Chọn tín hiệu `["2", "Tiếp tục"]`.
 5.  **Xác định Nhiệm vụ Hoàn thành (`completed_task_ids`):** Dựa trên `{history}` và phân tích ở bước 3 & 4, liệt kê ID của các nhiệm vụ từ **danh sách nhiệm vụ của giai đoạn hiện tại** mà nhóm đã hoàn thành. Trả về dưới dạng danh sách các chuỗi ID nhiệm vụ (ví dụ: `["1.1", "1.2"]`). Nếu không có, trả về `[]`. Chỉ xem xét các nhiệm vụ của **giai đoạn hiện tại được cung cấp**.
@@ -117,15 +120,27 @@ class ConversationPhaseManager:
 
         if not state_row:
             print(f"!!! WARN [PhaseManager - {session_id}]: Session not found in DB. Defaulting state.")
-            return "1", {} 
+            return "1", {}
 
         last_known_phase_id = state_row['current_phase_id'] or "1"
 
-        metadata = state_row['metadata'] 
-        if metadata is None: 
-            metadata = {}
-            
-        completed_tasks_map = metadata.get("completed_tasks", {}) 
+        raw_db_metadata = state_row['metadata'] # Changed variable name for clarity
+        metadata = {}
+        if raw_db_metadata:
+            if isinstance(raw_db_metadata, dict):
+                # If it's already a dict, use it directly
+                metadata = raw_db_metadata
+            elif isinstance(raw_db_metadata, (str, bytes, bytearray)):
+                # If it's a string (or bytes), try to parse it
+                try:
+                    metadata = json.loads(raw_db_metadata)
+                except json.JSONDecodeError:
+                    print(f"!!! WARN [PhaseManager - {session_id}]: Could not decode metadata JSON: '{raw_db_metadata}'. Defaulting.")
+            else:
+                # Handle unexpected types
+                print(f"!!! WARN [PhaseManager - {session_id}]: Metadata from DB is of unexpected type: {type(raw_db_metadata)}. Defaulting.")
+        
+        completed_tasks_map = metadata.get("completed_tasks", {})
 
         return last_known_phase_id, completed_tasks_map
 
@@ -133,20 +148,37 @@ class ConversationPhaseManager:
         """Updates current_phase_id and completed_tasks in DB metadata."""
         db = get_db()
         current_metadata_row = db.execute("SELECT metadata FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
-        existing_metadata = current_metadata_row['metadata'] if current_metadata_row and current_metadata_row['metadata'] else {}
+        
+        existing_metadata = {}
+        if current_metadata_row and current_metadata_row['metadata']:
+            raw_current_db_metadata = current_metadata_row['metadata'] # Changed variable name
+            if isinstance(raw_current_db_metadata, dict):
+                # If it's already a dict, use it directly
+                existing_metadata = raw_current_db_metadata
+            elif isinstance(raw_current_db_metadata, (str, bytes, bytearray)):
+                # If it's a string (or bytes), try to parse it
+                try:
+                    existing_metadata = json.loads(raw_current_db_metadata)
+                except json.JSONDecodeError:
+                    print(f"!!! WARN [PhaseManager - {session_id}]: Could not decode existing metadata JSON during update: '{raw_current_db_metadata}'. Starting fresh.")
+            else:
+                # Handle unexpected types
+                print(f"!!! WARN [PhaseManager - {session_id}]: Existing metadata from DB is of unexpected type during update: {type(raw_current_db_metadata)}. Starting fresh.")
 
-        existing_metadata["current_phase_id"] = new_phase_id_to_set_in_db 
+        existing_metadata["current_phase_id"] = new_phase_id_to_set_in_db
         existing_metadata["completed_tasks"] = completed_tasks_map_to_save
         
         try:
+            # metadata column expects a dictionary, which will be converted to JSON string by the adapter
             db.execute(
                 "UPDATE sessions SET current_phase_id = ?, metadata = ? WHERE session_id = ?",
-                (new_phase_id_to_set_in_db, existing_metadata, session_id) 
+                (new_phase_id_to_set_in_db, existing_metadata, session_id)
             )
             db.commit()
             print(f"--- PHASE_MGR [{session_id}]: Updated session state in DB - Phase: {new_phase_id_to_set_in_db}, Tasks: {completed_tasks_map_to_save}")
         except Exception as e:
             print(f"!!! ERROR [PhaseManager - {session_id}]: Failed to update session state in DB: {e}")
+            traceback.print_exc()
             db.rollback()
 
     def _format_task_status_for_prompt(self, phase_id_for_status: str, completed_tasks_map: Dict[str, List[str]]) -> str:
@@ -299,16 +331,30 @@ class ConversationPhaseManager:
             task_status_prompt = self._format_task_status_for_prompt(final_phase_id_for_context, final_completed_tasks_map_for_context)
 
             final_phase_data_def = self.phases.get(final_phase_id_for_context, {})
+
+            # Prepare structured tasks for UI display based on the final state
+            tasks_for_ui_display = []
+            defined_tasks_in_final_phase = final_phase_data_def.get('tasks', [])
+            print(f"--- PHASE_MGR [{session_id}]: Preparing tasks for UI. Final Phase ID: {final_phase_id_for_context}")
+            print(f"--- PHASE_MGR [{session_id}]: Final phase data definition from config: {final_phase_data_def}")
+            print(f"--- PHASE_MGR [{session_id}]: Raw defined tasks for this phase from config: {defined_tasks_in_final_phase}")
+            completed_task_ids_in_final_phase = final_completed_tasks_map_for_context.get(final_phase_id_for_context, [])
+            
+            for task_dict in defined_tasks_in_final_phase:
+                tasks_for_ui_display.append({
+                    "id": task_dict['id'],
+                    "description": task_dict['description'],
+                    "completed": task_dict['id'] in completed_task_ids_in_final_phase
+                })
+
             return {
                 "id": final_phase_id_for_context,
-                # "signal": final_signal_for_context, # Removed as per user request
                 "name": final_phase_data_def.get('name', f'Unknown Phase {final_phase_id_for_context}'),
                 "description": final_phase_data_def.get('description', ''),
-                "tasks": final_phase_data_def.get('tasks', []), 
-                "_task_map": final_phase_data_def.get('_task_map', {}), 
+                "tasks_for_display": tasks_for_ui_display,
                 "goals": final_phase_data_def.get('goals', []),
-                "task_status_prompt": task_status_prompt, 
-                # "signal_explanation": llm_explanation # Removed as per user request
+                "task_status_prompt": task_status_prompt,
+                "completed_tasks_map": final_completed_tasks_map_for_context
             }
 
     def _format_history_for_prompt(self, history: List[Dict], count=15) -> str:
@@ -450,5 +496,28 @@ class ConversationPhaseManager:
                  return {"id": "?", "last_signal": "Error", "name": "Processing Error"}
 
     def get_current_phase(self, session_id: str, conversation_history: ConversationHistory) -> Dict[str, Any]:
-        """Determines the current phase state for the session."""
-        return self._determine_phase_state(session_id, conversation_history)
+        """
+        Determines the current phase state for the session.
+        This is a simplified version, prefer get_phase_context for full updates.
+        """
+        with self.app.app_context():
+            current_phase_id, completed_tasks_map = self._get_session_state(session_id)
+            phase_data = self.phases.get(current_phase_id, {})
+            
+            tasks_for_display = []
+            defined_tasks = phase_data.get('tasks', [])
+            completed_ids = completed_tasks_map.get(current_phase_id, [])
+            for task_dict in defined_tasks:
+                tasks_for_display.append({
+                    "id": task_dict['id'],
+                    "description": task_dict['description'],
+                    "completed": task_dict['id'] in completed_ids
+                })
+
+            return {
+                "id": current_phase_id,
+                "name": phase_data.get('name', f'Unknown Phase {current_phase_id}'),
+                "description": phase_data.get('description', ''),
+                "tasks_for_display": tasks_for_display, # Added for consistency
+                "goals": phase_data.get('goals', []),
+            }

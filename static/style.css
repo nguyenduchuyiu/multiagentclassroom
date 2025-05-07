@@ -359,29 +359,66 @@ header {
 }
 
 .stage-progress {
-    margin-top: 12px;
+    margin: 15px 0;
+    position: relative;
 }
 
-.progress-container {
+.progress-label {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: var(--text-color-secondary);
     display: flex;
     justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: 0.8rem;
-    color: #777;
 }
 
 .progress-bar {
-    width: 100%;
-    height: 5px;
+    height: 8px;
     background-color: #e0e0e0;
-    border-radius: 2.5px;
+    border-radius: 4px;
     overflow: hidden;
+    position: relative;
 }
 
 .progress-fill {
     height: 100%;
     background-color: var(--primary-color);
-    transition: width 0.4s ease-out;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+/* Tooltip khi hover vào progress bar */
+.progress-bar:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+    margin-bottom: 5px;
+    z-index: 10;
+}
+
+.progress-bar[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    bottom: 120%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.95em;
+    white-space: pre-line;
+    z-index: 10;
+    pointer-events: none;
+    min-width: 180px;
+    text-align: left;
 }
 
 .participants {
@@ -693,4 +730,110 @@ li.participant.status-typing {
 
 .problem-description p { /* Add margin to paragraphs if needed */
     margin-bottom: 0.5em;
+}
+
+.sub-tasks-section {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color-light);
+}
+
+.sub-tasks-title {
+    font-size: 0.9em;
+    color: var(--text-color-secondary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.sub-tasks-list {
+    list-style: none;
+    padding-left: 0;
+    font-size: 0.85em;
+}
+
+.sub-tasks-list li {
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    color: var(--text-color);
+}
+
+.sub-tasks-list li.completed .task-description {
+    text-decoration: line-through;
+    color: var(--text-color-disabled);
+}
+
+.sub-tasks-list li .task-status-icon {
+    margin-right: 8px;
+    font-size: 1em;
+    width: 16px;
+    text-align: center;
+}
+
+.sub-tasks-list li.completed .task-status-icon {
+    color: var(--success-color);
+}
+
+.sub-tasks-list li:not(.completed) .task-status-icon {
+    color: var(--text-color-disabled);
+}
+
+.sub-tasks-list li.no-tasks {
+    color: var(--text-color-secondary);
+    font-style: italic;
+}
+
+
+.progress-container span {
+    /* Style for your stage markers, e.g., padding, color */
+    padding: 0 10px;
+    color: var(--text-color-secondary);
+}
+
+.progress-container span.active-stage-marker {
+    font-weight: bold;
+    color: var(--primary-color); /* Or your theme's highlight color */
+}
+
+.progress-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    /* Optional: overflow-x for many stages */
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.progress-container span {
+    flex: 0 0 auto;
+    min-width: 18px;
+    text-align: center;
+    font-size: 0.95em;
+    color: var(--text-color-secondary);
+    padding: 0 4px;
+    cursor: pointer;
+    position: relative;
+}
+.progress-container span.active-stage-marker {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+.progress-container span[title]::after {
+    /* Optional: Tooltip styling if you want to show stage name on hover */
+    content: attr(title);
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 120%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    white-space: nowrap;
+    z-index: 10;
+}
+.progress-container span:hover[title]::after {
+    display: block;
 }

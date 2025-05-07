@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentStageEl = document.getElementById('currentStage');
     const stageDescriptionEl = document.getElementById('stageDescription');
     const progressFillEl = document.getElementById('progressFill');
+    const progressStageMarkersEl = document.getElementById('progressStageMarkers');
+    const subTasksListEl = document.getElementById('subTasksList');
+    const progressLabelEl = document.getElementById('progressLabel');
+    const progressBarEl = document.querySelector('.progress-bar');
+    const progressPercentEl = document.getElementById('progressPercent');
 
     // --- State Variables ---
     let messageCounter = 0;
@@ -144,19 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         messageCounter++;
         if (messageCountEl) messageCountEl.textContent = messageCounter;
-
-        // Update stage display (optional)
-        if (eventData.metadata?.phase_id && currentStageEl && stageDescriptionEl && progressFillEl) {
-             const phaseId = parseInt(eventData.metadata.phase_id, 10);
-             if (!isNaN(phaseId)) {
-                 const phaseName = eventData.metadata.phase_name || `Giai đoạn ${phaseId}`;
-                 const phaseDesc = eventData.metadata.phase_description || '';
-                 currentStageEl.textContent = phaseName;
-                 stageDescriptionEl.textContent = phaseDesc;
-                 const progressPercent = (phaseId / 4) * 100; // Assuming 4 stages
-                 progressFillEl.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
-             }
-        }
     }
 
     function updateParticipantDisplay() {
@@ -368,6 +360,98 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         eventSource.addEventListener('message', e => { /* Handle keep-alive */ });
+
+        eventSource.addEventListener('stage_update', e => {
+            try {
+                const eventData = JSON.parse(e.data);
+                const phaseInfo = eventData.content;
+
+                console.log("[STAGE_UPDATE] Received phaseInfo:", phaseInfo);
+
+                if (phaseInfo && typeof phaseInfo.id !== 'undefined' && typeof phaseInfo.name !== 'undefined') {
+                    if (currentStageEl) currentStageEl.textContent = phaseInfo.name;
+                    if (stageDescriptionEl) stageDescriptionEl.textContent = phaseInfo.description || 'Không có mô tả cho giai đoạn này.';
+
+                    // Update progress bar fill
+                    if (progressFillEl && typeof phaseInfo.progress_bar_percent === 'number') {
+                        const progressPercent = phaseInfo.progress_bar_percent;
+                        console.log(`[STAGE_UPDATE] Progress bar: Using weighted progress_bar_percent = ${progressPercent.toFixed(2)}%`);
+                        progressFillEl.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
+                        
+                        // NEW: Hiển thị phần trăm hoàn thành
+                        if (progressPercentEl) {
+                            progressPercentEl.textContent = `(${Math.round(progressPercent)}%)`;
+                        }
+                        
+                        // NEW: Update progress label
+                        if (progressLabelEl && Array.isArray(phaseInfo.main_stage_markers)) {
+                            const totalStages = phaseInfo.main_stage_markers.length;
+                            const currentStageIndex = phaseInfo.main_stage_markers.findIndex(m => m.id === phaseInfo.id);
+                            const currentStageNum = currentStageIndex !== -1 ? currentStageIndex + 1 : '?';
+                            
+                            progressLabelEl.textContent = `Giai đoạn ${currentStageNum}/${totalStages}: ${phaseInfo.name}`;
+                        }
+                        
+                        // NEW: Create tooltip for progress bar
+                        if (progressBarEl && Array.isArray(phaseInfo.main_stage_markers)) {
+                            let tooltipText = phaseInfo.main_stage_markers.map((marker, idx) => {
+                                const prefix = marker.id === phaseInfo.id ? '➤ ' : '';
+                                return `${prefix}${idx+1}. ${marker.name || 'Giai đoạn ' + marker.id}`;
+                            }).join('\n');
+                            progressBarEl.setAttribute('data-tooltip', tooltipText);
+                        }
+                    }
+
+                    if (progressStageMarkersEl && Array.isArray(phaseInfo.main_stage_markers)) {
+                        progressStageMarkersEl.innerHTML = '';
+                        const n = phaseInfo.main_stage_markers.length;
+                        phaseInfo.main_stage_markers.forEach((marker, idx) => {
+                            const markerEl = document.createElement('span');
+                            markerEl.title = marker.name || marker.id; // Tooltip
+                            let leftPercent = 0;
+                            if (n === 1) {
+                                leftPercent = 0;
+                            } else {
+                                leftPercent = (idx) * 100 / (n - 1);
+                            }
+                            markerEl.style.left = `${leftPercent}%`;
+                            if (marker.id === phaseInfo.id) {
+                                markerEl.classList.add('active-stage-marker');
+                            }
+                            progressStageMarkersEl.appendChild(markerEl);
+                        });
+                    }
+
+                    if (subTasksListEl) {
+                        subTasksListEl.innerHTML = '';
+                        if (phaseInfo.tasks && Array.isArray(phaseInfo.tasks) && phaseInfo.tasks.length > 0) {
+                            phaseInfo.tasks.forEach(task => {
+                                const li = document.createElement('li');
+                                li.classList.add(task.completed ? 'completed' : 'pending');
+                                const icon = document.createElement('span');
+                                icon.classList.add('task-status-icon');
+                                icon.innerHTML = task.completed ? '&#10004;' : '&#9711;';
+                                const desc = document.createElement('span');
+                                desc.classList.add('task-description');
+                                desc.textContent = task.description;
+                                li.appendChild(icon);
+                                li.appendChild(desc);
+                                subTasksListEl.appendChild(li);
+                            });
+                        } else {
+                            const li = document.createElement('li');
+                            li.classList.add('no-tasks');
+                            li.textContent = 'Giai đoạn này không có nhiệm vụ cụ thể.';
+                            subTasksListEl.appendChild(li);
+                        }
+                    }
+                } else {
+                    console.warn("Received invalid stage_update data from SSE:", eventData);
+                }
+            } catch (err) {
+                console.error('Error parsing stage_update event from SSE:', err, e.data);
+            }
+        });
 
     } // End connectSSE
 
