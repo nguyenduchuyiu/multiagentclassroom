@@ -6,6 +6,12 @@ PyYAML==6.0.2
 PyYAML==6.0.2
 Requests==2.32.3
 tenacity==9.1.2
-gunicorn
 regex
 google-genai
+gevent==25.4.2
+greenlet==3.2.1
+gunicorn==23.0.0
+packaging==25.0
+setuptools==80.3.1
+zope-event==5.0
+zope-interface==7.2

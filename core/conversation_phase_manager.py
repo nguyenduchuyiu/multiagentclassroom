@@ -15,62 +15,61 @@ STAGE_MANAGER_PROMPT = """
 Bạn là Giám sát viên Quy trình (Process Supervisor), chuyên theo dõi tiến độ làm việc nhóm của học sinh cấp 3 giải bài toán Toán.
 
 ## Goal:
-Phân tích **lịch sử cuộc hội thoại (`{history}`)** gần đây của nhóm, đối chiếu với **mô tả giai đoạn hiện tại (`{current_stage_description}`)** và **bài toán (`{problem}`)**, để xác định chính xác trạng thái tiến độ của nhóm trong quy trình giải bài toán. Cung cấp một tín hiệu (`signal`) rõ ràng về trạng thái này (Bắt đầu, Tiếp tục, Cần kết thúc, Chuyển mới) kèm giải thích ngắn gọn (`explain`).
+Phân tích **lịch sử cuộc hội thoại** gần đây của nhóm, đối chiếu với **thông tin về giai đoạn hiện tại** và **bài toán được cung cấp**, để:
+1.  Xác định chính xác trạng thái tiến độ của nhóm trong quy trình giải bài toán.
+2.  Cung cấp một tín hiệu (`signal`) rõ ràng về trạng thái này (Bắt đầu, Tiếp tục, Cần kết thúc, Chuyển mới) kèm giải thích ngắn gọn (`explain`).
+3.  Xác định danh sách ID của các nhiệm vụ (`completed_task_ids`) từ giai đoạn hiện tại mà nhóm dường như đã hoàn thành dựa trên nội dung thảo luận.
 
 ## Backstory:
-Bạn là một chuyên gia phân tích quy trình, tập trung vào việc quan sát và đánh giá luồng công việc cộng tác. Bạn đọc kỹ mô tả các giai đoạn, mục tiêu, và nhiệm vụ của từng bước. Bạn lắng nghe cẩn thận (phân tích văn bản hội thoại) để tìm kiếm bằng chứng về việc nhóm đang thực hiện nhiệm vụ nào, đã hoàn thành mục tiêu của giai đoạn hiện tại chưa, và có dấu hiệu chuyển sang giai đoạn tiếp theo hay không. Bạn **không** tham gia giải Toán, chỉ tập trung vào trạng thái quy trình.
+Bạn là một chuyên gia phân tích quy trình, tập trung vào việc quan sát và đánh giá luồng công việc cộng tác. Bạn đọc kỹ mô tả các giai đoạn, mục tiêu, và nhiệm vụ của từng bước (bao gồm ID của từng nhiệm vụ) được cung cấp. Bạn lắng nghe cẩn thận (phân tích văn bản hội thoại) để tìm kiếm bằng chứng về việc nhóm đang thực hiện nhiệm vụ nào, đã hoàn thành mục tiêu của giai đoạn hiện tại chưa, và có dấu hiệu chuyển sang giai đoạn tiếp theo hay không. Bạn **không** tham gia giải Toán, chỉ tập trung vào trạng thái quy trình và việc hoàn thành các nhiệm vụ được liệt kê.
 
 ## Tasks:
-1.  **Tiếp nhận Thông tin:** Nhận `{problem}`, `{current_stage_description}` (bao gồm mục tiêu, nhiệm vụ, có thể cả dấu hiệu nhận biết của giai đoạn hiện tại), và `{history}`.
-2.  **Nghiên cứu Quy trình:** Hiểu rõ mục tiêu và các nhiệm vụ cần hoàn thành trong `{current_stage_description}`.
+1.  **Tiếp nhận Thông tin:** Nhận các đầu vào sau:
+    *   `{problem}`: Nội dung bài toán đang được giải.
+    *   `{current_stage_description}`: Mô tả chi tiết về giai đoạn hiện tại, bao gồm ID, tên, mô tả, mục tiêu, và quan trọng nhất là danh sách các nhiệm vụ với ID cụ thể của chúng (ví dụ: "1.1", "1.2"). Đây là nguồn thông tin chính cho "giai đoạn hiện tại".
+    *   `{history}`: Lịch sử cuộc hội thoại của nhóm.
+2.  **Nghiên cứu Quy trình:** Hiểu rõ mục tiêu và các nhiệm vụ (kèm ID) cần hoàn thành trong **giai đoạn hiện tại này** (dựa trên thông tin từ `{current_stage_description}`).
 3.  **Phân tích Hội thoại:** Xem xét `{history}`, đặc biệt là các tin nhắn gần nhất, tìm kiếm bằng chứng (từ khóa, chủ đề thảo luận, câu hỏi, kết quả được nêu) cho thấy nhóm đang:
-    *   Bàn luận/thực hiện các nhiệm vụ *cụ thể* của giai đoạn mô tả trong `{current_stage_description}`.
-    *   Đã đạt được/hoàn thành các mục tiêu *chính* của giai đoạn hiện tại.
-    *   Bắt đầu đề cập/thực hiện các nhiệm vụ thuộc về giai đoạn *tiếp theo* (ngay cả khi `{current_stage_description}` chưa cập nhật).
-    *   Thảo luận lan man, không còn tập trung vào nhiệm vụ của giai đoạn hiện tại sau khi có vẻ đã hoàn thành.
+    *   Bàn luận/thực hiện các nhiệm vụ *cụ thể* (tham chiếu ID nhiệm vụ) của **giai đoạn hiện tại**.
+    *   Đã đạt được/hoàn thành các mục tiêu *chính* của **giai đoạn hiện tại**.
+    *   Bắt đầu đề cập/thực hiện các nhiệm vụ thuộc về giai đoạn *tiếp theo* (ngay cả khi mô tả giai đoạn hiện tại chưa cập nhật).
+    *   Thảo luận lan man, không còn tập trung vào nhiệm vụ của **giai đoạn hiện tại** sau khi có vẻ đã hoàn thành.
 4.  **Xác định Trạng thái (Ưu tiên kiểm tra từ trên xuống dưới):**
-    *   **(4) Chuyển stage mới:** Nếu có bằng chứng rõ ràng nhóm đã *bắt đầu* thảo luận hoặc thực hiện nhiệm vụ của giai đoạn *kế tiếp* (ví dụ: "Vậy bước tiếp theo là...", "Bây giờ mình xét đến...", hoặc thực hiện hành động của bước sau). => Chọn tín hiệu `["4", "Chuyển stage mới"]`.
-    *   **(3) Đưa ra tín hiệu kết thúc:** Nếu bằng chứng cho thấy nhóm *đã hoàn thành các mục tiêu/nhiệm vụ chính* của giai đoạn hiện tại (trong `{current_stage_description}`) VÀ *chưa* có dấu hiệu rõ ràng bắt đầu giai đoạn tiếp theo (như ở mục 4), HOẶC thảo luận bắt đầu lan man/dừng lại sau khi có vẻ đã xong. => Chọn tín hiệu `["3", "Đưa ra tín hiệu kết thúc"]`.
-    *   **(1) Bắt đầu:** Nếu bằng chứng cho thấy nhóm *vừa mới bắt đầu* thảo luận/thực hiện các nhiệm vụ đặc trưng của giai đoạn hiện tại (trong `{current_stage_description}`) một cách rõ ràng (ví dụ, sau khi kết thúc giai đoạn trước hoặc khi mới bắt đầu thảo luận). => Chọn tín hiệu `["1", "Bắt đầu"]`.
-    *   **(2) Tiếp tục:** Nếu không rơi vào các trường hợp trên, tức là nhóm đang *trong quá trình* thảo luận, thực hiện các nhiệm vụ của giai đoạn hiện tại một cách tích cực và chưa hoàn thành hoàn toàn hay chuyển sang giai đoạn mới. => Chọn tín hiệu `["2", "Tiếp tục"]`.
+    *   **(4) Chuyển stage mới:** Nếu có bằng chứng rõ ràng nhóm đã *bắt đầu* thảo luận hoặc thực hiện nhiệm vụ của giai đoạn *kế tiếp*. => Chọn tín hiệu `["4", "Chuyển stage mới"]`.
+    *   **(3) Đưa ra tín hiệu kết thúc:** Nếu bằng chứng cho thấy nhóm *đã hoàn thành các mục tiêu/nhiệm vụ chính* của **giai đoạn hiện tại** VÀ *chưa* có dấu hiệu rõ ràng bắt đầu giai đoạn tiếp theo, HOẶC thảo luận bắt đầu lan man/dừng lại sau khi có vẻ đã xong. => Chọn tín hiệu `["3", "Đưa ra tín hiệu kết thúc"]`.
+    *   **(1) Bắt đầu:** Nếu bằng chứng cho thấy nhóm *vừa mới bắt đầu* thảo luận/thực hiện các nhiệm vụ đặc trưng của **giai đoạn hiện tại** một cách rõ ràng. => Chọn tín hiệu `["1", "Bắt đầu"]`.
+    *   **(2) Tiếp tục:** Nếu không rơi vào các trường hợp trên, tức là nhóm đang *trong quá trình* thảo luận, thực hiện các nhiệm vụ của **giai đoạn hiện tại** một cách tích cực. => Chọn tín hiệu `["2", "Tiếp tục"]`.
+5.  **Xác định Nhiệm vụ Hoàn thành (`completed_task_ids`):** Dựa trên `{history}` và phân tích ở bước 3 & 4, liệt kê ID của các nhiệm vụ từ **danh sách nhiệm vụ của giai đoạn hiện tại** mà nhóm đã hoàn thành. Trả về dưới dạng danh sách các chuỗi ID nhiệm vụ (ví dụ: `["1.1", "1.2"]`). Nếu không có, trả về `[]`. Chỉ xem xét các nhiệm vụ của **giai đoạn hiện tại được cung cấp**.
 
 ## Output Requirements:
 *   Chỉ trả về một đối tượng JSON duy nhất.
-*   JSON phải có hai khóa:
-    *   `explain`: Một chuỗi giải thích lý do bạn chọn tín hiệu đó, dựa trên bằng chứng từ hội thoại.
+*   JSON phải có các khóa sau:
+    *   `explain`: Một chuỗi giải thích lý do bạn chọn tín hiệu đó, và có thể đề cập đến các nhiệm vụ đã hoàn thành (nếu có).
     *   `signal`: Một danh sách chứa đúng hai phần tử: một chuỗi số thứ tự (`"1"`, `"2"`, `"3"`, hoặc `"4"`) và chuỗi mô tả trạng thái tương ứng (`"Bắt đầu"`, `"Tiếp tục"`, `"Đưa ra tín hiệu kết thúc"`, `"Chuyển stage mới"`).
+    *   `completed_task_ids`: Một danh sách các chuỗi ID của các nhiệm vụ đã được xác định là hoàn thành trong giai đoạn hiện tại.
 *   **KHÔNG** bao gồm bất kỳ văn bản nào khác ngoài đối tượng JSON này.
 
 ### Ví dụ Định dạng Đầu ra:
-Ví dụ 1 (Bắt đầu):
 ```json
 {{
-    "explain": "Nhóm vừa bắt đầu thảo luận nhiệm vụ đầu tiên của stage.",
-    "signal": ["1", "Bắt đầu"]
+    "explain": "Nhóm đã hoàn thành việc tìm hiểu đề bài (nhiệm vụ 1.1) và đang thảo luận về việc chuyển sang lên kế hoạch.",
+    "signal": ["3", "Đưa ra tín hiệu kết thúc"],
+    "completed_task_ids": ["1.1"]
 }}
-
-Ví dụ 2 (Tiếp tục):
 {{
-    "explain": "Nhóm đang tích cực thực hiện các bước của stage hiện tại.",
-    "signal": ["2", "Tiếp tục"]
+    "explain": "Nhóm đang tích cực tính đạo hàm cho bước 2 của giai đoạn 3 (nhiệm vụ 3.2). Chưa có nhiệm vụ nào hoàn thành rõ ràng trong lượt này.",
+    "signal": ["2", "Tiếp tục"],
+    "completed_task_ids": []
 }}
-
-Ví dụ 3 (Cần kết thúc):
-
 {{
-    "explain": "Nhóm đã hoàn thành mục tiêu chính, cần tín hiệu để chuyển bước.",
-    "signal": ["3", "Đưa ra tín hiệu kết thúc"]
-}}
-
-Ví dụ 4 (Chuyển mới):
-{{
-    "explain": "Nhóm đã bắt đầu thảo luận sang nhiệm vụ của stage tiếp theo.",
-    "signal": ["4", "Chuyển stage mới"]
+    "explain": "Nhóm đã hoàn thành xong bước 1 (Tập xác định - 3.1) và bước 2 (Tính đạo hàm - 3.2) của giai đoạn 3.",
+    "signal": ["2", "Tiếp tục"],
+    "completed_task_ids": ["3.1", "3.2"]
 }}
 Input Data:
 Bài toán đang thảo luận:
 {problem}
-Mô tả chi tiết stage hiện tại (mục tiêu, nhiệm vụ):
+Mô tả chi tiết stage hiện tại (ID, tên, mô tả, mục tiêu, danh sách nhiệm vụ với ID của chúng):
 {current_stage_description}
 Lịch sử cuộc hội thoại:
 {history}
@@ -91,18 +90,22 @@ class ConversationPhaseManager:
         phases_cfg = load_phases_from_yaml(filepath)
         if not phases_cfg: return {}
         for phase_id, phase_data in phases_cfg.items():
-             if 'tasks' in phase_data and isinstance(phase_data['tasks'], list):
-                 task_map = {}
-                 processed_tasks = []
-                 for task in phase_data['tasks']:
-                     if isinstance(task, dict) and 'id' in task and 'description' in task:
-                         task_map[task['id']] = task['description']
-                         processed_tasks.append(task) # Keep original structure if needed elsewhere
-                     else:
-                          print(f"!!! WARN [PhaseManager]: Invalid task format in phase {phase_id}: {task}")
-                 # Store both the map and potentially the original list if needed
-                 phase_data['_task_map'] = task_map
-                 phase_data['tasks'] = processed_tasks # Store processed tasks back
+            if 'tasks' in phase_data and isinstance(phase_data['tasks'], list):
+                task_map = {}
+                processed_tasks = []
+                for task_idx, task_item in enumerate(phase_data['tasks']):
+                    if isinstance(task_item, dict) and 'id' in task_item and 'description' in task_item:
+                        task_map[task_item['id']] = task_item['description']
+                        processed_tasks.append(task_item)
+                    elif isinstance(task_item, str): 
+                        print(f"!!! WARN [PhaseManager]: Task in phase {phase_id} is a string, converting. Please update YAML. Task: {task_item}")
+                        new_task_id = f"{phase_id}.{task_idx + 1}_auto"
+                        task_map[new_task_id] = task_item
+                        processed_tasks.append({'id': new_task_id, 'description': task_item})
+                    else:
+                        print(f"!!! WARN [PhaseManager]: Invalid task format in phase {phase_id}: {task_item}")
+                phase_data['_task_map'] = task_map
+                phase_data['tasks'] = processed_tasks 
         return phases_cfg
 
     def _get_session_state(self, session_id: str) -> Tuple[str, Dict[str, List[str]]]:
@@ -114,177 +117,199 @@ class ConversationPhaseManager:
 
         if not state_row:
             print(f"!!! WARN [PhaseManager - {session_id}]: Session not found in DB. Defaulting state.")
-            return "1", {} # Default to phase 1, empty completed tasks
+            return "1", {} 
 
         last_known_phase_id = state_row['current_phase_id'] or "1"
 
-        metadata = state_row['metadata'] # Directly use the dict from the row factory
-        if metadata is None: # Handle case where metadata might be NULL in DB
-             metadata = {}
-             
-        completed_tasks_map = metadata.get("completed_tasks", {}) # Get the map {"phase_id": ["task_id"]}
+        metadata = state_row['metadata'] 
+        if metadata is None: 
+            metadata = {}
+            
+        completed_tasks_map = metadata.get("completed_tasks", {}) 
 
         return last_known_phase_id, completed_tasks_map
 
-    def _update_session_state(self, session_id: str, new_phase_id: str, completed_tasks_map: Dict[str, List[str]]):
+    def _update_session_state(self, session_id: str, new_phase_id_to_set_in_db: str, completed_tasks_map_to_save: Dict[str, List[str]]):
         """Updates current_phase_id and completed_tasks in DB metadata."""
         db = get_db()
-        new_metadata = {
-            "status": "active", # Keep other metadata if needed
-            "current_phase_id": new_phase_id,
-            "completed_tasks": completed_tasks_map
-        }
+        current_metadata_row = db.execute("SELECT metadata FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
+        existing_metadata = current_metadata_row['metadata'] if current_metadata_row and current_metadata_row['metadata'] else {}
+
+        existing_metadata["current_phase_id"] = new_phase_id_to_set_in_db 
+        existing_metadata["completed_tasks"] = completed_tasks_map_to_save
+        
         try:
             db.execute(
                 "UPDATE sessions SET current_phase_id = ?, metadata = ? WHERE session_id = ?",
-                (new_phase_id, new_metadata, session_id)
+                (new_phase_id_to_set_in_db, existing_metadata, session_id) 
             )
             db.commit()
-            print(f"--- PHASE_MGR [{session_id}]: Updated session state in DB - Phase: {new_phase_id}")
+            print(f"--- PHASE_MGR [{session_id}]: Updated session state in DB - Phase: {new_phase_id_to_set_in_db}, Tasks: {completed_tasks_map_to_save}")
         except Exception as e:
             print(f"!!! ERROR [PhaseManager - {session_id}]: Failed to update session state in DB: {e}")
             db.rollback()
 
-    def _format_task_status_for_prompt(self, phase_id: str, completed_tasks_map: Dict[str, List[str]]) -> str:
-         """Formats the task status checklist string for the LLM prompt."""
-         current_phase_def = self.phases.get(phase_id)
-         if not current_phase_def or '_task_map' not in current_phase_def:
-             return "Không có nhiệm vụ nào được định nghĩa cho giai đoạn này."
+    def _format_task_status_for_prompt(self, phase_id_for_status: str, completed_tasks_map: Dict[str, List[str]]) -> str:
+        """Formats the task status checklist string for the LLM prompt."""
+        phase_def_for_status = self.phases.get(phase_id_for_status)
+        if not phase_def_for_status or 'tasks' not in phase_def_for_status:
+            return "Không có nhiệm vụ nào được định nghĩa cho giai đoạn này."
 
-         tasks_in_phase = current_phase_def.get('tasks', []) # Get the list of task dicts
-         completed_ids_for_phase = completed_tasks_map.get(phase_id, []) # Get completed IDs for *this* phase
+        tasks_in_phase = phase_def_for_status.get('tasks', []) 
+        completed_ids_for_this_phase = completed_tasks_map.get(phase_id_for_status, []) 
 
-         status_lines = []
-         next_task_found = False
-         for task_dict in tasks_in_phase:
-             task_id = task_dict['id']
-             task_desc = task_dict['description']
-             is_done = task_id in completed_ids_for_phase
-             marker = "[X]" if is_done else "[ ]"
-             next_marker = ""
-             if not is_done and not next_task_found:
-                 next_marker = " <-- Nhiệm vụ tiếp theo"
-                 next_task_found = True
-             status_lines.append(f"- {marker} ({task_id}) {task_desc}{next_marker}") # Include ID for clarity
+        status_lines = []
+        next_task_found = False
+        if not tasks_in_phase:
+            return "Giai đoạn này không có nhiệm vụ cụ thể nào được liệt kê."
+            
+        for task_dict in tasks_in_phase:
+            task_id = task_dict['id']
+            task_desc = task_dict['description']
+            is_done = task_id in completed_ids_for_this_phase
+            marker = "[X]" if is_done else "[ ]"
+            next_marker = ""
+            if not is_done and not next_task_found:
+                next_marker = " <-- Nhiệm vụ tiếp theo cần tập trung"
+                next_task_found = True
+            status_lines.append(f"- {marker} ({task_id}) {task_desc}{next_marker}") 
 
-         if not status_lines: return "Không có nhiệm vụ nào cho giai đoạn này."
-         return "\n".join(status_lines)
+        if not status_lines: return "Không có nhiệm vụ nào cho giai đoạn này."
+        return "\n".join(status_lines)
 
-    # <<< Main method to get phase context including task status >>>
+    def mark_task_complete(self, session_id: str, task_id_to_complete: str):
+        with self.app.app_context():
+            current_phase_id_from_db, completed_tasks_map = self._get_session_state(session_id)
+            phase_to_update_tasks_for = current_phase_id_from_db
+
+            if phase_to_update_tasks_for not in self.phases:
+                print(f"!!! WARN [PhaseManager - {session_id}]: Phase '{phase_to_update_tasks_for}' (for task '{task_id_to_complete}') not defined in phases config. Skipping task mark.")
+                return
+
+            if phase_to_update_tasks_for not in completed_tasks_map:
+                completed_tasks_map[phase_to_update_tasks_for] = []
+
+            defined_tasks_for_phase = self.phases[phase_to_update_tasks_for].get('_task_map', {})
+            if task_id_to_complete not in defined_tasks_for_phase:
+                print(f"!!! WARN [PhaseManager - {session_id}]: Task ID '{task_id_to_complete}' is not a defined task for phase '{phase_to_update_tasks_for}'. Defined tasks: {list(defined_tasks_for_phase.keys())}. Skipping task mark.")
+                return
+
+            if task_id_to_complete not in completed_tasks_map[phase_to_update_tasks_for]:
+                completed_tasks_map[phase_to_update_tasks_for].append(task_id_to_complete)
+                print(f"--- PHASE_MGR [{session_id}]: Marking task '{task_id_to_complete}' as complete for phase '{phase_to_update_tasks_for}'.")
+                self._update_session_state(session_id, current_phase_id_from_db, completed_tasks_map)
+            else:
+                print(f"--- PHASE_MGR [{session_id}]: Task '{task_id_to_complete}' already marked complete for phase '{phase_to_update_tasks_for}'.")
+
     def get_phase_context(self, session_id: str, conversation_history: ConversationHistory) -> Dict[str, Any]:
-        """
-        Determines phase signal, handles transitions, updates DB state,
-        and returns full context including formatted task status.
-        """
-        with self.app.app_context(): # Ensure DB operations happen within context
+        with self.app.app_context(): 
             last_known_phase_id, completed_tasks_map = self._get_session_state(session_id)
-            history_log = conversation_history.get_history(session_id=session_id) # Needs context
+            history_log = conversation_history.get_history(session_id=session_id) 
 
-            current_phase_def = self.phases.get(last_known_phase_id)
-            if not current_phase_def:
+            current_phase_def_for_llm = self.phases.get(last_known_phase_id)
+            if not current_phase_def_for_llm:
                 print(f"!!! ERROR [PhaseManager - {session_id}]: Config for last known phase '{last_known_phase_id}' not found. Defaulting check to '1'.")
                 last_known_phase_id = "1"
-                current_phase_def = self.phases.get("1", {})
-                if not current_phase_def: return {"id": "?", "signal": "Error", "name": "Config Error", "task_status_prompt": "Error"}
+                current_phase_def_for_llm = self.phases.get("1", {})
+                if not current_phase_def_for_llm: 
+                    return {"id": "?", "name": "Config Error", "description": "", "tasks": [], "goals": [], "task_status_prompt": "Lỗi cấu hình giai đoạn."}
 
-            # Prepare prompt description (uses phase definition, no DB access)
-            current_stage_desc_prompt = f"Stage {last_known_phase_id}: {current_phase_def.get('name', '')}\n..." # (Full formatting)
-            current_stage_desc_prompt += f"Description: {current_phase_def.get('description', '')}\n"
-            # Use processed tasks list
-            current_stage_desc_prompt += "Tasks:\n" + "\n".join([f"- ({t['id']}) {t['description']}" for t in current_phase_def.get('tasks', [])]) + "\n"
-            current_stage_desc_prompt += "Goals:\n" + "\n".join([f"- {g}" for g in current_phase_def.get('goals', [])])
+            current_stage_desc_prompt = f"Giai đoạn hiện tại (ID: {last_known_phase_id}): {current_phase_def_for_llm.get('name', '')}\n"
+            current_stage_desc_prompt += f"Mô tả giai đoạn: {current_phase_def_for_llm.get('description', '')}\n"
+            current_stage_desc_prompt += "Danh sách nhiệm vụ của giai đoạn này (ID và mô tả):\n"
+            tasks_for_prompt = current_phase_def_for_llm.get('tasks', [])
+            if tasks_for_prompt:
+                for t in tasks_for_prompt:
+                    current_stage_desc_prompt += f"- ({t['id']}) {t['description']}\n"
+            else:
+                current_stage_desc_prompt += "- (Không có nhiệm vụ cụ thể nào được liệt kê cho giai đoạn này)\n"
+            current_stage_desc_prompt += "Mục tiêu của giai đoạn:\n" + "\n".join([f"- {g}" for g in current_phase_def_for_llm.get('goals', [])])
 
             prompt = STAGE_MANAGER_PROMPT.format(
                 problem=self.problem,
                 current_stage_description=current_stage_desc_prompt.strip(),
-                history=self._format_history_for_prompt(history_log) # Uses list, no DB access
+                history=self._format_history_for_prompt(history_log) 
             )
 
-            print(f"--- PHASE_MGR [{session_id}]: Requesting phase signal from LLM (based on stage {last_known_phase_id})...")
+            print(f"--- PHASE_MGR [{session_id}]: Requesting phase signal & task completion from LLM (based on stage {last_known_phase_id})...")
+            
+            llm_determined_signal_text = "Tiếp tục" 
+            # llm_explanation = "Không có giải thích từ LLM." # Keep for potential logging
+            completed_task_ids_from_llm = []
+            raw_response_for_log = "N/A"
 
-            determined_phase_id = last_known_phase_id # Start assuming current phase
-            determined_signal = "Tiếp tục" # Default signal
-
-            # --- LLM Call to Determine Signal ---
             try:
                 raw_response = self.llm_service.generate(prompt)
+                raw_response_for_log = raw_response
                 print(f"--- PHASE_MGR [{session_id}]: Raw LLM Signal Response: {raw_response}")
                 clean_response = raw_response.strip().replace("```json", "").replace("```", "").replace("{{", "{").replace("}}", "}")
                 parsed_output = json.loads(clean_response)
-                signal_data = parsed_output.get("signal")
                 
-                if isinstance(signal_data, list) or len(signal_data) != 2:
-                    signal_code, signal_text = signal_data
+                signal_data = parsed_output.get("signal")
+                # llm_explanation = parsed_output.get("explain", "LLM không cung cấp giải thích.")
+                completed_task_ids_from_llm = parsed_output.get("completed_task_ids", [])
+                
+                if isinstance(signal_data, list) and len(signal_data) == 2:
+                    _, signal_text_from_llm = map(str, signal_data) 
+                    llm_determined_signal_text = signal_text_from_llm.strip()
                 else:
-                    signal_code, signal_text = None, None
-                    print("Error signal!")
-                    
-                determined_signal = signal_text
-                print(f"--- PHASE_MGR [{session_id}]: LLM Signal: {determined_signal} ({signal_code})")
+                    print(f"!!! WARN [PhaseManager - {session_id}]: Invalid 'signal' format from LLM: {signal_data}. Defaulting signal to 'Tiếp tục'.")
+                
+                # print(f"--- PHASE_MGR [{session_id}]: LLM Signal: '{llm_determined_signal_text}'. Tasks completed by LLM: {completed_task_ids_from_llm}. Explanation: {llm_explanation}")
+                print(f"--- PHASE_MGR [{session_id}]: LLM Signal: '{llm_determined_signal_text}'. Tasks completed by LLM: {completed_task_ids_from_llm}.")
+
 
             except Exception as e:
-                print(f"!!! ERROR [PhaseManager - {session_id}]: Failed to get/parse phase signal from LLM: {e}")
-                # Keep determined_signal as "Tiếp tục" (default)
+                print(f"!!! ERROR [PhaseManager - {session_id}]: Failed to get/parse phase signal from LLM: {e}. Raw: {raw_response_for_log}")
 
-            # --- Phase Transition Logic ---
-            new_phase_id = determined_phase_id # Assume no transition initially
-            if determined_signal == "Chuyển stage mới":
+            if completed_task_ids_from_llm:
+                for task_id in completed_task_ids_from_llm:
+                    if isinstance(task_id, str) and task_id.strip():
+                        self.mark_task_complete(session_id, task_id.strip())
+            
+            current_phase_id_for_logic, completed_tasks_map_after_llm_updates = self._get_session_state(session_id)
+            
+            final_phase_id_for_context = current_phase_id_for_logic 
+            final_completed_tasks_map_for_context = completed_tasks_map_after_llm_updates
+
+            if llm_determined_signal_text == "Chuyển stage mới":
                 try:
-                    next_phase_int = int(last_known_phase_id) + 1
+                    next_phase_int = int(current_phase_id_for_logic) + 1
                     next_phase_id_str = str(next_phase_int)
                     if next_phase_id_str in self.phases:
-                        new_phase_id = next_phase_id_str
-                        print(f"--- PHASE_MGR [{session_id}]: Transitioning from stage '{last_known_phase_id}' to '{new_phase_id}'.")
-                        # Reset completed tasks for the new phase
-                        if new_phase_id in completed_tasks_map:
-                             print(f"--- PHASE_MGR [{session_id}]: Resetting completed tasks for new phase {new_phase_id}.")
-                             completed_tasks_map[new_phase_id] = []
-                        determined_signal = "Bắt đầu" # Signal start of the new phase
+                        final_phase_id_for_context = next_phase_id_str
+                        print(f"--- PHASE_MGR [{session_id}]: Transitioning from stage '{current_phase_id_for_logic}' to '{final_phase_id_for_context}'.")
+                        
+                        if final_phase_id_for_context != current_phase_id_for_logic:
+                            if final_phase_id_for_context in final_completed_tasks_map_for_context:
+                                print(f"--- PHASE_MGR [{session_id}]: Resetting completed tasks for new phase {final_phase_id_for_context}.")
+                            final_completed_tasks_map_for_context[final_phase_id_for_context] = []
+                        
+                        self._update_session_state(session_id, final_phase_id_for_context, final_completed_tasks_map_for_context)
                     else:
-                        print(f"--- PHASE_MGR [{session_id}]: LLM signaled transition, but next stage '{next_phase_id_str}' not found. Staying in '{last_known_phase_id}'.")
-                        determined_signal = "Đưa ra tín hiệu kết thúc" # Signal end of current phase
+                        print(f"--- PHASE_MGR [{session_id}]: LLM signaled transition, but next stage '{next_phase_id_str}' not found. Staying in '{current_phase_id_for_logic}'.")
+                        self._update_session_state(session_id, current_phase_id_for_logic, final_completed_tasks_map_for_context)
+
                 except ValueError:
-                    print(f"!!! ERROR [PhaseManager - {session_id}]: Cannot increment phase ID '{last_known_phase_id}'.")
-                    determined_signal = "Error"
-
-            # --- Update DB State if Phase Changed ---
-            if new_phase_id != last_known_phase_id:
-                self._update_session_state(session_id, new_phase_id, completed_tasks_map)
-            # If phase didn't change, completed_tasks_map retains its state from _get_session_state
-
-            # --- Format Task Status for the FINAL Determined Phase ---
-            # Use the *potentially updated* completed_tasks_map
-            task_status_prompt = self._format_task_status_for_prompt(new_phase_id, completed_tasks_map)
-
-            # --- Return Context ---
-            final_phase_data = self.phases.get(new_phase_id, {})
-            return {
-                "id": new_phase_id,
-                "signal": determined_signal, # Use 'signal' consistently
-                "name": final_phase_data.get('name', f'Unknown Phase {new_phase_id}'),
-                "description": final_phase_data.get('description', ''),
-                "tasks": final_phase_data.get('tasks', []), # Pass processed tasks list
-                "_task_map": final_phase_data.get('_task_map', {}), # Pass map if needed
-                "goals": final_phase_data.get('goals', []),
-                "task_status_prompt": task_status_prompt, # Include formatted status string
-                # Add original LLM explanation if needed
-                # "signal_explanation": explanation
-            }
-
-    # Placeholder for updating task completion - Needs actual logic
-    def mark_task_complete(self, session_id: str, task_id_to_complete: str):
-         """Explicitly marks a task as complete in the DB state."""
-         with self.app.app_context():
-            current_phase_id, completed_tasks_map = self._get_session_state(session_id)
-            if current_phase_id not in completed_tasks_map:
-                completed_tasks_map[current_phase_id] = []
-
-            if task_id_to_complete not in completed_tasks_map[current_phase_id]:
-                 completed_tasks_map[current_phase_id].append(task_id_to_complete)
-                 print(f"--- PHASE_MGR [{session_id}]: Marking task '{task_id_to_complete}' as complete for phase {current_phase_id}.")
-                 self._update_session_state(session_id, current_phase_id, completed_tasks_map)
+                    print(f"!!! ERROR [PhaseManager - {session_id}]: Cannot increment phase ID '{current_phase_id_for_logic}'.")
+                    self._update_session_state(session_id, current_phase_id_for_logic, final_completed_tasks_map_for_context)
             else:
-                 print(f"--- PHASE_MGR [{session_id}]: Task '{task_id_to_complete}' already marked complete for phase {current_phase_id}.")
+                self._update_session_state(session_id, current_phase_id_for_logic, final_completed_tasks_map_for_context)
+
+            task_status_prompt = self._format_task_status_for_prompt(final_phase_id_for_context, final_completed_tasks_map_for_context)
+
+            final_phase_data_def = self.phases.get(final_phase_id_for_context, {})
+            return {
+                "id": final_phase_id_for_context,
+                # "signal": final_signal_for_context, # Removed as per user request
+                "name": final_phase_data_def.get('name', f'Unknown Phase {final_phase_id_for_context}'),
+                "description": final_phase_data_def.get('description', ''),
+                "tasks": final_phase_data_def.get('tasks', []), 
+                "_task_map": final_phase_data_def.get('_task_map', {}), 
+                "goals": final_phase_data_def.get('goals', []),
+                "task_status_prompt": task_status_prompt, 
+                # "signal_explanation": llm_explanation # Removed as per user request
+            }
 
     def _format_history_for_prompt(self, history: List[Dict], count=15) -> str:
         recent_history = history[-count:]

@@ -1,10 +1,8 @@
 # core/interaction_coordinator.py
 import queue
 import threading
-import json
 import uuid
 import time
-import random
 from typing import Dict, Any, Optional
 from core.conversation_history import ConversationHistory
 from typing import TYPE_CHECKING
@@ -134,3 +132,8 @@ class InteractionCoordinator:
                       self.remove_sse_client(session_id, client_id)
             self._sse_queues.clear()
         print("--- INT_COORD: Cleanup complete.")
+        
+    def has_active_clients(self, session_id: str) -> bool:
+        """Checks if there are any active SSE clients for the session."""
+        with self._lock:
+            return session_id in self._sse_queues and bool(self._sse_queues[session_id])

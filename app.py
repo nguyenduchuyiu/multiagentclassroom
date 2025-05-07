@@ -265,6 +265,7 @@ def stream(session_id):
                     sse_event_type = event_data.get('event', 'message')
                     sse_message = f"event: {sse_event_type}\ndata: {data_str}\n\n"
                     yield sse_message
+                    
             except GeneratorExit:
                 print(f"--- APP [{session_id}]: SSE client disconnected (GeneratorExit): {client_id}")
             except Exception as e:

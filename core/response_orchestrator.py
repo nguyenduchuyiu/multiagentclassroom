@@ -38,6 +38,11 @@ class ResponseOrchestrator:
 
     def _process_in_thread(self, session_id: str, triggering_event: Dict):
         """The actual processing logic running in a separate thread with app context."""
+        
+        if not self.interaction_coordinator.has_active_clients(session_id):
+             print(f"--- RESP_ORCH [{session_id}]: No active clients. Skipping processing for event {triggering_event['event_id']}.")
+             return
+             
         acquired = self._lock.acquire(blocking=False)
         if not acquired:
              print(f"--- RESP_ORCH [{session_id}]: Orchestrator busy. Skipping event {triggering_event['event_id']}.")
