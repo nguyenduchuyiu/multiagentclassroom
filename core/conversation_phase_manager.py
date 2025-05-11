@@ -248,25 +248,40 @@ class ConversationPhaseManager:
 
             current_stage_desc_prompt = f"Giai đoạn hiện tại (ID: {last_known_phase_id}): {current_phase_def_for_llm.get('name', '')}\n"
             current_stage_desc_prompt += f"Mô tả giai đoạn: {current_phase_def_for_llm.get('description', '')}\n"
-            current_stage_desc_prompt += "Danh sách nhiệm vụ của giai đoạn này (ID và mô tả):\n"
+            current_stage_desc_prompt += "Danh sách nhiệm vụ của giai đoạn này (ID, trạng thái [X] Hoàn thành / [ ] Chưa, và mô tả):\n"
+            
             tasks_for_prompt = current_phase_def_for_llm.get('tasks', [])
+            completed_ids_for_this_phase = completed_tasks_map.get(last_known_phase_id, [])
+
             if tasks_for_prompt:
-                for t in tasks_for_prompt:
-                    current_stage_desc_prompt += f"- ({t['id']}) {t['description']}\n"
+                for t_dict in tasks_for_prompt:
+                    task_id = t_dict.get('id')
+                    task_desc = t_dict.get('description')
+                    if task_id and task_desc:
+                        marker = "[X]" if task_id in completed_ids_for_this_phase else "[ ]"
+                        current_stage_desc_prompt += f"- {marker} ({task_id}) {task_desc}\n"
+                    else:
+                        current_stage_desc_prompt += f"- (Nhiệm vụ không hợp lệ: {t_dict})\n"
             else:
                 current_stage_desc_prompt += "- (Không có nhiệm vụ cụ thể nào được liệt kê cho giai đoạn này)\n"
-            current_stage_desc_prompt += "Mục tiêu của giai đoạn:\n" + "\n".join([f"- {g}" for g in current_phase_def_for_llm.get('goals', [])])
+            
+            current_stage_desc_prompt += "Mục tiêu của giai đoạn:\n"
+            goals_list = current_phase_def_for_llm.get('goals', [])
+            if goals_list:
+                current_stage_desc_prompt += "\n".join([f"- {g}" for g in goals_list])
+            else:
+                current_stage_desc_prompt += "(Không có mục tiêu cụ thể cho giai đoạn này)"
 
             prompt = STAGE_MANAGER_PROMPT.format(
                 problem=self.problem,
                 current_stage_description=current_stage_desc_prompt.strip(),
                 history=self._format_history_for_prompt(history_log) 
             )
+            print(prompt)
 
             print(f"--- PHASE_MGR [{session_id}]: Requesting phase signal & task completion from LLM (based on stage {last_known_phase_id})...")
             
             llm_determined_signal_text = "Tiếp tục" 
-            # llm_explanation = "Không có giải thích từ LLM." # Keep for potential logging
             completed_task_ids_from_llm = []
             raw_response_for_log = "N/A"
 
@@ -278,7 +293,6 @@ class ConversationPhaseManager:
                 parsed_output = json.loads(clean_response)
                 
                 signal_data = parsed_output.get("signal")
-                # llm_explanation = parsed_output.get("explain", "LLM không cung cấp giải thích.")
                 completed_task_ids_from_llm = parsed_output.get("completed_task_ids", [])
                 
                 if isinstance(signal_data, list) and len(signal_data) == 2:
@@ -287,9 +301,7 @@ class ConversationPhaseManager:
                 else:
                     print(f"!!! WARN [PhaseManager - {session_id}]: Invalid 'signal' format from LLM: {signal_data}. Defaulting signal to 'Tiếp tục'.")
                 
-                # print(f"--- PHASE_MGR [{session_id}]: LLM Signal: '{llm_determined_signal_text}'. Tasks completed by LLM: {completed_task_ids_from_llm}. Explanation: {llm_explanation}")
                 print(f"--- PHASE_MGR [{session_id}]: LLM Signal: '{llm_determined_signal_text}'. Tasks completed by LLM: {completed_task_ids_from_llm}.")
-
 
             except Exception as e:
                 print(f"!!! ERROR [PhaseManager - {session_id}]: Failed to get/parse phase signal from LLM: {e}. Raw: {raw_response_for_log}")
