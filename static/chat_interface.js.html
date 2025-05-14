@@ -132,17 +132,22 @@ document.addEventListener('DOMContentLoaded', () => {
             msg.classList.add(agentClass);
         }
 
-        // Ensure senderName is escaped for display
         html = `
             <div class="message-header">
                 <strong class="sender-name">${escapeHTML(senderName)}</strong>
                 <span class="timestamp">${timeStr}</span>
             </div>
             <div class="message-content">
-                <div class="message-text">${escapeHTML(text)}</div>
+                <div class="message-text"></div>
             </div>`;
 
         msg.innerHTML = html;
+
+        const messageTextDiv = msg.querySelector('.message-text');
+        if (messageTextDiv) {
+            messageTextDiv.innerHTML = text;
+        }
+
         chatbox.appendChild(msg);
         renderMathInElement(msg.querySelector('.message-text'));
         chatbox.scrollTop = chatbox.scrollHeight;
@@ -339,8 +344,20 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         eventSource.addEventListener('new_message', e => {
-            try { displayMessage(JSON.parse(e.data)); }
-            catch (err) { console.error('Parsing new_message:', err, e.data); }
+            try { 
+                const data = JSON.parse(e.data);
+                displayMessage(data);
+
+                // --- FIX: Nếu là agent, xóa trạng thái "đang nhập" ngay khi gửi xong ---
+                const senderName = data.content?.sender_name;
+                if (senderName && agentStatuses.hasOwnProperty(senderName)) {
+                    currentTypingAgents.delete(senderName);
+                    updateParticipantDisplay();
+                }
+            }
+            catch (err) { 
+                console.error('Parsing new_message:', err, e.data); 
+            }
         });
 
         eventSource.addEventListener('agent_status', e => {

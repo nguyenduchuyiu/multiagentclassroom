@@ -94,7 +94,7 @@ class InteractionCoordinator:
 
         # Trigger orchestrator
         if self.response_orchestrator:
-             delay = 2 # wait in case user enters more input 
+             delay = 10 # wait in case user enters more input 
              print(f"--- INT_COORD [{session_id}]: Scheduling orchestrator trigger after {delay:.2f}s delay (external).")
              timer = threading.Timer(delay, self._delayed_orchestrator_trigger, args=[session_id, logged_event])
              timer.start()
@@ -106,17 +106,17 @@ class InteractionCoordinator:
         logged_event = None
         # Log significant internal events (needs app context via ConversationHistory methods)
         if event_type in ["new_message", "system_message", "phase_transition"]:
-             logged_event = self.conv_history.add_event(session_id, event_type, source, content)
-             if not logged_event: return
+            logged_event = self.conv_history.add_event(session_id, event_type, source, content)
+            if not logged_event: return
 
-             # Broadcast logged internal events
-             self.post_event_to_clients(session_id, event_type, source, content, metadata=logged_event.get("metadata"))
+                # Broadcast logged internal events
+            self.post_event_to_clients(session_id, event_type, source, content, metadata=logged_event.get("metadata"))
+            time.sleep(10) # wait in case user enter more input
 
-             # Trigger orchestrator for agent messages
-             if event_type == 'new_message' and self.response_orchestrator and logged_event:
-                time.sleep(2) # wait in case user enter more input
+            # Trigger orchestrator for agent messages
+            if event_type == 'new_message' and self.response_orchestrator and logged_event:
                 print(f"--- INT_COORD [{session_id}]: Triggering orchestrator in response to internal message from {source}")
-                self.response_orchestrator.process_event(session_id=session_id, triggering_event=logged_event)
+            self.response_orchestrator.process_event(session_id=session_id, triggering_event=logged_event)
 
         elif event_type == "agent_status":
             # Broadcast non-logged status updates

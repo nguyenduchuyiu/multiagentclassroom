@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Dict, Any, List
 
 from flask import Flask
 from services.llm_service import LLMService # Added
+from utils.helpers import parse_output
 
 if TYPE_CHECKING:
     from core.interaction_coordinator import InteractionCoordinator
@@ -48,24 +49,23 @@ Dựa trên suy nghĩ nội tâm **hiện tại** của bạn (`{inner_thought}`
 *   **Tương tác Cá nhân (Nếu phù hợp):** Cân nhắc dùng tên bạn bè nếu hợp lý.
 
 ## Output Format
-**YÊU CẦU TUYỆT ĐỐI:** Chỉ trả về MỘT đối tượng JSON DUY NHẤT chứa hai khóa sau. KHÔNG thêm bất kỳ giải thích hay văn bản nào khác bên ngoài đối tượng JSON.
-```json
+**YÊU CẦU TUYỆT ĐỐI:** 
+    1. Chỉ trả về MỘT đối tượng JSON DUY NHẤT chứa hai khóa sau. KHÔNG thêm bất kỳ giải thích hay văn bản nào khác bên ngoài đối tượng JSON. 
+    2. KHÔNG chứa CON#/STEP#/FUNC#, tin nhắn phải tự nhiên.
+    3. Mọi biểu thức toán học, tabular đều in ra dạng latex và để trong dấu '$' ví dụ $x^2$, nhớ escape các kí tự đặc biệt.
+    4. Định dạng tin nhắn trong các html block.
 {{
-  "internal_thought": "<Tóm tắt lại ngắn gọn suy nghĩ chuẩn bị của bạn, ví dụ: Trả lời CON#2 về tập xác định cho STEP#1>",
-  "spoken_message": "<Nội dung câu nói cuối cùng, tự nhiên, KHÔNG chứa CON#/STEP#/FUNC#>"
+  "spoken_message": "<Nội dung câu nói cuối cùng, tự nhiên, có thể in hình minh họa (ví dụ bảng biến thiên, hình học) để giúp mọi người dễ hình dung>"
 }}
 Ví dụ JSON Output ĐÚNG:
 {{
-  "internal_thought": "Nhiệm vụ hiện tại là STEP#1. Mình sẽ trả lời CON#2 của A về tập xác định.",
   "spoken_message": "Chào A, mình nghĩ bước đầu tiên là tìm tập xác định đúng không?"
 }}
 {{
-  "internal_thought": "Nhiệm vụ hiện tại là STEP#2. Mình sẽ trả lời CON#6 của B và đồng tình với cách làm của bạn ấy.",
   "spoken_message": "Đúng rồi B, cách làm đó hợp lý đó. Dùng đạo hàm để xét tính đơn điệu là chuẩn rồi."
 }}
 Ví dụ JSON Output SAI (Không được lộ CON#/STEP# trong spoken_message):
 {{
-  "internal_thought": "Nhiệm vụ hiện tại là STEP#2. Mình sẽ trả lời CON#6 của B và đồng tình với CON#4.",
   "spoken_message": "Đúng rồi B, cách làm của bạn ở CON#4 là hợp lý đó. Dùng đạo hàm để xét tính đơn điệu là chuẩn rồi."
 }}
 """
@@ -144,14 +144,7 @@ class BehaviorExecutor:
 
             # Parse JSON
             try:
-                clean_response = raw_response.strip()
-                if clean_response.startswith("```json"): clean_response = clean_response[7:]
-                if clean_response.endswith("```"): clean_response = clean_response[:-3]
-                clean_response = clean_response.strip()
-                parsed_output = json.loads(clean_response)
-                internal_thought = parsed_output.get("internal_thought", "(Lỗi)")
-                final_message = parsed_output.get("spoken_message", "").strip()
-                print(f"{log_prefix}: Parsed Internal Thought: {internal_thought}")
+                final_message = parse_output(raw_response)
                 if not final_message:
                     print(f"!!! WARN [{log_prefix}]: LLM returned empty 'spoken_message'.")
                     return ""

@@ -1,23 +1,45 @@
 :root {
-    --primary-color: #4a6fa5; /* Main blue */
-    --secondary-color: #6c8cbf; /* Lighter blue */
-    --tertiary-color: #e6ecf5; /* Very light blue background */
-    --light-color: #f5f7fa; /* Main page background */
-    --dark-color: #2c3e50; /* Main text color */
-    --user-color: #1abc9c; /* User message/avatar color (Teal) */
-    --success-color: #2ecc71; /* Success/connected/idle status (Green) */
-    --warning-color: #f39c12; /* Warning/connecting/thinking status (Orange) */
-    --error-color: #e74c3c; /* Error/disconnected status (Red) */
-    --typing-color: var(--primary-color); /* Color for typing status (Blue) */
+    /* Learning System Palette */
+    --primary-color: #4A90E2;       /* Professional Blue - for main actions, titles, highlights */
+    --primary-darker-color: #3A7BC8; /* Darker blue for hover states on primary buttons */
+    --primary-color-transparent: rgba(74, 144, 226, 0.2); /* For focus rings */
+    --primary-color-rgb: 74, 144, 226; /* RGB version for tinted shadows */
+    --secondary-color: #7FBAF5;     /* Lighter Blue - for hover states, secondary elements */
+    --tertiary-color: #EBF5FF;      /* Very Light Blue/Grey - for backgrounds of elements like messages, cards */
+    
+    --light-color: #F8F9FA;        /* Main Page Background - very light grey, almost white */
+    --content-bg-color: #FFFFFF;   /* White - for main content areas like chat, info panel */
 
-    /* Define Agent Colors using agent names (MATCH YOUR AGENT NAMES) */
-    /* Example: If you have agents named 'CoderAI' and 'ManagerAI' */
-    --agent-coderai-color: #f2994a; /* Orange for CoderAI */
-    --agent-managerai-color: #6fcf97; /* Green for ManagerAI */
-    /* Add more agent colors as needed */
-    /* --agent-anotheragent-color: #bb6bd9; */
+    --dark-color: #34495E;         /* Base Dark Grey Text */
+    --text-color-main: var(--dark-color);
+    --text-color-secondary: #546E7A; /* Medium Grey Text (slightly lighter than dark-color) */
+    --text-color-disabled: #90A4AE;  /* Light Grey Text (for disabled/muted items) */
 
-    --border-radius: 6px; /* Slightly smaller border-radius */
+    --user-color: #50C878;         /* Emerald Green - for user messages */
+    --user-text-color: #FFFFFF;    /* White text on user messages */
+
+    --ai-message-bg: #F0F4F8;      /* Slightly off-white/light blue for AI messages */
+    --ai-message-border: var(--secondary-color); /* Default AI border */
+
+    --system-message-bg: #F5F5F5;  /* Light grey for system messages */
+    --system-message-border: #B0BEC5; /* Muted grey border for system messages */
+    --system-message-text: #546E7A;   /* Text color for system messages (matches text-color-secondary) */
+
+    --success-color: #2ECC71;       /* Green - for success states, connected */
+    --warning-color: #F39C12;       /* Orange - for warnings, connecting */
+    --error-color: #E74C3C;         /* Red - for errors, disconnected */
+    --typing-color: var(--primary-color); /* Color for typing status */
+
+    /* Agent Specific Colors (Examples - MATCH YOUR AGENT NAMES) */
+    --agent-coderai-color: #F5A623;   /* Orange for CoderAI */
+    --agent-managerai-color: #7ED321; /* Bright Green for ManagerAI */
+    /* --agent-anotheragent-color: #BB6BD9; */ /* Purple for another agent example */
+
+    --border-color-light: #E0E6ED; /* Light border color for dividers */
+    --border-color-medium: #CFD8DC; /* Medium border color */
+    --shadow-color: rgba(0, 0, 0, 0.07); /* Softer shadow */
+
+    --border-radius: 6px;
     --transition: all 0.2s ease-in-out;
 }
 
@@ -50,7 +72,7 @@ header {
     align-items: center;
     padding-bottom: 15px;
     margin-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-color-light);
     flex-shrink: 0; /* Prevent header from shrinking */
 }
 
@@ -64,7 +86,7 @@ header {
 }
 
 .logo i {
-    color: var(--secondary-color);
+    color: var(--primary-color); /* Updated to match primary for stronger branding */
 }
 
 /* Status Indicator in Header */
@@ -101,17 +123,17 @@ header {
     flex: 3;
     display: flex;
     flex-direction: column;
-    background-color: white;
+    background-color: var(--content-bg-color);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Softer shadow */
+    box-shadow: 0 2px 8px var(--shadow-color); /* Softer shadow */
     overflow: hidden; /* Contained overflow */
 }
 
 .info-panel {
     flex: 1;
-    background-color: white;
+    background-color: var(--content-bg-color);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px var(--shadow-color);
     padding: 15px;
     overflow-y: auto; /* Allow scrolling */
     display: flex;
@@ -126,17 +148,17 @@ header {
 }
 .info-panel::-webkit-scrollbar-track,
 .chat-messages::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--tertiary-color); /* Updated scrollbar track */
     border-radius: 3px;
 }
 .info-panel::-webkit-scrollbar-thumb,
 .chat-messages::-webkit-scrollbar-thumb {
-    background: #ccc;
+    background: var(--border-color-medium); /* Updated scrollbar thumb */
     border-radius: 3px;
 }
 .info-panel::-webkit-scrollbar-thumb:hover,
 .chat-messages::-webkit-scrollbar-thumb:hover {
-    background: #aaa;
+    background: var(--secondary-color); /* Updated scrollbar thumb hover */
 }
 
 /* Chat Messages Area */
@@ -180,7 +202,7 @@ header {
 }
 
 .message.user-message .sender-name {
-    color: var(--user-color);
+    color: rgba(255, 255, 255, 0.9); /* Kept for contrast on user message bg */
 }
 
 .timestamp {
@@ -193,17 +215,17 @@ header {
 .message-content {
     padding: 10px 15px;
     border-radius: var(--border-radius);
-    background-color: var(--tertiary-color); /* Default background */
+    background-color: var(--ai-message-bg); /* Default background for AI/system if not overridden */
     word-break: break-word;
     line-height: 1.5;
     position: relative; /* For pseudo-elements if needed */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle shadow on messages */
+    box-shadow: 0 1px 2px var(--shadow-color); /* Subtle shadow on messages */
 }
 
 /* User Message Specific Styles */
 .message.user-message .message-content {
     background-color: var(--user-color);
-    color: white;
+    color: var(--user-text-color);
 }
 .message.user-message .timestamp {
      color: rgba(255, 255, 255, 0.8);
@@ -215,8 +237,8 @@ header {
 
 /* AI Message Specific Styles - Using Border */
 .message.ai-message .message-content {
-    background-color: #f0f4f8; /* Light greyish-blue background for AI */
-    border-left: 4px solid var(--secondary-color); /* Default AI border */
+    background-color: var(--ai-message-bg); 
+    border-left: 4px solid var(--ai-message-border); 
 }
 
 /* --- CORRECTED: AI Message Border Colors (match JS classes) --- */
@@ -235,14 +257,14 @@ header {
 
 /* System Message Specific Styles */
 .message.system-message .message-content {
-    background-color: #f9f9f9; /* Very light grey for system */
-    border-left: 4px solid #ccc;
-    color: #555;
+    background-color: var(--system-message-bg); 
+    border-left: 4px solid var(--system-message-border);
+    color: var(--system-message-text);
     font-style: italic;
     font-size: 0.9em;
 }
 .message.system-message .sender-name {
-    color: #666;
+    color: var(--system-message-text);
 }
 
 
@@ -252,9 +274,9 @@ header {
     height: 25px;
     font-size: 0.85rem;
     font-style: italic;
-    color: #888;
-    border-top: 1px solid #eee;
-    background-color: #fdfdfd;
+    color: var(--text-color-secondary); /* Updated color */
+    border-top: 1px solid var(--border-color-light);
+    background-color: var(--light-color); /* Differentiate from chat area */
     flex-shrink: 0; /* Prevent shrinking */
     line-height: 15px; /* Match height */
     text-align: left;
@@ -263,8 +285,8 @@ header {
 /* Chat Input Area */
 .chat-input {
     padding: 10px 15px; /* Reduced padding */
-    border-top: 1px solid #e0e0e0;
-    background-color: #fff;
+    border-top: 1px solid var(--border-color-light);
+    background-color: var(--content-bg-color);
     flex-shrink: 0; /* Prevent shrinking */
 }
 
@@ -277,7 +299,7 @@ header {
 .input-container textarea {
     flex: 1;
     padding: 10px 15px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color-medium);
     border-radius: var(--border-radius);
     resize: none;
     min-height: 42px; /* Slightly smaller min-height */
@@ -286,14 +308,14 @@ header {
     line-height: 1.4;
     transition: var(--transition);
     overflow-y: auto;
-    background-color: #fdfdfd;
+    background-color: var(--tertiary-color); /* Slight inset look */
 }
 
 .input-container textarea:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.1); /* Softer focus shadow */
-    background-color: #fff;
+    box-shadow: 0 0 0 2px var(--primary-color-transparent); /* Softer focus shadow */
+    background-color: var(--content-bg-color);
 }
 
 .send-btn {
@@ -318,7 +340,7 @@ header {
 /* Use .disabled class added by JS */
 .send-btn.disabled,
 .send-btn:disabled {
-    background-color: #ccc;
+    background-color: #BDC3C7; /* Neutral grey for disabled */
     cursor: not-allowed;
     opacity: 0.7;
 }
@@ -333,7 +355,7 @@ header {
     color: var(--primary-color);
     margin-bottom: 10px;
     padding-bottom: 5px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-color-light);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -355,7 +377,7 @@ header {
 
 .stage-description {
     font-size: 0.85rem;
-    color: #555;
+    color: var(--text-color-secondary); /* Updated color */
 }
 
 .stage-progress {
@@ -366,14 +388,14 @@ header {
 .progress-label {
     margin-bottom: 5px;
     font-size: 0.9em;
-    color: var(--text-color-secondary);
+    color: var(--text-color-secondary); /* Updated color */
     display: flex;
     justify-content: space-between;
 }
 
 .progress-bar {
     height: 8px;
-    background-color: #e0e0e0;
+    background-color: var(--border-color-light);
     border-radius: 4px;
     overflow: hidden;
     position: relative;
@@ -443,21 +465,21 @@ header {
     /* margin-bottom: 8px; Removed, using gap on parent */
     padding: 8px 10px;
     border-radius: 6px;
-    background-color: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    background-color: var(--content-bg-color);
+    box-shadow: 0 1px 2px var(--shadow-color);
     border-left: 5px solid transparent; /* Base border */
     transition: background-color 0.2s ease, border-left-color 0.3s ease; /* Animate border color */
 }
 
 .participant:hover {
-    background-color: #f9f9f9;
+    background-color: var(--tertiary-color);
 }
 
 .participant-avatar {
     width: 35px;
     height: 35px;
     border-radius: 50%;
-    background-color: #ccc; /* Default avatar color */
+    background-color: var(--border-color-medium); /* Default avatar color */
     color: white;
     display: flex;
     align-items: center;
@@ -475,7 +497,7 @@ header {
 
 .participant-name {
     font-weight: 600;
-    color: #333;
+    color: var(--text-color-main); /* Updated color */
     margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
@@ -484,7 +506,7 @@ header {
 
 .participant-status {
     font-size: 0.85em;
-    color: #666;
+    color: var(--text-color-secondary); /* Updated color */
     display: flex;
     align-items: center;
     white-space: nowrap;
@@ -541,8 +563,8 @@ li.participant.status-typing {
 
 /* Màu nền và avatar cho từng participant (DÙNG CLASS = participant-<agent_id>) */
 .participant.participant-Human .participant-avatar { background-color: var(--user-color); }
-.participant.participant-CoderAI .participant-avatar { background-color: var(--coder-ai-color); }
-.participant.participant-ManagerAI .participant-avatar { background-color: var(--manager-ai-color); }
+.participant.participant-CoderAI .participant-avatar { background-color: var(--agent-coderai-color); }
+.participant.participant-ManagerAI .participant-avatar { background-color: var(--agent-managerai-color); }
 /* Thêm các AI khác */
 
 
@@ -569,13 +591,13 @@ li.participant.status-typing {
 
 .stat-label {
     font-size: 0.75rem; /* Giảm font-size */
-    color: #555;
+    color: var(--text-color-secondary); /* Updated color */
     text-transform: uppercase; /* Viết hoa label */
 }
 
 .controls {
     margin-top: 15px; /* Giảm margin */
-    border-top: 1px solid #eee; /* Thêm đường kẻ phân cách */
+    border-top: 1px solid var(--border-color-light); /* Thêm đường kẻ phân cách */
     padding-top: 15px; /* Padding trên */
 }
 
@@ -584,10 +606,10 @@ li.participant.status-typing {
     width: 100%;
     padding: 10px 12px; /* Giảm padding */
     margin-bottom: 8px; /* Giảm margin */
-    background-color: #e9edf2; /* Màu nền nhạt hơn */
-    border: 1px solid #dce1e8; /* Thêm border nhẹ */
+    background-color: var(--tertiary-color); /* Màu nền nhạt hơn */
+    border: 1px solid var(--border-color-medium); /* Thêm border nhẹ */
     border-radius: var(--border-radius);
-    color: var(--dark-color);
+    color: var(--text-color-main); /* Updated color */
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition);
@@ -614,8 +636,8 @@ li.participant.status-typing {
 }
 
 .control-btn.restart:hover {
-    background-color: #3a5a8c;
-    border-color: #3a5a8c;
+    background-color: var(--primary-darker-color); /* Darker shade for hover */
+    border-color: var(--primary-darker-color);
 }
 
 .control-btn i {
@@ -718,10 +740,10 @@ li.participant.status-typing {
 }
 
 .problem-description {
-    background-color: #fff;
+    background-color: var(--content-bg-color); /* Ensure consistency */
     padding: 15px;
     border-radius: 5px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px var(--shadow-color); /* Use shadow variable */
     font-size: 0.95em;
     line-height: 1.5;
     /* Ensure block math displays correctly */
@@ -735,12 +757,12 @@ li.participant.status-typing {
 .sub-tasks-section {
     margin-top: 15px;
     padding-top: 10px;
-    border-top: 1px solid var(--border-color-light);
+    border-top: 1px solid var(--border-color-light); /* Use variable */
 }
 
 .sub-tasks-title {
     font-size: 0.9em;
-    color: var(--text-color-secondary);
+    color: var(--text-color-secondary); /* Use variable */
     margin-bottom: 8px;
     font-weight: 600;
 }
@@ -755,12 +777,12 @@ li.participant.status-typing {
     padding: 4px 0;
     display: flex;
     align-items: center;
-    color: var(--text-color);
+    color: var(--text-color-main); /* Use variable */
 }
 
 .sub-tasks-list li.completed .task-description {
     text-decoration: line-through;
-    color: var(--text-color-disabled);
+    color: var(--text-color-disabled); /* Use variable */
 }
 
 .sub-tasks-list li .task-status-icon {
@@ -775,11 +797,11 @@ li.participant.status-typing {
 }
 
 .sub-tasks-list li:not(.completed) .task-status-icon {
-    color: var(--text-color-disabled);
+    color: var(--text-color-disabled); /* Use variable */
 }
 
 .sub-tasks-list li.no-tasks {
-    color: var(--text-color-secondary);
+    color: var(--text-color-secondary); /* Use variable */
     font-style: italic;
 }
 
@@ -787,7 +809,7 @@ li.participant.status-typing {
 .progress-container span {
     /* Style for your stage markers, e.g., padding, color */
     padding: 0 10px;
-    color: var(--text-color-secondary);
+    color: var(--text-color-secondary); /* Use variable */
 }
 
 .progress-container span.active-stage-marker {
@@ -808,7 +830,7 @@ li.participant.status-typing {
     min-width: 18px;
     text-align: center;
     font-size: 0.95em;
-    color: var(--text-color-secondary);
+    color: var(--text-color-secondary); /* Use variable */
     padding: 0 4px;
     cursor: pointer;
     position: relative;
@@ -836,4 +858,247 @@ li.participant.status-typing {
 }
 .progress-container span:hover[title]::after {
     display: block;
+}
+
+/* Styles for New/List Sessions link in header (index.html) */
+.new-chat-link {
+    padding: 8px 15px;
+    background-color: var(--tertiary-color);
+    color: var(--primary-color);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    transition: var(--transition);
+    border: 1px solid var(--border-color-medium);
+    font-size: 0.9rem; /* Match other header elements */
+    line-height: 1.5; /* Ensure consistent height with other potential buttons */
+    display: inline-flex; /* Align icon and text if icon is added later */
+    align-items: center;
+}
+
+.new-chat-link:hover {
+    background-color: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+/* Styles for templates/list_sessions.html */
+/* Body class .session-listing-page is used to scope these styles */
+
+.session-listing-page { /* Targets the body tag */
+    background-color: var(--light-color);
+    color: var(--text-color-main);
+}
+
+.session-listing-page .container {
+    max-width: 800px;
+    margin: 30px auto;
+    background-color: var(--content-bg-color);
+    padding: 30px 40px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 6px 18px rgba(var(--shadow-color-rgb, 0,0,0), 0.1);
+}
+.session-listing-page h1 {
+    text-align: center;
+    color: var(--primary-darker-color); /* Darker primary for main title */
+    font-size: 2.2rem; /* Slightly larger */
+    margin-bottom: 35px; /* More space below */
+}
+
+.session-listing-page h2 {
+    text-align: center;
+    color: var(--primary-color); /* Primary color for section titles */
+    font-size: 1.6rem; /* Slightly larger */
+    margin-top: 0px; /* More space above */
+    margin-bottom: 25px; /* More space below */
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary-color-transparent); /* Softer, thicker underline */
+}
+
+.session-listing-page ul {
+    max-height: 80vh;   /* hoặc 500px, tuỳ ý */
+    overflow-y: auto;
+    margin-bottom: 30px;
+    padding-right: 4px;
+}
+
+.session-listing-page li {
+    background-color: var(--tertiary-color); /* Light background for items */
+    margin-bottom: 18px; /* Slightly more margin */
+    padding: 20px 25px; /* Adjusted padding */
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color-medium); /* Slightly more visible border */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease-in-out; /* Smoother transition */
+    box-shadow: 0 2px 5px rgba(var(--shadow-color-rgb, 0,0,0), 0.08); /* Subtle shadow */
+}
+
+.session-listing-page li:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 5px 15px rgba(var(--primary-color-rgb), 0.15); /* Primary-tinted shadow */
+    transform: translateY(-3px) scale(1.01); /* More dynamic hover */
+    background-color: var(--content-bg-color); /* Lighten on hover */
+}
+
+.session-listing-page li .session-info {
+    flex-grow: 1;
+    margin-right: 20px; /* More space */
+}
+
+.session-listing-page li a {
+    text-decoration: none;
+    color: var(--primary-darker-color); /* Darker for better readability */
+    font-weight: 600;
+    font-size: 1.2rem; /* Larger link text */
+    display: flex; /* Align icon and text */
+    align-items: center;
+}
+
+.session-listing-page li a i {
+    margin-right: 10px; /* Space after icon */
+    color: var(--primary-color); /* Icon color */
+    font-size: 1.1em; /* Slightly larger icon */
+}
+
+.session-listing-page li a:hover {
+    text-decoration: underline;
+    color: var(--primary-color); /* Lighter blue on hover */
+}
+
+.session-listing-page li .session-meta {
+    color: var(--text-color-secondary);
+    font-size: 0.9rem; /* Slightly larger meta text */
+    text-align: right;
+    min-width: 160px; /* Adjusted min-width */
+    flex-shrink: 0;
+    display: flex; /* Align icon and text */
+    align-items: center;
+}
+
+.session-listing-page li .session-meta i {
+    margin-right: 6px;
+    font-size: 0.95em;
+    color: var(--text-color-secondary);
+}
+
+.session-listing-page .no-sessions-message {
+    text-align: center;
+    color: var(--text-color-secondary);
+    padding: 25px; /* More padding */
+    background-color: var(--tertiary-color);
+    border-radius: var(--border-radius);
+    margin-top: 25px;
+    font-style: italic;
+    border: 1px dashed var(--border-color-medium); /* Dashed border */
+}
+
+.session-listing-page .new-session-form {
+    margin-top: 0; /* Để sát dưới danh sách */
+    padding-top: 30px;
+    text-align: center;
+    background-color: var(--tertiary-color); /* Light background for form section */
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(var(--shadow-color-rgb, 0,0,0), 0.07); /* Subtle shadow for the form card */
+}
+
+.session-listing-page .new-session-form .form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.session-listing-page .new-session-form label {
+    margin-bottom: 10px; /* More space */
+    font-weight: 600; /* Bolder label */
+    color: var(--text-color-main);
+    font-size: 1rem; /* Larger label */
+}
+
+.session-listing-page .new-session-form input[type="text"] {
+    padding: 12px 18px; /* More padding */
+    border: 1px solid var(--border-color-medium);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    width: 100%;
+    max-width: 350px; /* Slightly wider input */
+    background-color: var(--content-bg-color); /* White background for input */
+    color: var(--text-color-main);
+    transition: var(--transition);
+    box-shadow: inset 0 1px 3px rgba(var(--shadow-color-rgb, 0,0,0), 0.06); /* Softer inset shadow */
+}
+
+.session-listing-page .new-session-form input[type="text"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-color-transparent), inset 0 1px 3px rgba(var(--shadow-color-rgb, 0,0,0), 0.06);
+    outline: none;
+}
+
+.session-listing-page .new-session-form button[type="submit"] {
+    padding: 12px 30px; /* More padding */
+    background-image: linear-gradient(to right, var(--primary-color) 0%, var(--primary-darker-color) 100%);
+    color: white;
+    border: none; /* Remove border for gradient button */
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1.05rem; /* Slightly larger font */
+    font-weight: 500;
+    transition: all 0.3s ease; /* Transition for all properties */
+    box-shadow: 0 4px 8px rgba(var(--primary-color-rgb), 0.2); /* Softer shadow */
+    display: inline-flex; /* Align icon and text */
+    align-items: center;
+    justify-content: center;
+}
+
+.session-listing-page .new-session-form button[type="submit"] i {
+    margin-right: 8px; /* Space between icon and text */
+    font-size: 1em;
+}
+
+.session-listing-page .new-session-form button[type="submit"]:hover {
+    background-image: linear-gradient(to right, var(--primary-darker-color) 0%, var(--primary-color) 100%);
+    box-shadow: 0 6px 12px rgba(var(--primary-color-rgb), 0.3); /* Enhanced shadow on hover */
+    transform: translateY(-1px); /* Slight lift on hover */
+}
+
+/* Flash Messages for session-listing-page */
+.session-listing-page .flash {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: var(--border-radius);
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    text-align: center;
+    color: white; /* Default text color for flash messages */
+}
+
+.session-listing-page .flash.error {
+    background-color: var(--error-color);
+    border-color: var(--error-color);
+}
+
+.session-listing-page .flash.success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+/* Responsive adjustments for session list items */
+@media (max-width: 600px) {
+    .session-listing-page li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .session-listing-page li .session-info {
+        margin-right: 0;
+        margin-bottom: 10px; /* Space when stacked */
+    }
+    .session-listing-page li .session-meta {
+        text-align: left;
+        min-width: auto; /* Allow it to shrink */
+    }
+    .session-listing-page .new-session-form input[type="text"] {
+        max-width: 100%;
+    }
 }
