@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chọn Bài Toán - Toán Tư Duy</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
+        h1 { color: #0056b3; text-align: center; margin-bottom: 20px; }
+        h2 { color: #333; margin-top: 30px; border-bottom: 2px solid #eee; padding-bottom: 10px;}
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        select, input[type="text"], input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        input[type="submit"]:hover { background-color: #0056b3; }
+        .problem-preview {
+            margin-top: 10px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            white-space: pre-wrap; /* Respects newlines and spaces */
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .loader {
+            border: 5px solid #f3f3f3; /* Light grey */
+            border-top: 5px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none; /* Hidden by default */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-size: 0.95em;
+        }
+        .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+        .message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chào Mừng Đến Với Toán Tư Duy Tương Tác!</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h2>1. Chọn Bài Toán</h2>
+        <form id="problem-selection-form" action="{{ url_for('generate_script_and_start_chat') }}" method="POST">
+            <label for="problem_id">Chọn một bài toán:</label>
+            <select name="problem_id" id="problem_id" required>
+                <option value="">-- Vui lòng chọn --</option>
+            </select>
+            <div id="problem-preview-area" class="problem-preview" style="display:none;"></div>
+
+            <h2>2. Nhập Thông Tin</h2>
+            <label for="username">Tên của bạn:</label>
+            <input type="text" name="username" id="username" placeholder="Ví dụ: Học Sinh A" required>
+
+            <label for="keywords">Từ khóa cho kịch bản (tùy chọn):</label>
+            <input type="text" name="keywords" id="keywords" placeholder="Ví dụ: Halloween, thám tử, không gian">
+            
+            <input type="submit" value="Bắt Đầu & Tạo Kịch Bản">
+        </form>
+        <div id="loader" class="loader"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const problemSelect = document.getElementById('problem_id');
+            const previewArea = document.getElementById('problem-preview-area');
+            const form = document.getElementById('problem-selection-form');
+            const loader = document.getElementById('loader');
+            const submitButton = form.querySelector('input[type="submit"]');
+
+            fetch('/api/problems')
+                .then(response => response.json())
+                .then(problems => {
+                    if (problems && problems.length > 0) {
+                        problems.forEach(problem => {
+                            const option = document.createElement('option');
+                            option.value = problem.id;
+                            // Truncate long problem text for display in dropdown
+                            option.textContent = problem.text.length > 100 ? problem.text.substring(0, 97) + "..." : problem.text;
+                            option.dataset.fulltext = problem.text; // Store full text
+                            problemSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = "";
+                        option.textContent = "Không có bài toán nào.";
+                        problemSelect.appendChild(option);
+                        problemSelect.disabled = true;
+                        submitButton.disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching problems:', error);
+                    previewArea.textContent = 'Lỗi tải danh sách bài toán.';
+                    previewArea.style.display = 'block';
+                    problemSelect.disabled = true;
+                    submitButton.disabled = true;
+                });
+
+            problemSelect.addEventListener('change', (event) => {
+                const selectedOption = event.target.selectedOptions[0];
+                if (selectedOption && selectedOption.value) {
+                    previewArea.textContent = selectedOption.dataset.fulltext;
+                    previewArea.style.display = 'block';
+                } else {
+                    previewArea.style.display = 'none';
+                    previewArea.textContent = '';
+                }
+            });
+
+            form.addEventListener('submit', () => {
+                loader.style.display = 'block';
+                submitButton.disabled = true;
+                submitButton.value = 'Đang xử lý...';
+            });
+        });
+    </script>
+</body>
+</html>

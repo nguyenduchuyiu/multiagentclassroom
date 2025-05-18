@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Session - {{ user_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true
+          },
+          options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            ignoreHtmlClass: 'tex2jax_ignore',
+            processHtmlClass: 'tex2jax_process'
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container" data-session-id="{{ session_id }}" data-user-name="{{ user_name }}">
+        <!-- Header -->
+        <header>
+           <div class="logo">
+               <i class="fas fa-robot"></i> Chat Session: {{ session_id[:8] }}...
+           </div>
+           <a href="{{ url_for('list_sessions') }}" class="new-chat-link">Phiên Mới</a>
+           <div class="status connecting">
+               <i class="fas fa-circle" id="connectionStatusIcon"></i>
+               <span id="statusText">Đang kết nối...</span>
+           </div>
+       </header>
+
+        <div class="main-content">
+            <!-- Chat Container -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Tin nhắn sẽ được thêm vào đây -->
+                </div>
+                <div class="typing-indicator" id="typingIndicator" style="display: none;"></div>
+                <div class="chat-input">
+                     <div class="input-container">
+                        <textarea id="userInput" placeholder="Nhập tin nhắn của bạn..." rows="1"></textarea>
+                        <button class="send-btn" id="sendBtn" title="Gửi tin nhắn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="info-panel">
+                <!-- Problem Description -->
+                <div>
+                    <div class="section-title"><i class="fas fa-book-open"></i> Bài Toán</div>
+                    <div class="problem-description" id="problemDisplay">
+                        {{ problem_description | safe }}
+                    </div>
+                </div>
+                <!-- Progress -->
+                <div>
+                    <div class="section-title"><i class="fas fa-tasks"></i> Tiến Trình</div>
+                    <div class="stage-info">
+                        <span id="currentStage">Đang tải giai đoạn...</span>
+                        <p id="stageDescription">Mô tả giai đoạn sẽ xuất hiện ở đây.</p>
+                    </div>
+                    <div class="stage-progress">
+                        <div class="progress-label" id="progressLabel">
+                            Giai đoạn 1/4
+                            <span id="progressPercent" style="float:right"></span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <!-- NEW: Sub-tasks list -->
+                    <div class="sub-tasks-section">
+                        <h4 class="sub-tasks-title">Nhiệm vụ giai đoạn hiện tại:</h4>
+                        <ul class="sub-tasks-list" id="subTasksList">
+                            <li class="no-tasks">Đang tải nhiệm vụ...</li>
+                        </ul>
+                    </div>
+                    <!-- END NEW -->
+                </div>
+
+                <!-- Participants -->
+                <div>
+                    <div class="section-title"><i class="fas fa-users"></i> Người Tham Gia</div>
+                    <ul class="participants" id="participantsList">
+                        <!-- User Participant -->
+                        <li class="participant user-participant">
+                            <div class="participant-avatar">BẠN</div>
+                            <div class="participant-info">
+                                <div class="participant-name">Bạn</div>
+                                <div class="participant-status">Online</div>
+                            </div>
+                        </li>
+                        <!-- Agents -->
+                        {% if participants %}
+                            {% for agent in participants %}
+                            <li class="participant agent-participant status-idle"
+                                data-agent-id="{{ agent.id }}"
+                                data-agent-name="{{ agent.name }}">
+                                <div class="participant-avatar">{{ agent.avatar_initial }}</div>
+                                <div class="participant-info">
+                                    <div class="participant-name">{{ agent.name }}</div>
+                                    <div class="participant-status">
+                                        Đang hoạt động
+                                        <span class="typing-dot" style="display: none;"></span>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="participant-empty">Không có agent nào được tải.</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Statistics -->
+                <div>
+                    <div class="section-title"><i class="fas fa-info-circle"></i> Thống Kê</div>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="messageCount">0</div>
+                            <div class="stat-label">Tin nhắn</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="control-btn restart" id="restartBtn" title="Bắt đầu lại cuộc trò chuyện">
+                        <i class="fas fa-redo"></i> Khởi Động Lại
+                    </button>
+                    <button class="control-btn" id="exportBtn" title="Xuất nội dung chat">
+                        <i class="fas fa-download"></i> Xuất
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='chat_interface.js') }}"></script>
+</body>
+</html> 

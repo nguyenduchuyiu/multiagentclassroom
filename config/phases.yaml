@@ -1,96 +1,114 @@
 "1":
   stage: "1"
-  name: "Tìm hiểu đề bài."
+  name: |
+    Tìm hiểu đề bài: "Bùa chú đơn điệu"
   description: |
-    Tìm hiểu nội dung đề bài, xác định bài toán yêu cầu điều gì, những dữ kiện đã cho và các ẩn số cần tìm hoặc chứng minh.
+    Chào mừng các phù thủy và pháp sư tương lai! Hôm nay, chúng ta sẽ sử dụng kiến thức toán học để giải một "bùa chú đơn điệu" liên quan đến sự biến thiên của hàm số.
+    Trước tiên, hãy đọc kỹ "lời nguyền" (bài toán) mà chúng ta cần giải.
+    Bài toán của chúng ta là: Xét tính đơn điệu của hàm số $f(x) = -x^3 + 3x - 2$.
   tasks:
     - id: "1.1"
       description: |
-        Tìm hiểu bài toán cho những gì? Đâu là ẩn? Đâu là dữ liệu? 
-        Và bài toán yêu cầu tìm hay chứng minh điều gì? 
-        (Chỉ cần nêu và nhận xét chứ không cần đi chi tiết vào)
+        Theo con, yêu cầu chính của "lời nguyền" này là gì?
+        Chúng ta cần tìm gì hoặc chứng minh điều gì về hàm số $f(x) = -x^3 + 3x - 2$?
     - id: "1.2"
       description: |
-        Khi đã giải quyết được các nhiệm vụ trên và nắm được các mục tiêu, 
-        đề nghị cả nhóm sang bước mới là "Lên kế hoạch".
+        "Lời nguyền" này cho chúng ta biết những thông tin gì quan trọng?
+        Hãy liệt kê những dữ kiện hoặc đặc điểm nổi bật của hàm số đã cho.
+        Ví dụ, nó là hàm đa thức bậc mấy?
   goals:
-    - "Nhận biết đây là dạng bài toán xét tính đơn điệu của hàm số bậc nhất trên bậc nhất"
-
+    - "Hiểu rõ yêu cầu của bài toán (xét tính đơn điệu)."
+    - "Xác định được hàm số cần khảo sát."
 "2":
   stage: "2"
-  name: "Lập kế hoạch giải bài."
+  name: "Lập kế hoạch giải bài: Chuẩn bị cho 'bùa chú'."
   description: |
-    Đưa ra kế hoạch giải bài, xác định phương pháp phù hợp trước khi thực hiện chi tiết.
+    Tuyệt vời! Bây giờ, chúng ta cần chuẩn bị cho "bùa chú" bằng cách vạch ra kế hoạch chi tiết.
+    Đây là những bước quan trọng để giải quyết bài toán về tính đơn điệu của hàm số.
   tasks:
     - id: "2.1"
       description: |
-        Đề xuất phương pháp giải bài từ quan sát và đánh giá bài toán. 
-        Nhận xét, phân tích một phương pháp cụ thể xem có khả thi không. 
-        Tuy nhiên CHƯA cần thực hiện cụ thể, chi tiết.
+        Bước đầu tiên trong việc "khảo sát bùa chú" này là gì? (Gợi ý: Hàm số có nghĩa ở đâu?)
+        Chúng ta cần xác định điều kiện tồn tại của hàm số, hay còn gọi là gì nhỉ?
     - id: "2.2"
       description: |
-        Khi đã giải quyết được các nhiệm vụ trên và nắm được các mục tiêu, 
-        đề nghị cả nhóm sang bước mới là "Thực hiện giải bài cụ thể".
+        Sau khi xác định "lãnh thổ" của hàm số, chúng ta cần tìm "sức mạnh" của nó.
+        Vậy bước tiếp theo là gì? (Gợi ý: Liên quan đến sự thay đổi của hàm số)
+    - id: "2.3"
+      description: |
+        Khi đã có "sức mạnh" (đạo hàm), chúng ta cần giải mã nó.
+        Bước tiếp theo là gì để biết hàm số tăng hay giảm?
+    - id: "2.4"
+      description: |
+        Để vẽ bản đồ chi tiết về sự biến thiên của hàm số, chúng ta cần tìm thêm thông tin gì?
+        (Gợi ý: giá trị tại điểm đặc biệt và ở vô cùng)
+    - id: "2.5"
+      description: |
+        Cuối cùng, chúng ta sẽ trình bày tất cả thông tin thu thập được dưới dạng nào để dễ dàng nhìn thấy sự biến thiên của hàm số?
   goals:
-    - "Thống nhất được cách làm phổ biến nhất là dùng đạo hàm để xét tính đơn điệu và vẽ bảng biến thiên."
-
+    - "Xác định được các bước cần thiết để giải bài toán."
+    - "Hiểu rõ thứ tự thực hiện các bước."
 "3":
   stage: "3"
-  name: "Thực hiện giải bài."
+  name: "Thực hiện giải bài: Thi triển 'bùa chú'."
   description: |
-    Thực hiện cụ thể các bước giải bài theo kế hoạch đã đề ra.
+    Đã đến lúc thi triển "bùa chú"! Chúng ta sẽ thực hiện từng bước trong kế hoạch để giải quyết "lời nguyền" đơn điệu này.
+    Hãy tập trung và cẩn thận trong từng bước tính toán nhé.
   tasks:
     - id: "3.1"
-      description: "Bước 1: Tìm Tập Xác Định D = ℝ \\ {-1}"
+      description: |
+        Đầu tiên, hãy xác định "lãnh thổ" của hàm số $f(x) = -x^3 + 3x - 2$.
+        Hàm số này có điều kiện gì không? Nó xác định trên khoảng nào?
     - id: "3.2"
-      description: "Bước 2: Tính Đạo Hàm f'(x) = 2 / (x + 1)^2"
+      description: |
+        Tiếp theo, chúng ta cần tìm "sức mạnh" của hàm số.
+        Hãy tính đạo hàm $f'(x)$ của hàm số $f(x) = -x^3 + 3x - 2$.
+        Nhớ lại các quy tắc tính đạo hàm cơ bản nhé!
     - id: "3.3"
-      description: "Bước 3: Xét Dấu Đạo Hàm f'(x) > 0 ∀ x ≠ -1"
+      description: |
+        Bây giờ, hãy tìm các điểm mà "sức mạnh" bằng không, tức là giải phương trình $f'(x) = 0$.
+        Các giá trị $x$ này có ý nghĩa gì trong việc xét tính đơn điệu của hàm số?
     - id: "3.4"
       description: |
-        Bước 4: Tính Giới Hạn (lim)
-        lim(x → +∞) f(x) = 1
-        lim(x → -∞) f(x) = 1
-        lim(x → -1⁺) f(x) = -∞
-        lim(x → -1⁻) f(x) = +∞
+        Xác định dấu của $f'(x)$ trên các khoảng giữa các nghiệm vừa tìm được.
+        $f'(x)$ mang dấu dương nghĩa là gì? Âm nghĩa là gì?
     - id: "3.5"
       description: |
-        Bước 5: Lập Bảng Biến Thiên  
-        | x      | -∞         |   -1        | +∞         |
-        |--------|------------|-------------|------------|
-        | f'(x)  | +          |   ∥         | +          |
-        | f(x)   | 1 ↑ +∞     |   ∥         | -∞ ↑ 1     |
+        Tính giá trị của hàm số $f(x)$ tại các điểm mà $f'(x) = 0$.
+        $f(-1) = ?$ và $f(1) = ?$
     - id: "3.6"
       description: |
-        Bước 6: Kết Luận Tính Đơn Điệu: 
-        Hàm số đồng biến trên khoảng (-∞, -1) và (-1, +∞).
+        Tính giới hạn của $f(x)$ khi $x$ tiến tới $+\infty$ và $-\infty$.
+        $\lim_{x \to +\infty} f(x) = ?$
+        $\lim_{x \to -\infty} f(x) = ?$
     - id: "3.7"
       description: |
-        Khi đã giải quyết được đầy đủ các bước làm của lời giải trên, 
-        đề nghị cả nhóm sang quá trình cuối là "Kết luận và đánh giá cả bài làm".
+        Dựa vào tất cả thông tin thu thập được, hãy vẽ bảng biến thiên của hàm số $f(x)$.
+        Bảng biến thiên sẽ cho chúng ta thấy rõ sự tăng giảm của hàm số trên các khoảng khác nhau.
   goals:
-    - "Tính đạo hàm và xét dấu đúng."
-    - "Nhận biết tính đơn điệu qua dấu đạo hàm."
-    - "Sử dụng bảng biến thiên để hỗ trợ kết luận."
-
+    - "Tính toán chính xác đạo hàm và các giá trị liên quan."
+    - "Xác định đúng dấu của đạo hàm trên các khoảng."
+    - "Vẽ đúng bảng biến thiên của hàm số."
 "4":
   stage: "4"
-  name: "Kết luận."
+  name: "Kết luận và Đánh giá: Giải mã 'bùa chú'."
   description: |
-    Kết luận lại quá trình làm bài và đánh giá kết quả đạt được.
+    Chúc mừng! Chúng ta đã thành công thi triển "bùa chú" và thu thập đủ thông tin.
+    Bây giờ là lúc đưa ra kết luận cuối cùng về tính đơn điệu của hàm số.
   tasks:
     - id: "4.1"
-      description: "Tóm tắt những bước chính đã làm."
-    - id: "4.2"
-      description: "Đánh giá phương pháp đã làm."
-    - id: "4.3"
-      description: "Rút ra được nguyên tắc làm bài."
-    - id: "4.4"
       description: |
-        Khi đã giải quyết được các nhiệm vụ trên và nắm được các mục tiêu, 
-        kết thúc bài toán ở đây và kết thúc thảo luận.
+        Dựa vào bảng biến thiên, hãy cho biết hàm số $f(x)$ đồng biến trên khoảng nào?
+        Ở đó, đạo hàm $f'(x)$ mang dấu gì?
+    - id: "4.2"
+      description: |
+        Dựa vào bảng biến thiên, hãy cho biết hàm số $f(x)$ nghịch biến trên những khoảng nào?
+        Ở đó, đạo hàm $f'(x)$ mang dấu gì?
+    - id: "4.3"
+      description: |
+        Vậy, theo con, chúng ta có thể kết luận gì về tính đơn điệu của hàm số $f(x) = -x^3 + 3x - 2$?
+        Hãy tóm tắt lại kết quả chúng ta vừa tìm được.
   goals:
-    - |
-      Rút ra được nguyên tắc làm dạng này như sau:
-      Bước 1: Tìm tập xác định D...
-      Bước 4: Nêu kết luận...
+    - "Nắm vững khái niệm về tính đơn điệu của hàm số."
+    - "Biết cách sử dụng đạo hàm để xét tính đơn điệu."
+    - "Đưa ra kết luận chính xác về tính đơn điệu của hàm số."

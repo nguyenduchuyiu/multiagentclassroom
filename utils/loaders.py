@@ -69,20 +69,49 @@ def load_phases_from_yaml(filepath: str) -> Dict[str, Dict]:
         print(f"!!! ERROR [Loader]: Unexpected error loading phases from {filepath}: {e}")
         return {}
     
-def load_problem_context(filepath: str) -> Optional[Dict[str, str]]:
-    """Loads problem and solution descriptions from a YAML file."""
+def load_problem_context(filepath: str) -> Optional[Dict[str, Dict[str, str]]]:
+    """Loads multiple problems and their solutions from a YAML file.
+    Expects a YAML structure like:
+    "1":
+      problem: "Problem description for 1..."
+      solution: "Solution for 1..."
+    "2":
+      problem: "Problem description for 2..."
+      solution: "Solution for 2..."
+    Returns a dictionary where keys are problem IDs and values are
+    dictionaries containing 'problem' and 'solution' strings.
+    Returns None if the file is not found, is not a valid YAML dictionary,
+    or contains no valid problems.
+    """
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
-            context_cfg = yaml.safe_load(f)
-        if not isinstance(context_cfg, dict) or 'problem' not in context_cfg:
-             print(f"!!! ERROR [Loader]: Invalid format or missing 'problem' key in {filepath}.")
+            problems_cfg = yaml.safe_load(f)
+
+        if not isinstance(problems_cfg, dict):
+             print(f"!!! ERROR [Loader]: Invalid YAML format in {filepath}. Expected a top-level dictionary of problems.")
              return None
-        print(f"--- LOADER: Loaded problem context from {filepath}")
-        # Return the whole dictionary
-        return {
-            'problem': context_cfg.get('problem', ''),
-            'solution': context_cfg.get('solution', '') # Include solution if present
-        }
+
+        valid_problems: Dict[str, Dict[str, str]] = {}
+        for problem_id, content in problems_cfg.items():
+            if isinstance(content, dict) and \
+               isinstance(content.get('problem'), str) and \
+               isinstance(content.get('solution'), str) and \
+               content['problem'].strip() and \
+               content['solution'].strip(): # Ensure they are non-empty strings
+                valid_problems[str(problem_id)] = { # Ensure problem_id is a string
+                    'problem': content['problem'],
+                    'solution': content['solution']
+                }
+            else:
+                print(f"!!! WARN [Loader]: Problem ID '{problem_id}' in {filepath} has invalid format, is missing, or has empty 'problem'/'solution'. Skipping.")
+        
+        if not valid_problems:
+            print(f"!!! INFO [Loader]: No valid problems found in {filepath} after validation.")
+            return None # Or return {} if an empty dict is preferred over None for "no valid problems"
+            
+        print(f"--- LOADER: Loaded {len(valid_problems)} valid problems from {filepath}")
+        return valid_problems
+
     except FileNotFoundError:
         print(f"!!! ERROR [Loader]: Problem context file not found: {filepath}")
         return None

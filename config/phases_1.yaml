@@ -1,0 +1,96 @@
+"1":
+  stage: "1"
+  name: "Tìm hiểu đề bài."
+  description: |
+    Tìm hiểu nội dung đề bài, xác định bài toán yêu cầu điều gì, những dữ kiện đã cho và các ẩn số cần tìm hoặc chứng minh.
+  tasks:
+    - id: "1.1"
+      description: |
+        Tìm hiểu bài toán cho những gì? Đâu là ẩn? Đâu là dữ liệu? 
+        Và bài toán yêu cầu tìm hay chứng minh điều gì? 
+        (Chỉ cần nêu và nhận xét chứ không cần đi chi tiết vào)
+    - id: "1.2"
+      description: |
+        Khi đã giải quyết được các nhiệm vụ trên và nắm được các mục tiêu, 
+        đề nghị cả nhóm sang bước mới là "Lên kế hoạch".
+  goals:
+    - "Nhận biết đây là dạng bài toán xét tính đơn điệu của hàm số bậc nhất trên bậc nhất"
+
+"2":
+  stage: "2"
+  name: "Lập kế hoạch giải bài."
+  description: |
+    Đưa ra kế hoạch giải bài, xác định phương pháp phù hợp trước khi thực hiện chi tiết.
+  tasks:
+    - id: "2.1"
+      description: |
+        Đề xuất phương pháp giải bài từ quan sát và đánh giá bài toán. 
+        Nhận xét, phân tích một phương pháp cụ thể xem có khả thi không. 
+        Tuy nhiên CHƯA cần thực hiện cụ thể, chi tiết.
+    - id: "2.2"
+      description: |
+        Khi đã giải quyết được các nhiệm vụ trên và nắm được các mục tiêu, 
+        đề nghị cả nhóm sang bước mới là "Thực hiện giải bài cụ thể".
+  goals:
+    - "Thống nhất được cách làm phổ biến nhất là dùng đạo hàm để xét tính đơn điệu và vẽ bảng biến thiên."
+
+"3":
+  stage: "3"
+  name: "Thực hiện giải bài."
+  description: |
+    Thực hiện cụ thể các bước giải bài theo kế hoạch đã đề ra.
+  tasks:
+    - id: "3.1"
+      description: "Bước 1: Tìm Tập Xác Định D = ℝ \\ {-1}"
+    - id: "3.2"
+      description: "Bước 2: Tính Đạo Hàm f'(x) = 2 / (x + 1)^2"
+    - id: "3.3"
+      description: "Bước 3: Xét Dấu Đạo Hàm f'(x) > 0 ∀ x ≠ -1"
+    - id: "3.4"
+      description: |
+        Bước 4: Tính Giới Hạn (lim)
+        lim(x → +∞) f(x) = 1
+        lim(x → -∞) f(x) = 1
+        lim(x → -1⁺) f(x) = -∞
+        lim(x → -1⁻) f(x) = +∞
+    - id: "3.5"
+      description: |
+        Bước 5: Lập Bảng Biến Thiên  
+        | x      | -∞         |   -1        | +∞         |
+        |--------|------------|-------------|------------|
+        | f'(x)  | +          |   ∥         | +          |
+        | f(x)   | 1 ↑ +∞     |   ∥         | -∞ ↑ 1     |
+    - id: "3.6"
+      description: |
+        Bước 6: Kết Luận Tính Đơn Điệu: 
+        Hàm số đồng biến trên khoảng (-∞, -1) và (-1, +∞).
+    - id: "3.7"
+      description: |
+        Khi đã giải quyết được đầy đủ các bước làm của lời giải trên, 
+        đề nghị cả nhóm sang quá trình cuối là "Kết luận và đánh giá cả bài làm".
+  goals:
+    - "Tính đạo hàm và xét dấu đúng."
+    - "Nhận biết tính đơn điệu qua dấu đạo hàm."
+    - "Sử dụng bảng biến thiên để hỗ trợ kết luận."
+
+"4":
+  stage: "4"
+  name: "Kết luận."
+  description: |
+    Kết luận lại quá trình làm bài và đánh giá kết quả đạt được.
+  tasks:
+    - id: "4.1"
+      description: "Tóm tắt những bước chính đã làm."
+    - id: "4.2"
+      description: "Đánh giá phương pháp đã làm."
+    - id: "4.3"
+      description: "Rút ra được nguyên tắc làm bài."
+    - id: "4.4"
+      description: |
+        Khi đã giải quyết được các nhiệm vụ trên và nắm được các mục tiêu, 
+        kết thúc bài toán ở đây và kết thúc thảo luận.
+  goals:
+    - |
+      Rút ra được nguyên tắc làm dạng này như sau:
+      Bước 1: Tìm tập xác định D...
+      Bước 4: Nêu kết luận...
