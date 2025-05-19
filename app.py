@@ -72,7 +72,7 @@ def list_sessions():
     sessions = db.execute(
         'SELECT session_id, user_name, created_at FROM sessions ORDER BY created_at DESC'
     ).fetchall()
-    return render_template('select_problem.html', sessions=sessions)
+    return render_template('list_sessions.html', sessions=sessions)
 
 @app.route('/select_problem', methods=['GET'])
 def select_problem_page():

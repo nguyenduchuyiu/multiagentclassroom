@@ -12,6 +12,13 @@
     <div class="container">
         <h1><i class="fas fa-list-alt"></i> Chat Sessions</h1>
 
+        <!-- Nút New Chat ở đầu trang -->
+        <div style="margin-bottom: 20px;">
+            <a href="{{ url_for('select_problem_page') }}" class="button-like-link" style="text-decoration: none; padding: 10px 15px; background-color: #28a745; color: white; border-radius: 5px; display: inline-block;">
+                <i class="fas fa-plus"></i> New Chat
+            </a>
+        </div>
+
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}

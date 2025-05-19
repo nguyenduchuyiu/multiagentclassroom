@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chọn Bài Toán - Toán Tư Duy</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
         .container { max-width: 800px; margin: auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
@@ -65,6 +66,9 @@
 </head>
 <body>
     <div class="container">
+        <a href="{{ url_for('list_sessions') }}" class="button-like-link" style="align-self: flex-start;">
+            <i class="fas fa-list-alt"></i> Danh sách phiên chat
+        </a>
         <h1>Chào Mừng Đến Với Toán Tư Duy Tương Tác!</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}

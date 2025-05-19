@@ -30,6 +30,9 @@
            <div class="logo">
                <i class="fas fa-robot"></i> Chat Session: {{ session_id[:8] }}...
            </div>
+           <a href="{{ url_for('list_sessions') }}" class="button-like-link" style="margin-right:10px;">
+               <i class="fas fa-list-alt"></i> Danh sách phiên
+           </a>
            <a href="{{ url_for('list_sessions') }}" class="new-chat-link">Phiên Mới</a>
            <div class="status connecting">
                <i class="fas fa-circle" id="connectionStatusIcon"></i>

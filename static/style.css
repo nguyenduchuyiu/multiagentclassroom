@@ -880,3 +880,213 @@ li.participant.status-typing {
     color: white;
     border-color: var(--secondary-color);
 }
+
+/* --- List Sessions Page Styles --- */
+.session-listing-page .container {
+    max-width: 700px;
+    margin: 40px auto;
+    background: var(--content-bg-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 12px var(--shadow-color);
+    padding: 32px 28px 28px 28px;
+    min-height: 70vh;
+}
+
+.session-listing-page h1 {
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.session-listing-page h2 {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    margin-top: 28px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.session-listing-page ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px 0;
+}
+
+.session-listing-page li {
+    background: var(--tertiary-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 1px 4px var(--shadow-color);
+    margin-bottom: 14px;
+    padding: 18px 18px 12px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: background 0.2s, box-shadow 0.2s;
+    border-left: 5px solid var(--primary-color);
+}
+
+.session-listing-page li:hover {
+    background: var(--secondary-color);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    border-left-color: var(--primary-darker-color);
+}
+
+.session-info a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 1.08rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+}
+.session-info a:hover {
+    color: var(--primary-darker-color);
+    text-decoration: underline;
+}
+
+.session-meta {
+    color: var(--text-color-secondary);
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 2px;
+}
+
+.no-sessions-message {
+    color: var(--text-color-disabled);
+    font-style: italic;
+    margin: 18px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.05em;
+}
+
+.flash {
+    padding: 12px 18px;
+    border-radius: var(--border-radius);
+    margin-bottom: 18px;
+    font-size: 1em;
+    font-weight: 500;
+    box-shadow: 0 1px 4px var(--shadow-color);
+    border-left: 5px solid var(--primary-color);
+    background: var(--tertiary-color);
+}
+.flash.error { border-left-color: var(--error-color); background: #fff3f3; color: var(--error-color);}
+.flash.success { border-left-color: var(--success-color); background: #f3fff6; color: var(--success-color);}
+.flash.warning { border-left-color: var(--warning-color); background: #fff9f3; color: var(--warning-color);}
+
+.button-like-link {
+    background: var(--primary-color);
+    color: #fff !important;
+    border-radius: var(--border-radius);
+    padding: 12px 22px;
+    font-size: 1.08em;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 1px 4px var(--shadow-color);
+    transition: background 0.2s, color 0.2s;
+    margin-top: 10px;
+    border: none;
+    cursor: pointer;
+}
+.button-like-link:hover {
+    background: var(--primary-darker-color);
+    color: #fff;
+    text-decoration: none;
+}
+.button-like-link i {
+    font-size: 1.1em;
+    margin-right: 4px;
+}
+
+/* Đảm bảo nút không bị dính sát nhau nếu có nhiều nút trên header */
+header .button-like-link {
+    margin-left: 10px;
+    margin-right: 0;
+}
+
+@media (max-width: 600px) {
+    .session-listing-page .container {
+        padding: 12px 4vw;
+    }
+    .session-listing-page h1 { font-size: 1.3rem; }
+    .session-listing-page h2 { font-size: 1.05rem; }
+    .button-like-link { font-size: 1em; padding: 10px 12px; }
+    .session-listing-page li { padding: 12px 8px 8px 12px; }
+    header .button-like-link {
+        margin-left: 4px;
+    }
+}
+
+/* Nút danh sách phiên (List Sessions Button) */
+.session-list-link {
+    background: var(--secondary-color);
+    color: var(--primary-color) !important;
+    border-radius: var(--border-radius);
+    padding: 12px 22px;
+    font-size: 1.08em;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 1px 4px var(--shadow-color);
+    transition: background 0.2s, color 0.2s;
+    margin-top: 10px;
+    border: none;
+    cursor: pointer;
+    border: 1px solid var(--primary-color);
+}
+.session-list-link:hover {
+    background: var(--primary-color);
+    color: #fff !important;
+    border-color: var(--primary-darker-color);
+}
+.session-list-link i {
+    font-size: 1.1em;
+    margin-right: 4px;
+}
+
+/* Đảm bảo style cho nút danh sách phiên chat luôn được áp dụng */
+.button-like-link.session-list-link,
+.session-list-link.button-like-link {
+    background: var(--secondary-color);
+    color: var(--primary-color) !important;
+    border-radius: var(--border-radius);
+    padding: 12px 22px;
+    font-size: 1.08em;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 1px 4px var(--shadow-color);
+    transition: background 0.2s, color 0.2s;
+    margin-top: 10px;
+    border: 1px solid var(--primary-color);
+    border-width: 1px;
+    cursor: pointer;
+}
+.button-like-link.session-list-link:hover,
+.session-list-link.button-like-link:hover {
+    background: var(--primary-color);
+    color: #fff !important;
+    border-color: var(--primary-darker-color);
+}
+.button-like-link.session-list-link i,
+.session-list-link.button-like-link i {
+    font-size: 1.1em;
+    margin-right: 4px;
+}
