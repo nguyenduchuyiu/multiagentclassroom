@@ -1,20 +1,16 @@
-<!-- templates/list_sessions.html -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Chat Sessions</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Assuming Font Awesome is linked globally or in a base template.
-         If not, add: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sessions.css') }}">
 </head>
-<body class="session-listing-page">
+<body>
     <div class="container">
-        <h1><i class="fas fa-list-alt"></i> Chat Sessions</h1>
-
-        <!-- Nút New Chat ở đầu trang -->
-        <div style="margin-bottom: 20px;">
-            <a href="{{ url_for('select_problem_page') }}" class="button-like-link" style="text-decoration: none; padding: 10px 15px; background-color: #28a745; color: white; border-radius: 5px; display: inline-block;">
+        <div class="header">
+            <h1><i class="fas fa-list-alt"></i> Chat Sessions</h1>
+            <a href="{{ url_for('select_problem_page') }}" class="new-chat-btn">
                 <i class="fas fa-plus"></i> New Chat
             </a>
         </div>
@@ -28,35 +24,45 @@
           {% endif %}
         {% endwith %}
 
-        <h2><i class="fas fa-history"></i> Existing Sessions</h2>
-        {% if sessions %}
-            <ul>
-            {% for session in sessions %}
-                <li>
-                    <div class="session-info">
-                        <a href="{{ url_for('chat_interface', session_id=session['session_id']) }}">
-                            <i class="fas fa-comments"></i> <!-- Icon for session -->
+        <div class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-history"></i> Existing Sessions
+            </h2>
+            
+            {% if sessions %}
+                <div class="session-list">
+                {% for session in sessions %}
+                    <div class="session-item">
+                        <a href="{{ url_for('chat_interface', session_id=session['session_id']) }}" class="session-link">
+                            <i class="fas fa-comments"></i>
                             Session with {{ session['user_name'] }} (ID: {{ session['session_id'][:8] }})
                         </a>
+                        <div class="session-meta">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Started: {{ session['created_at'].strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
                     </div>
-                    <div class="session-meta">
-                        <i class="fas fa-calendar-alt"></i> <!-- Icon for date -->
-                        <span>Started: {{ session['created_at'].strftime('%Y-%m-%d %H:%M') }}</span>
-                    </div>
-                </li>
-            {% endfor %}
-            </ul>
-        {% else %}
-            <p class="no-sessions-message"><i class="fas fa-folder-open"></i> No existing sessions found.</p>
-        {% endif %}
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-sessions">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No existing sessions found.</p>
+                </div>
+            {% endif %}
+        </div>
 
-        <div class="new-session-form">
-            <h2><i class="fas fa-plus-square"></i> Start New Session</h2>
-            <a href="{{ url_for('select_problem_page') }}" class="button-like-link" style="text-decoration: none; padding: 10px 15px; background-color: #007bff; color: white; border-radius: 5px; display: inline-block; margin-top: 10px;">
-                <i class="fas fa-play-circle"></i> Select Problem and Start New Chat
-            </a>
+        <div class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-plus-square"></i> Start New Session
+            </h2>
+            <div class="start-new-section">
+                <a href="{{ url_for('select_problem_page') }}" class="start-new-btn">
+                    <i class="fas fa-play-circle"></i>
+                    Select Problem and Start New Chat
+                </a>
+            </div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='list_sessions.js') }}"></script>
 </body>
 </html>

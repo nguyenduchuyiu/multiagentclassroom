@@ -13,6 +13,7 @@ def generate_uuid():
 def clean_response(raw_response):
     """Xử lý các ký tự đặc biệt và markdown artifacts"""
     cleaned = re.sub(r'```(json)?', '', raw_response)
+    cleaned = cleaned.replace('<\html>', '')
     cleaned = cleaned.replace('\r\n', '\n').replace('\r', '\n')
     cleaned = re.sub(
         r'(?<!\\)\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', 

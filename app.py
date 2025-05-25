@@ -66,6 +66,10 @@ atexit.register(cleanup_system)
 # --- Flask Routes ---
 
 @app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/list_sessions')
 def list_sessions():
     """Lists existing chat sessions. This is the main entry point."""
     db = database.get_db()
@@ -77,7 +81,7 @@ def list_sessions():
 @app.route('/select_problem', methods=['GET'])
 def select_problem_page():
     """Displays the page for users to select a problem and enter details."""
-    return render_template('select_problem.html')
+    return render_template('selection.html')
 
 @app.route('/chat/<session_id>')
 def chat_interface(session_id):
@@ -335,7 +339,7 @@ def generate_script_and_start_chat():
         db.commit()
         print(f"--- APP: Created new session {session_id} for user {username} (problem {problem_id}) ---")
 
-        initial_text = f"Chào mừng {username}! Chúng ta hãy cùng giải bài toán:\n\n{problem_text}\n\nBắt đầu với giai đoạn 1: Tìm hiểu đề bài nhé!"
+        initial_text = f"Chào mừng mọi người! Chúng ta hãy cùng giải bài toán:\n\n{problem_text}\n\nBắt đầu với giai đoạn 1: Tìm hiểu đề bài nhé!"
         initial_content = {"text": initial_text, "sender_name": "System"}
         conversation_history.add_event(
             session_id=session_id,

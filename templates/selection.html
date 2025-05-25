@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Problem - AI Learning Lab</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/selection.css') }}">
+</head>
+<body class="selection-page">
+    <div class="page-wrapper">
+        <!-- Background Pattern -->
+        <div class="bg-pattern"></div>
+        
+        <!-- Navigation -->
+        <nav class="top-nav">
+            <a href="{{ url_for('list_sessions') }}" class="nav-link">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Sessions</span>
+            </a>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="selection-container">
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="hero-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h1 class="hero-title">Welcome to AI Learning Lab</h1>
+                <p class="hero-subtitle">Choose a problem and start your interactive learning journey</p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'times-circle' }}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Selection Form -->
+            <div class="selection-form-wrapper">
+                <form id="problem-selection-form" action="{{ url_for('generate_script_and_start_chat') }}" method="POST" class="selection-form">
+                    <!-- Problem Selection -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-puzzle-piece"></i>
+                            </div>
+                            <div class="section-title">
+                                <h2>Select Your Challenge</h2>
+                                <p>Pick a problem that interests you</p>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="problem_id" class="input-label">Choose a problem:</label>
+                            <div class="select-wrapper">
+                                <select name="problem_id" id="problem_id" class="custom-select" required>
+                                    <option value="">-- Please select a problem --</option>
+                                </select>
+                                <i class="fas fa-chevron-down select-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div id="problem-preview-area" class="problem-preview custom-scrollbar" style="display:none;">
+                            <div class="preview-header">
+                                <i class="fas fa-eye"></i>
+                                <span>Problem Preview</span>
+                            </div>
+                            <div class="preview-content"></div>
+                        </div>
+                    </div>
+
+                    <!-- User Information -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div class="section-title">
+                                <h2>Tell Us About Yourself</h2>
+                                <p>Personalize your learning experience</p>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="username" class="input-label">Your name:</label>
+                            <input type="text" 
+                                   name="username" 
+                                   id="username" 
+                                   class="custom-input"
+                                   placeholder="e.g., Student A" 
+                                   required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="keywords" class="input-label">
+                                Keywords for scenario (optional):
+                                <span class="label-hint">Help us create a themed experience</span>
+                            </label>
+                            <input type="text" 
+                                   name="keywords" 
+                                   id="keywords" 
+                                   class="custom-input"
+                                   placeholder="e.g., Halloween, detective, space exploration">
+                        </div>
+                    </div>
+
+                    <!-- Submit Section -->
+                    <div class="submit-section">
+                        <button type="submit" class="submit-button">
+                            <div class="button-content">
+                                <i class="fas fa-play"></i>
+                                <span>Start Learning Journey</span>
+                            </div>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Loading State -->
+                <div id="loading-overlay" class="loading-overlay" style="display: none;">
+                    <div class="loading-content">
+                        <div class="loading-spinner">
+                            <div class="spinner-ring"></div>
+                            <div class="spinner-ring"></div>
+                            <div class="spinner-ring"></div>
+                        </div>
+                        <div class="loading-text">
+                            <h3>Creating Your Learning Experience...</h3>
+                            <p>Please wait while we set up your personalized session</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/selection.js') }}"></script>
+</body>
+</html>

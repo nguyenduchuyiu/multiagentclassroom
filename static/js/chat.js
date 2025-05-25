@@ -11,8 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const participantsList = document.getElementById('participantsList');
     const messageCountEl = document.getElementById('messageCount');
     const problemDisplayEl = document.getElementById('problemDisplay');
-    const connectionStatusIcon = document.getElementById('connectionStatusIcon');
-    const statusText = document.getElementById('statusText');
+    const statusTextEl = document.getElementById('statusText');
+    const statusIndicatorEl = document.querySelector('.status');
+    const statusIconEl = document.getElementById('connectionStatusIcon');
     const restartBtn = document.getElementById('restartBtn');
     const exportBtn = document.getElementById('exportBtn');
     const currentStageEl = document.getElementById('currentStage');
@@ -74,8 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTypingAgents.clear();
         participantsList.querySelectorAll('.agent-participant').forEach(div => {
             const agentName = div.dataset.agentName;
-            if (agentName) agentStatuses[agentName] = 'idle';
+            if (agentName) {
+                agentStatuses[agentName] = 'idle';
+            }
         });
+        console.log('Final agentStatuses object after initialization:', JSON.stringify(agentStatuses));
         updateParticipantDisplay();
     }
 
@@ -190,29 +194,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateConnectionStatus(status) {
-        const panel = document.querySelector('.status');
-        if (!panel || !connectionStatusIcon || !statusText || !messageInput || !sendButton) return;
-        panel.classList.remove('connecting','connected','disconnected');
+        if (!statusIndicatorEl || !statusTextEl || !messageInput || !sendButton) {
+            console.warn("Status display elements not found, cannot update connection status.");
+            return;
+        }
+
+        statusIndicatorEl.classList.remove('connecting', 'connected', 'disconnected');
         messageInput.disabled = true; // Disable input by default
         sendButton.disabled = true;
 
         switch(status) {
             case 'connected':
-                connectionStatusIcon.style.color = 'var(--success-color)';
-                statusText.textContent = 'Đã kết nối';
-                panel.classList.add('connected');
+                statusTextEl.textContent = 'Đã kết nối';
+                statusIndicatorEl.classList.add('connected');
+                if (statusIconEl) {
+                    statusIconEl.style.animationName = 'none'; // Stop pulsing
+                    statusIconEl.style.opacity = '1';          // Ensure dot is solid
+                }
                 messageInput.disabled = false; // Enable input on connection
                 sendButton.disabled = false;
                 break;
-            case 'disconnected':
-                connectionStatusIcon.style.color = 'var(--error-color)';
-                statusText.textContent = 'Mất kết nối';
-                panel.classList.add('disconnected');
+            case 'connecting':
+                statusTextEl.textContent = 'Đang kết nối...';
+                statusIndicatorEl.classList.add('connecting');
+                if (statusIconEl) {
+                    statusIconEl.style.animationName = 'pulse'; // Ensure pulsing
+                }
+                // Inputs remain disabled (already set by default)
                 break;
-            default: // connecting
-                connectionStatusIcon.style.color = 'var(--warning-color)';
-                statusText.textContent = 'Đang kết nối...';
-                panel.classList.add('connecting');
+            case 'disconnected':
+                statusTextEl.textContent = 'Đã mất kết nối';
+                statusIndicatorEl.classList.add('disconnected');
+                if (statusIconEl) {
+                    statusIconEl.style.animationName = 'none'; // Stop pulsing
+                    statusIconEl.style.opacity = '1';          // Ensure dot is solid
+                }
+                // Inputs remain disabled (already set by default)
+                break;
+            default:
+                statusTextEl.textContent = 'Trạng thái không xác định';
+                if (statusIconEl) {
+                     statusIconEl.style.animationName = 'pulse'; // Default to pulsing
+                }
+                // Inputs remain disabled
         }
     }
 
@@ -340,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('SSE error:', err);
             updateConnectionStatus('disconnected');
             if (eventSource) eventSource.close();
-            if (statusText) statusText.textContent = 'Mất kết nối. Tải lại trang để thử.';
+            if (statusTextEl) statusTextEl.textContent = 'Mất kết nối. Tải lại trang để thử.';
         };
 
         eventSource.addEventListener('new_message', e => {
@@ -364,16 +388,42 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const eventData = JSON.parse(e.data);
                 const update = eventData.content; // Status data is inside content
-                const { agent_name: name, status } = update;
-                if (name && status && agentStatuses.hasOwnProperty(name)) {
-                    agentStatuses[name] = status;
-                    if (status === 'typing') currentTypingAgents.add(name);
-                    else currentTypingAgents.delete(name);
+                const { agent_name: nameFromEvent, status } = update;
+
+                if (!nameFromEvent || !status) {
+                    console.warn("Received agent_status with missing name or status:", eventData);
+                    return;
+                }
+
+                let actualAgentNameKey = null;
+                // Perform a case-insensitive search for the agent name in our agentStatuses object
+                for (const key in agentStatuses) {
+                    if (agentStatuses.hasOwnProperty(key) && key.toLowerCase() === nameFromEvent.toLowerCase()) {
+                        actualAgentNameKey = key; // Found the matching key (preserving its original case)
+                        break;
+                    }
+                }
+
+                if (actualAgentNameKey) {
+                    agentStatuses[actualAgentNameKey] = status;
+                    if (status === 'typing') {
+                        currentTypingAgents.add(actualAgentNameKey); // Add the original-cased name for display
+                    } else {
+                        currentTypingAgents.delete(actualAgentNameKey);
+                    }
                     updateParticipantDisplay();
                 } else {
-                    console.warn("Received invalid agent_status:", eventData);
+                    console.warn(
+                        "Received agent_status for an unknown or uninitialized agent (after case-insensitive check):",
+                        {
+                            eventName: nameFromEvent,
+                            eventStatus: status,
+                            knownAgentKeys: Object.keys(agentStatuses),
+                            fullEventData: eventData
+                        }
+                    );
                 }
-            } catch (err) { console.error('Parsing agent_status:', err, e.data); }
+            } catch (err) { console.error('Parsing agent_status error:', err, { rawData: e.data }); }
         });
 
         eventSource.addEventListener('message', e => { /* Handle keep-alive */ });

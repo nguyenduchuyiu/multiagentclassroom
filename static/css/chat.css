@@ -1,0 +1,920 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Unified Dark Color Palette */
+    --bg-primary: #222831;
+    --bg-secondary: #393E46;
+    --bg-tertiary: #4A4F57;
+    --bg-card: var(--bg-secondary); 
+    --bg-chat-area: var(--bg-primary); /* Or a slightly different dark shade if preferred */
+    
+    --accent-primary: #00ADB5;
+    --primary-gradient: linear-gradient(135deg, var(--accent-primary) 0%, color-mix(in srgb, var(--accent-primary) 80%, #EEEEEE 20%) 100%);
+    --primary-gradient-hover: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 90%, #222831 10%) 0%, color-mix(in srgb, var(--accent-primary) 70%, #EEEEEE 20%) 100%);
+    
+    --text-primary: #EEEEEE;
+    --text-secondary: rgba(238, 238, 238, 0.8);
+    --text-muted: rgba(238, 238, 238, 0.6);
+    --text-accent: var(--accent-primary);
+    --text-on-gradient: #222831; /* Dark text for contrast on accent */
+
+    --border-color: rgba(238, 238, 238, 0.2);
+    --border-focus: var(--accent-primary);
+    
+    --shadow-light: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-medium: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-heavy: 0 8px 16px rgba(0,0,0,0.15);
+
+    --border-radius: 12px; 
+    --border-radius-small: 8px;
+    --transition: all 0.25s ease-out;
+
+    /* Message specific colors */
+    --message-user-bg: var(--primary-gradient);
+    --message-user-text: var(--text-on-gradient);
+    --message-ai-bg: var(--bg-tertiary); 
+    --message-ai-text: var(--text-primary);
+    --message-system-bg: rgba(238, 238, 238, 0.05); /* Subtle on dark */
+    --message-system-text: var(--text-muted);
+
+    /* Status colors */
+    --success-color: #4CAF50; 
+    --success-bg: rgba(76, 175, 80, 0.15);
+    --success-border: #4CAF50;
+
+    --warning-color: #FF9800;
+    --warning-bg: rgba(255, 152, 0, 0.15);
+    --warning-border: #FF9800;
+
+    --error-color: #F44336;
+    --error-bg: rgba(244, 67, 54, 0.15);
+    --error-border: #F44336;
+
+    --hover-bg: color-mix(in srgb, var(--bg-secondary) 80%, var(--text-primary) 10%); /* Lighter version of card bg */
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.chat-page {
+    background: var(--bg-primary); /* Simplified background */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent; /* Updated colors */
+    scrollbar-width: none; /* Keep if you prefer no scrollbar visually */
+    -ms-overflow-style: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    display: none; /* Keep if you prefer no scrollbar visually */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent; /* Updated */
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--text-muted); /* Updated */
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary); /* Updated */
+}
+
+/* Header styles */
+header {
+    background: rgba(34, 40, 49, 0.85); /* Dark, blurred background */
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+    z-index: 1000;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.logo i {
+    color: var(--text-accent); /* Updated */
+}
+
+/* Styling for header links if needed */
+.button-like-link, .new-chat-link {
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-small);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.button-like-link:hover, .new-chat-link:hover {
+    background: var(--hover-bg);
+    color: var(--text-accent); /* Updated */
+}
+
+.new-chat-link {
+    background: var(--primary-gradient);
+    color: var(--text-on-gradient); 
+}
+.new-chat-link:hover {
+    background: var(--primary-gradient-hover); 
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+}
+
+.status.connecting {
+    background: var(--warning-bg);
+    color: var(--warning-color);
+    border-color: var(--warning-border);
+}
+
+.status.connected {
+    background: var(--success-bg);
+    color: var(--success-color);
+    border-color: var(--success-border);
+}
+
+.status.disconnected {
+    background: var(--error-bg);
+    color: var(--error-color);
+    border-color: var(--error-border);
+}
+
+#connectionStatusIcon {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status.connecting #connectionStatusIcon {
+    background: var(--warning-color);
+    animation: pulse 2s infinite;
+}
+.status.connected #connectionStatusIcon {
+    background: var(--success-color);
+}
+.status.disconnected #connectionStatusIcon {
+    background: var(--error-color);
+}
+
+/* Main App Container */
+.container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    max-width: 100vw;
+    min-height: 0;
+}
+
+.main-content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 0;
+    overflow: hidden;
+    background: var(--bg-chat-area); /* Use specific chat area background */
+    width: 100%;
+    max-width: 100vw;
+    min-height: 0;
+}
+
+/* Chat Section */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    border-right: 1px solid var(--border-color);
+    min-width: 0;
+    min-height: 0;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 0;
+    width: 100%;
+    margin: 0 auto;
+    max-width: 100%;
+}
+
+/* Message Styles */
+.message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+    animation: messageSlide 0.4s ease-out;
+    gap: 0.25rem;
+}
+
+@keyframes messageSlide {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message.user-message {
+    align-self: flex-end;
+}
+
+.message.ai-message {
+    align-self: flex-start;
+}
+
+.message.system-message {
+    align-self: center;
+    max-width: 90%;
+    font-size: 0.875rem;
+    color: var(--message-system-text);
+    background-color: var(--message-system-bg);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-small);
+    text-align: center;
+}
+
+.message-header {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 0 0.5rem;
+}
+
+.message.user-message .message-header {
+    text-align: right;
+}
+
+.message-header .sender-name {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.message-content {
+    background: var(--message-ai-bg);
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    position: relative;
+    transition: var(--transition);
+    color: var(--message-ai-text);
+    line-height: 1.5;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.message.user-message .message-content {
+    background: var(--message-user-bg);
+    color: var(--message-user-text);
+}
+
+.message.ai-message .message-content {
+    /* Default AI styles are already on .message-content */
+}
+
+.message.user-message .message-content::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left-color: var(--accent-primary); /* Match start of user gradient or a solid accent */
+}
+
+.message.ai-message .message-content::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-right-color: var(--message-ai-bg); /* Match AI message background */
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.875rem;
+}
+
+/* Message Input Area */
+.chat-input {
+    padding: 1rem 1.5rem;
+    background: rgba(34, 40, 49, 0.7); /* Dark, blurred background */
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.input-container {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    background: var(--bg-secondary); 
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.input-container:focus-within {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent); 
+}
+
+#userInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.5;
+    resize: none;
+    min-height: 24px;
+    max-height: 120px;
+}
+
+#userInput::placeholder {
+    color: var(--text-muted);
+}
+
+.send-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 50%;
+    color: var(--text-on-gradient);
+    font-size: 1.125rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-light);
+    flex-shrink: 0;
+}
+
+.send-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Sidebar Panel */
+.info-panel {
+    background: var(--bg-primary); 
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+    min-height: 0;
+    max-height: 100vh;
+}
+
+/* Card Styles */
+.info-panel > div {
+    background: var(--bg-secondary); 
+    backdrop-filter: blur(10px); 
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.info-panel > div:hover {
+    border-color: var(--text-accent); /* Accent border on hover */
+    box-shadow: var(--shadow-light);
+}
+
+/* Section title for Participants */
+.section-title {
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary); /* Light gray header for sections */
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-title i {
+    color: var(--text-accent); /* Accent color for icons */
+}
+
+/* Participants container */
+.participants {
+    padding: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Each participant item */
+.participant {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    transition: background 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.participant:hover {
+    background: var(--hover-bg); /* Use general hover background */
+    border-left-color: var(--text-accent); /* Accent color for border */
+}
+
+/* Participant avatar */
+.participant-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-right: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-on-gradient);
+    flex-shrink: 0;
+    background: var(--primary-gradient); /* Default avatar with primary gradient */
+}
+
+.user-participant .participant-avatar {
+    background: linear-gradient(45deg, var(--success-color), color-mix(in srgb, var(--success-color) 70%, #EEEEEE 30%)); /* Success-like gradient for user */
+}
+
+/* Participant info */
+.participant-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.participant-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.participant-status {
+    font-size: 0.75rem;
+    color: var(--success-color); /* Default online status */
+    display: flex;
+    align-items: center;
+}
+
+.participant-status .typing-dot {
+    width: 5px;
+    height: 5px;
+    background-color: var(--success-color); /* Match status color */
+    border-radius: 50%;
+    margin-left: 0.25rem;
+    animation: pulse 1.5s infinite;
+}
+
+.participant.status-idle .participant-status {
+    color: var(--text-muted);
+}
+
+.participant.status-thinking .participant-status {
+    color: var(--warning-color); /* Use warning color for thinking */
+}
+
+/* Stats Card */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 0.75rem;
+    background: color-mix(in srgb, var(--accent-primary) 10%, transparent); /* Light accent background */
+    border-radius: var(--border-radius-small);
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-accent); /* Accent color for value */
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Control Buttons */
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-small);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.control-btn:hover {
+    background: var(--hover-bg);
+    border-color: var(--text-accent);
+    color: var(--text-accent);
+}
+
+.control-btn.restart:hover {
+    border-color: var(--warning-border); /* Use warning border color */
+    color: var(--warning-color);
+}
+
+.control-btn#exportBtn:hover {
+    border-color: var(--success-border); /* Use success border color */
+    color: var(--success-color);
+}
+
+/* Problem Description & Progress Section */
+.problem-description, .stage-description, .stage-info {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+#problemDisplay, #stageDescription {
+    background: var(--bg-tertiary); 
+    border-radius: var(--border-radius-small);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-primary); /* Ensure content is readable */
+}
+
+/* Stage Progress */
+.stage-info {
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+}
+
+#currentStage {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Progress bar styling */
+.stage-progress {
+    margin-top: 0.75rem;
+}
+
+.progress-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--bg-tertiary); /* Light gray for bar background */
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-gradient); /* Accent gradient for fill */
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Sub-tasks styling */
+.sub-tasks-section {
+    margin-top: 0.75rem;
+    padding: 0 1rem 1rem;
+}
+
+.sub-tasks-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.sub-tasks-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.sub-tasks-list li {
+    position: relative;
+    padding: 0.4rem 0.4rem 0.4rem 1.5rem;
+    margin-bottom: 0.5rem;
+    background: var(--bg-tertiary); /* Light gray background for tasks */
+    border-radius: var(--border-radius-small);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.sub-tasks-list .task-status-icon {
+    position: absolute;
+    left: 0.4rem;
+    top: 0.4rem;
+    width: 0.8rem;
+    height: 0.8rem;
+    text-align: center;
+    font-size: 0.7rem;
+}
+
+.sub-tasks-list .task-description {
+    display: block;
+    color: var(--text-secondary);
+}
+
+.sub-tasks-list li.completed {
+    background: var(--success-bg); /* Use success background */
+    border-left: 3px solid var(--success-border); /* Use success border */
+}
+
+.sub-tasks-list li.pending {
+    background: var(--warning-bg); /* Use warning background */
+    border-left: 3px solid var(--warning-border); /* Use warning border */
+}
+
+.sub-tasks-list li.completed .task-status-icon {
+    color: var(--success-color);
+}
+
+.sub-tasks-list li.pending .task-status-icon {
+    color: var(--warning-color);
+}
+
+.sub-tasks-list li.no-tasks {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 0.5rem;
+    background: transparent;
+}
+
+/* MathJax styling adjustments */
+.MathJax {
+    font-size: 105% !important;
+}
+
+/* Improved formulas visibility */
+.problem-description .math {
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent); /* Light accent background for math */
+    padding: 0.1em 0.3em;
+    border-radius: 4px;
+    margin: 0 0.1em;
+    color: var(--text-primary); /* Ensure math text is readable */
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .main-content {
+        grid-template-columns: 1fr 300px;
+    }
+    
+    .info-panel {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+    
+    .section-title {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-panel {
+        display: none;
+    }
+    
+    .chat-container {
+        border-right: none;
+    }
+    
+    .chat-messages {
+        max-width: 100%;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    header {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .logo {
+        font-size: 1.1rem;
+    }
+    
+    .button-like-link, .new-chat-link {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    .status {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .chat-messages {
+        padding: 0.75rem;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+    
+    .chat-input {
+        padding: 0.75rem;
+    }
+    
+    /* Participants for small screens */
+    .participants {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+    
+    .participant {
+        width: auto;
+        border-left: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: 1.5rem;
+        background: rgba(238, 238, 238, 0.1); /* Adjusted for dark theme */
+    }
+    
+    .participant:hover {
+        background: rgba(238, 238, 238, 0.2); /* Adjusted for dark theme */
+        border-left-color: transparent;
+    }
+    
+    .participant-info {
+        display: none;
+    }
+    
+    .participant-avatar {
+        margin-right: 0;
+        font-size: 0.7rem;
+        width: 24px;
+        height: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    header {
+        padding: 0.5rem;
+    }
+    
+    .logo {
+        font-size: 1rem;
+    }
+    
+    .chat-messages {
+        padding: 0.5rem;
+        max-width: 100%;
+    }
+    
+    .message {
+        max-width: 95%;
+    }
+    
+    .message-content {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    .chat-input {
+        padding: 0.5rem;
+    }
+    
+    .input-container {
+        padding: 0.5rem;
+    }
+    
+    .send-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+}
+
+/* Animation for pulse effect */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Session - {{ user_name }}</title>
+    <title>Chat Session - AI Learning Lab</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <!-- MathJax Configuration -->
     <script>
         MathJax = {
@@ -21,9 +22,10 @@
         };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 </head>
-<body>
+<body class="chat-page">
     <div class="container" data-session-id="{{ session_id }}" data-user-name="{{ user_name }}">
         <!-- Header -->
         <header>
@@ -33,7 +35,7 @@
            <a href="{{ url_for('list_sessions') }}" class="button-like-link" style="margin-right:10px;">
                <i class="fas fa-list-alt"></i> Danh sách phiên
            </a>
-           <a href="{{ url_for('list_sessions') }}" class="new-chat-link">Phiên Mới</a>
+           <a href="{{ url_for('select_problem_page') }}" class="new-chat-link">Phiên Mới</a>
            <div class="status connecting">
                <i class="fas fa-circle" id="connectionStatusIcon"></i>
                <span id="statusText">Đang kết nối...</span>
@@ -43,7 +45,7 @@
         <div class="main-content">
             <!-- Chat Container -->
             <div class="chat-container">
-                <div class="chat-messages" id="chatMessages">
+                <div class="chat-messages custom-scrollbar" id="chatMessages">
                     <!-- Tin nhắn sẽ được thêm vào đây -->
                 </div>
                 <div class="typing-indicator" id="typingIndicator" style="display: none;"></div>
@@ -58,7 +60,7 @@
             </div>
 
             <!-- Info Panel -->
-            <div class="info-panel">
+            <div class="info-panel custom-scrollbar">
                 <!-- Problem Description -->
                 <div>
                     <div class="section-title"><i class="fas fa-book-open"></i> Bài Toán</div>
@@ -80,6 +82,7 @@
                         </div>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                            <div id="progressStageMarkers"></div>
                         </div>
                     </div>
                     <!-- NEW: Sub-tasks list -->
@@ -149,6 +152,7 @@
             </div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='chat_interface.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>
-</html> 
+</html>

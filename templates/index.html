@@ -3,15 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <title>Toán Tư Duy Tương Tác</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
-    <div class="container" style="max-width:600px; margin:60px auto; text-align:center;">
-        <h1>Chào mừng đến với Toán Tư Duy Tương Tác!</h1>
-        <p>Bạn có thể bắt đầu một phiên chat mới để giải bài toán.</p>
-        <a href="{{ url_for('list_sessions') }}" class="new-chat-link" style="font-size:1.2em; margin-top:30px; display:inline-block;">
-            Bắt đầu phiên mới
-        </a>
+    <div class="container">
+        <div class="hero-card">
+            <div class="brain-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <h1>Toán Tư Duy Tương Tác</h1>
+            <p class="subtitle">Khám phá thế giới toán học thông qua trải nghiệm học tập tương tác và thú vị</p>
+            
+            <a href="{{ url_for('select_problem_page') }}" class="cta-button">
+                <i class="fas fa-rocket"></i>
+                Bắt đầu hành trình
+            </a>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="feature-text">Học tập nhóm với AI</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="feature-text">Tư duy sáng tạo</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="feature-text">Theo dõi tiến độ</div>
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>
