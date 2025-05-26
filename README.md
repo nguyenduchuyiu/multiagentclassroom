@@ -31,9 +31,9 @@ The app enables students to engage with educational content via an interactive c
    - **Response Delivery:** Selected agent’s response is sent via SSE to the student and other agents.
 
 3. **Configuration & Progress:**
-   - **YAML Files:** Define personas (`personas.yaml`), learning phases (`phases.yaml`), and problems (`problem_context.yaml`).
+   - **YAML Files:** Define personas (`personas.yaml`), learning phases (`phases.yaml`), and problems (`problems.yaml`).
    - **Dynamic Generation:** uses LLMs to create tailored personas/phases based on problems and keywords.
-   - **Database:** Stores sessions and history in `chat_sessions.db`.
+   - **Database:** Stores sessions and history in database.
    - **Environment:** `.env` secures API keys and Flask settings.
 
 ---

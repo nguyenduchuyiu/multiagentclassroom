@@ -96,7 +96,7 @@ def chat_interface(session_id):
         return redirect(url_for('list_sessions'))
 
     # --- Initialize Core Components with latest config for THIS session ---
-    from core.conversation_phase_manager import ConversationPhaseManager
+    from core.stage_management.conversation_phase_orchestrator import ConversationPhaseOrchestrator
     from core.agent_manager import AgentManager
     from core.speaker_selector import SpeakerSelector
     from core.behavior_executor import BehaviorExecutor
@@ -105,7 +105,7 @@ def chat_interface(session_id):
     problem_description_for_session = session_data['problem_description']
 
     # Ensure app_instance=app is passed if components need it
-    phase_manager = ConversationPhaseManager(PHASE_CONFIG_PATH, problem_description_for_session, llm_service, app_instance=app)
+    phase_manager = ConversationPhaseOrchestrator(PHASE_CONFIG_PATH, problem_description_for_session, llm_service, app_instance=app)
     agent_manager = AgentManager(PERSONA_CONFIG_PATH, problem_description_for_session, llm_service, app_instance=app)
     speaker_selector = SpeakerSelector(problem_description_for_session, llm_service)
     behavior_executor = BehaviorExecutor(interaction_coordinator, problem_description_for_session, llm_service, agent_manager, app_instance=app)

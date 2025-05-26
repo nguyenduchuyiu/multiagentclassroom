@@ -11,8 +11,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Cấu hình logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)  # hoặc DEBUG để log chi tiết hơn
+# logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)  # hoặc DEBUG để log chi tiết hơn
 
 
 class LLMService:
@@ -25,7 +25,7 @@ class LLMService:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_fixed(2),
-        before_sleep=before_sleep_log(logger, logging.WARNING)  # In log mỗi lần retry
+        # before_sleep=before_sleep_log(logger, logging.WARNING)  # In log mỗi lần retry
     )
     def generate(self, prompt: str) -> str:
         """Gọi LLM API và trả về text response, retry tối đa 3 lần nếu lỗi."""

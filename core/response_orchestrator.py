@@ -7,7 +7,7 @@ from flask import Flask
 
 
 from core.conversation_history import ConversationHistory
-from core.conversation_phase_manager import ConversationPhaseManager
+from core.stage_management.conversation_phase_orchestrator import ConversationPhaseOrchestrator
 from core.agent_manager import AgentManager
 from core.speaker_selector import SpeakerSelector
 from core.behavior_executor import BehaviorExecutor
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class ResponseOrchestrator:
     def __init__(self,
                  conversation_history: ConversationHistory,
-                 phase_manager: ConversationPhaseManager,
+                 phase_manager: ConversationPhaseOrchestrator,
                  agent_manager: AgentManager,
                  speaker_selector: SpeakerSelector,
                  behavior_executor: BehaviorExecutor,
@@ -52,16 +52,17 @@ class ResponseOrchestrator:
         with self.app.app_context():
             try:
                 log_prefix = f"--- RESP_ORCH [{session_id}]"
-                print(f"{log_prefix}: Starting processing for event: {triggering_event['event_id']} ({triggering_event['event_type']})")
+                # print(f"{log_prefix}: Starting processing for event: {triggering_event['event_id']} ({triggering_event['event_type']})")
                 start_time = time.time()
 
                 # Get Phase Context (needs context for DB access)
                 current_phase_context = self.phase_manager.get_phase_context(session_id, self.conv_history)
+                # print(f"--- RESP_ORCH [{session_id}]: Current phase context: {current_phase_context}")
 
                 # <<< NEW: Send stage update to clients >>>
                 if current_phase_context and 'id' in current_phase_context:
                     # --- NEW: Weighted progress calculation ---
-                    all_phases_dict = self.phase_manager.phases
+                    all_phases_dict = self.phase_manager.get_all_phases()
                     sorted_phase_ids = sorted(all_phases_dict.keys()) # Assuming keys like "1", "2", "3", "4" sort naturally
                     num_main_stages = len(sorted_phase_ids)
                     
@@ -78,7 +79,7 @@ class ResponseOrchestrator:
                         log_prefix_calc = f"--- RESP_ORCH_WEIGHTED_CALC [{session_id}]"
                         print(f"{log_prefix_calc}: Starting weighted progress. Num main stages: {num_main_stages}, Progress per stage: {progress_per_main_stage_completion:.2f}%")
                         # Log thêm để kiểm tra completed_tasks_map_from_context nếu cần
-                        # print(f"{log_prefix_calc}: Initial completed_tasks_map_from_context: {completed_tasks_map_from_context}")
+                        print(f"{log_prefix_calc}: Initial completed_tasks_map_from_context: {completed_tasks_map_from_context}")
 
                         for phase_id_str in sorted_phase_ids:
                             phase_data = all_phases_dict[phase_id_str]
@@ -166,6 +167,9 @@ class ResponseOrchestrator:
                         "progress_bar_percent": progress_percent_for_bar, # Sử dụng giá trị đã được gán đúng
                         "main_stage_markers": main_stage_markers
                     }
+                    
+                    print(f"--- RESP_ORCH [{session_id}]: Stage update content: {stage_update_content}")
+                    
                     self.interaction_coordinator.post_event_to_clients(
                         session_id=session_id,
                         event_type="stage_update",

@@ -2,8 +2,9 @@
 import traceback
 import yaml
 import uuid
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from core.persona import Persona # Import the dataclass
+
 
 def load_personas_from_yaml(filepath: str) -> Dict[str, Persona]:
     """Loads agent personas from a YAML file."""

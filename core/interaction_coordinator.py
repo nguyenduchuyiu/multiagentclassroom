@@ -77,7 +77,7 @@ class InteractionCoordinator:
     def _delayed_orchestrator_trigger(self, session_id: str, triggering_event: Dict):
         """Helper function called by the Timer."""
         if self.response_orchestrator:
-            print(f"--- INT_COORD [{session_id}]: Delayed trigger for orchestrator.")
+            # print(f"--- INT_COORD [{session_id}]: Delayed trigger for orchestrator.")
             self.response_orchestrator.process_event(session_id=session_id, triggering_event=triggering_event)
         else:
             print(f"--- INT_COORD [{session_id}]: Warning - Orchestrator not set for delayed trigger.")

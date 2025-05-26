@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 from core.agent_mind import AgentMind
 from core.persona import Persona
 from core.conversation_history import ConversationHistory
-from core.conversation_phase_manager import ConversationPhaseManager
+from core.stage_management.conversation_phase_orchestrator import ConversationPhaseOrchestrator
 from services.llm_service import LLMService
 from utils.loaders import load_personas_from_yaml
 from flask import Flask
@@ -47,10 +47,10 @@ class AgentManager:
                          session_id: str,
                          triggering_event: Dict,
                          conversation_history: ConversationHistory,
-                         phase_manager: ConversationPhaseManager) -> List[Dict[str, Any]]:
+                         phase_manager: ConversationPhaseOrchestrator) -> List[Dict[str, Any]]:
         """Triggers thinking, passing task status."""
         log_prefix = f"--- AGENT_MGR [{session_id}]"
-        print(f"{log_prefix}: Requesting thinking for all agents (Event: {triggering_event['event_id']})")
+        # print(f"{log_prefix}: Requesting thinking for all agents (Event: {triggering_event['event_id']})")
         futures = []
         for agent_id, agent_mind in self.agents.items():
             future = self.executor.submit(

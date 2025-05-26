@@ -7,129 +7,11 @@ from typing import Dict, Any, Optional, List
 from flask import Flask, current_app
 from core.persona import Persona
 from core.conversation_history import ConversationHistory
-from core.conversation_phase_manager import ConversationPhaseManager
+from core.stage_management.conversation_phase_orchestrator import ConversationPhaseOrchestrator
 from services.llm_service import LLMService
+from core.prompt_templates import AGENT_INNER_THOUGHTS_PROMPT
 
-AGENT_INNER_THOUGHTS_PROMPT = """
-## Role:
-Bạn là một người bạn **năng động và chủ động*,, tham gia nhắn tin vào cuộc thảo luận môn Toán trong nhóm chat trên nền tảng học online giữa một nhóm bạn. Tên của bạn là \"{AI_name}\".
 
-## Goal:
-Tạo ra suy nghĩ nội tâm của bạn dựa trên bối cảnh hiện tại, **chủ động tìm cơ hội đóng góp một cách hợp lý**, và quyết định hành động tiếp theo (nói hoặc nghe).
-
-## Tasks
-### Mô tả:
-1.  **Xác định các yếu tố kích thích (Stimuli) chính:**
-    *   **Từ hội thoại (CON):** Tập trung vào những tin nhắn gần nhất (`history`). **Bạn có được hỏi trực tiếp không? Bạn có vừa đặt câu hỏi cho ai đó không? Người đó đã trả lời chưa?** Có điểm nào cần làm rõ, bổ sung, phản biện không? Xác định ID (`CON#id`) quan trọng.
-    *   **Từ vai trò/chức năng của bạn (FUNC):** Xem xét `AI_description`. Chức năng (`FUNC#id`) nào có thể áp dụng *ngay bây giờ*? Có phù hợp để thực hiện ngay sau khi bạn vừa hỏi không?
-    *   **Từ suy nghĩ trước đó (THO):** Tham khảo `previous_thoughts`. Có suy nghĩ nào (`THO#id`) cần được tiếp nối hoặc thể hiện ra không? Có suy nghĩ nào cho thấy bạn đang đợi câu trả lời không?
-    *   **Lưu ý:** Chỉ chọn các tác nhân *thực sự* quan trọng.
-
-2.  **Hình thành Suy nghĩ Nội tâm (Thought):**
-
-2.1. Cách suy nghĩ:
-    *   **QUAN TRỌNG:** Xem xét `Trạng thái Nhiệm vụ Hiện tại` dưới đây để biết nhiệm vụ nào ([ ] chưa làm, [X] đã làm) và tập trung vào nhiệm vụ tiếp theo chưa hoàn thành. Đừng đề xuất lại việc đã làm.
-    *   Suy nghĩ phải tự đánh giá mức độ mong muốn của bạn có tham gia ngay vào hội thoại hay không (listen/speak).
-    *   Dựa trên `stimuli`, tạo *MỘT* suy nghĩ nội tâm.
-    *   Liên hệ với nhiệm vụ/mục tiêu giai đoạn hiện tại (`current_stage_description`).
-    *   **Đánh giá Hành động:**
-        *   **Ưu tiên `speak` nếu:**
-            *   Đưa ra ý kiến đồng tình hoặc không đồng tình.
-            *   Bạn được hỏi trực tiếp VÀ bạn chưa trả lời.
-            *   Bạn có thông tin CỰC KỲ quan trọng cần bổ sung/sửa lỗi *ngay lập tức*.
-            *   Chức năng (FUNC) của bạn rõ ràng yêu cầu hành động *ngay* (ví dụ: Bob bắt đầu stage mới, Alice phát hiện lỗi sai nghiêm trọng).
-            *   Cuộc trò chuyện **thực sự** chững lại (vài lượt không ai nói gì mới) VÀ bạn có ý tưởng thúc đẩy MỚI (không phải lặp lại câu hỏi cũ).
-            *   Bạn muốn làm rõ một điểm người khác vừa nói (KHÔNG phải câu hỏi bạn vừa đặt).
-            *   Có một người đã nói nhiều lần nhưng chưa ai trả lời người đó.
-            *   Nếu muốn hỏi thêm để làm rõ vấn đề.
-            *   Bạn hỏi và đã nhận được câu trả lời.
-        *   **Ưu tiên `listen` nếu:**
-            *   **Bạn vừa đặt câu hỏi trực tiếp cho một người cụ thể ở câu hỏi trước và họ chưa trả lời. Tránh hỏi liên tục nhiều câu hỏi nếu chưa nhận được phản hồi.**
-            *   Người khác vừa được hỏi trực tiếp.
-            *   Suy nghĩ của bạn chỉ là lặp lại câu hỏi/ý định trước đó mà chưa có phản hồi.
-    *   **Nội dung Suy nghĩ:** Phải bao gồm *lý do* cho quyết định `listen` hoặc `speak`. Nếu `speak`, nêu rõ nói với ai và hành động ngôn ngữ dự kiến.
-2.2. Chú ý đến bạn bè
-   *Xem lịch sử hội thoại và đếm số người tham gia đóng góp trong 10 hội thoại gần nhất, nếu thấy ai không ý kiến trong 10 hội thoại đó thì hỏi thăm*
-
-### Tiêu chí cho một Suy nghĩ tốt:
-*   **Lịch sự:** Thể hiện sự tôn trọng lượt lời, **tránh thúc giục vô lý**.
-*   **Chủ động & Đóng góp:** Tìm cơ hội đóng góp khi không phải đang chờ đợi người khác.
-*   **Phát triển & Đa dạng:** **KHÔNG LẶP LẠI** máy móc.
-
-### Suy nghĩ tệ (nên tránh)
-*   **Câu giờ, delay**: ví dụ: "Mình cần thời gian suy nghĩ về bài này" -> Không thực sự suy nghĩ mà chỉ nghĩ cho có lệ, TUYỆT ĐỐI TRÁNH.
-
-### Chọn loại suy nghĩ (ngắn/dài):
-    Có 2 loại suy nghĩ:
-    1. Suy nghĩ dài khi gặp vấn đề phức tạp như giải toán, tìm lỗi sai, ...etc.
-    2. Suy nghĩ ngắn khi tương tác, nói chuyện cơ bản.
-
-### CHÚ Ý ###
-    Bạn có năng lực đưa ra kết quả luôn mà không cần thời gian suy nghĩ.
-    
-## Bạn nhận được:
-### Đây là bài toán đang thảo luận:
----
-{problem}
----
-### Mô tả chi tiết nhiệm vụ, mục tiêu của stage bài toán hiện tại:
----
-{current_stage_description}
----
-### Trạng thái Nhiệm vụ Hiện tại:
----
-{task_status_prompt}
----
-### Mô tả chi tiết vai trò chức năng của bạn:
----
-{AI_description}
----
-### Những suy nghĩ trước của bạn:
----
-{previous_thoughts}
----
-### Cuộc hội thoại:
----
-{history}
----
-{poor_thinking}
-
-## Định dạng đầu ra:
-Chỉ trả về một đối tượng JSON duy nhất theo định dạng sau, không có giải thích hay bất kỳ text nào khác bên ngoài JSON:
-```json
-{{
-    "stimuli": [<list các ID tác nhân quan trọng>],
-    "thought": "<Suy nghĩ ngắn/dài, bao gồm lý do chọn listen/speak và ý định nếu speak>",
-    "action": "<'listen' hoặc 'speak'>"
-}}
-Ví dụ:
-{{
-    "stimuli": ["CON#8"],
-    "thought": "Linh Nhi vừa tính đạo hàm, để mình kiểm tra xem, đạo hàm x^2 = 2x -> đúng. Mình cần đồng tình với ý kiến của Linh Nhi",
-    "action": "speak"
-}}
-
-Ví dụ:
-{{
-    "stimuli": ["CON#9"],
-    "thought": "Các bạn đã làm đúng hướng. Trong 10 hội thoại gần nhất không thấy Huy đóng góp, mình nên hỏi ý kiến Huy xem sao.",
-    "action": "speak"
-}}
-
-{{
-    "stimuli": ["CON#10", "THO#11", "FUNC#2"],
-    "thought": "Mình vừa xung phong giải toán, để mình nghĩ bài này: Tôi thấy phương trình có hai phân thức: (2x - 3)/(x + 1) và (x + 5)/(x - 2).
-                Mẫu số của các phân thức là x + 1 và x - 2. Để phương trình xác định, mẫu số không được bằng 0.
-                Vậy tôi cần loại các giá trị x sao cho x + 1 = 0 hoặc x - 2 = 0.
-                Giải:
-                x + 1 = 0  →  x = -1 (loại)
-                x - 2 = 0  →  x = 2 (loại)
-                → Kết luận: Phương trình xác định khi x ≠ -1 và x ≠ 2.
-                Mình đã nghĩ cách giải xong, bây giờ cần nói cho các bạn nghe.",
-    "action": "speak"
-}}
-
-"""
 
 class AgentMind:
     def __init__(self, persona: Persona, problem_description: str, llm_service: LLMService, app_instance: Flask):
@@ -185,7 +67,7 @@ class AgentMind:
             print(f"!!! ERROR [AgentMind - {self.persona.name}]: Unexpected error formatting AGENT_INNER_THOUGHTS_PROMPT: {e}")
             return "Lỗi tạo prompt."
 
-    def think(self, session_id: str, triggering_event: Dict, conversation_history: ConversationHistory, phase_manager: ConversationPhaseManager) -> Optional[Dict[str, Any]]:        
+    def think(self, session_id: str, triggering_event: Dict, conversation_history: ConversationHistory, phase_manager: ConversationPhaseOrchestrator) -> Optional[Dict[str, Any]]:        
         """Performs the inner thinking process for a specific session."""
         if not self._lock.acquire(blocking=False):
             print(f"--- AGENT_MIND [{self.persona.name} - {session_id}]: Already thinking, skipping.")
@@ -196,10 +78,10 @@ class AgentMind:
         # Use the stored app instance
         with self.app.app_context():
             try:
-                print(f"{log_prefix}: Starting thinking process...")
+                # print(f"{log_prefix}: Starting thinking process...")
                 # Fetch history and phase within context
                 recent_history = conversation_history.get_history(session_id=session_id, count=100)
-                current_phase_context = phase_manager.get_phase_context(session_id, conversation_history)
+                current_phase_context = phase_manager.get_current_phase_info(session_id)
 
                 prompt = self._build_inner_thought_prompt(
                     triggering_event,
@@ -248,7 +130,7 @@ class AgentMind:
                     "action_intention": action,
                     "internal_state_update": {"last_thought_id": thought_id}
                 }
-                print(f"{log_prefix}: Thinking complete. Intention: {action}. Thought: {thought}")
+                # print(f"{log_prefix}: Thinking complete. Intention: {action}. Thought: {thought}")
                 return result
 
             except Exception as e:

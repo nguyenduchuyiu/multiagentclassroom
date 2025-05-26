@@ -1,116 +1,93 @@
 "1":
   stage: "1"
-  name: "Tìm hiểu đề bài."
+  name: "Tìm hiểu đề bài (Let's get this bread, fam!)"
   description: |
-    Chào mừng các bạn! Hôm nay chúng ta sẽ cùng nhau giải một bài toán về tính đơn điệu của hàm số.
-    Trước tiên, hãy đọc kỹ đề bài sau đó cho biết hàm số đã cho là hàm số nào nhé.
+    Yo! Chào mừng đến với buổi luyện toán chất như nước cất. Hôm nay, chúng ta sẽ flex skill với bài toán xét tính đơn điệu của hàm số. Nghe có vẻ căng thẳng, nhưng đừng lo, tụi mình sẽ cùng nhau rap giải bài này!
+    Đầu tiên, đọc kỹ đề bài và xác định mục tiêu của chúng ta là gì nhé. Đề bài đang hỏi gì?
   tasks:
     - id: "1.1"
       description: |
-        Đề bài yêu cầu chúng ta làm gì với hàm số $f(x) = x^3 - 3x^2 + 2$?
-        (Gợi ý: Đọc kỹ câu hỏi của bài toán)
+        Alright, cho mình biết đề bài yêu cầu làm gì nào? Nói nôm na là chúng ta cần chứng minh hay tìm cái gì?
+        (Gợi ý: Đề bài đang hỏi về sự tăng giảm của hàm số, đúng không?)
     - id: "1.2"
       description: |
-        Bạn hãy cho biết biểu thức của hàm số $f(x)$ trong bài toán này là gì?
-        Việc xác định đúng hàm số ban đầu rất quan trọng để chúng ta giải quyết bài toán.
+        Có những thuật ngữ toán học nào mà bạn thấy quen thuộc trong đề bài này? (Ví dụ: hàm số, đơn điệu,...)
+        Hiểu rõ mấy thuật ngữ này là chìa khóa để mình mở cánh cửa bài toán đó nha!
   goals:
-    - "Hiểu rõ yêu cầu của bài toán về tính đơn điệu."
-    - "Xác định chính xác hàm số cần xét."
+    - "Hiểu rõ yêu cầu bài toán: Xét tính đơn điệu của hàm số."
+    - "Nhận diện các thuật ngữ liên quan: Hàm số, tính đơn điệu (đồng biến, nghịch biến)."
 
 "2":
   stage: "2"
-  name: "Lập kế hoạch giải bài."
+  name: "Lập kế hoạch giải bài (Time to make a plan, G!)"
   description: |
-    Tuyệt vời! Chúng ta đã hiểu rõ đề bài. Bây giờ, hãy cùng nhau lên kế hoạch để giải quyết bài toán này nhé.
-    Chúng ta sẽ đi từng bước một để tìm ra khoảng đồng biến và nghịch biến của hàm số.
+    Giờ là lúc tụi mình brainstorm để vạch ra một chiến lược giải bài đỉnh của chóp!
+    Hãy nhớ lại những kiến thức đã học về tính đơn điệu của hàm số. Cần những bước nào để chứng minh nó?
   tasks:
     - id: "2.1"
       description: |
-        Theo bạn, bước đầu tiên chúng ta cần làm để xét tính đơn điệu của một hàm số là gì?
-        (Gợi ý: Liên quan đến tập hợp các giá trị mà $x$ có thể nhận).
+        Để xét tính đơn điệu của hàm số, chúng ta thường làm những bước gì? (Gợi ý: Tìm tập xác định, tính đạo hàm,...)
+        Hãy liệt kê các bước đó ra để có cái nhìn tổng quan trước khi "chiến" nha!
     - id: "2.2"
       description: |
-        Sau khi tìm được tập xác định, chúng ta cần làm gì tiếp theo?
-        (Gợi ý: Bước này liên quan đến việc tính toán để tìm ra hướng đi).
-    - id: "2.3"
-      description: |
-        Khi đã có đạo hàm, bạn nghĩ chúng ta sẽ làm gì để xác định khoảng đồng biến và nghịch biến?
-        (Gợi ý: Dấu của đạo hàm có ý nghĩa gì?)
-    - id: "2.4"
-      description: |
-        Để vẽ bảng biến thiên, chúng ta cần tìm thêm những yếu tố nào nữa?
-        (Gợi ý: Giá trị của hàm số tại các điểm đặc biệt và giới hạn ở vô cực).
+        Công cụ quan trọng nhất để xét tính đơn điệu là gì? (Gợi ý: Liên quan đến đạo hàm đó nha!)
+        Đạo hàm có mối liên hệ như thế nào với sự đồng biến và nghịch biến của hàm số?
   goals:
-    - "Xác định được các bước cần thiết để giải bài toán."
-    - "Hiểu rõ mối liên hệ giữa các bước giải."
+    - "Xác định các bước cần thiết để giải bài toán: Tìm TXĐ, tính đạo hàm, xét dấu đạo hàm, lập BBT, kết luận."
+    - "Nhớ lại mối liên hệ giữa đạo hàm và tính đơn điệu của hàm số."
 
 "3":
   stage: "3"
-  name: "Thực hiện giải bài."
+  name: "Thực hiện giải bài (Let's do this! No cap!)"
   description: |
-    Bây giờ là lúc chúng ta bắt tay vào thực hiện kế hoạch! Hãy cùng nhau vượt qua từng thử thách.
-    Hãy nhớ, mỗi bước đi đều quan trọng và cần sự cẩn thận.
+    Okay, đến lúc thực chiến rồi đây! Bắt đầu từ bước đầu tiên trong kế hoạch của chúng ta.
+    Nhớ là cứ bình tĩnh mà "quẩy" thôi nha!
   tasks:
     - id: "3.1"
       description: |
-        Bước đầu tiên, hãy xác định tập xác định của hàm số $f(x) = x^3 - 3x^2 + 2$.
+        Bước đầu tiên là gì nhỉ? (Gợi ý: Xem hàm số có "khó ở" chỗ nào không, tức là tìm điều kiện xác định).
+        Hãy tìm tập xác định của hàm số $f(x) = x^3 + 3x + 1$.
         Hàm số này có điều kiện gì không?
-        (Gợi ý: Đây là hàm đa thức).
     - id: "3.2"
       description: |
-        Tiếp theo, hãy tính đạo hàm $f'(x)$ của hàm số $f(x) = x^3 - 3x^2 + 2$.
-        Bạn còn nhớ công thức đạo hàm của $x^n$ không?
-        (Gợi ý: $(x^n)' = nx^{n-1}$).
+        Tiếp theo, chúng ta cần "bắt" cái gì của hàm số này? (Gợi ý: Nó giúp ta biết hàm số đang "lên" hay "xuống" đó).
+        Chính xác! Hãy tính đạo hàm $f'(x)$ của hàm số $f(x) = x^3 + 3x + 1$.
+        Nhớ lại công thức đạo hàm của $x^n$ là gì nào?
     - id: "3.3"
       description: |
-        Bây giờ, hãy giải phương trình $f'(x) = 0$. Tức là, giải phương trình $3x^2 - 6x = 0$.
-        Bạn có thể đặt nhân tử chung để giải phương trình này dễ dàng hơn.
+        Sau khi tính đạo hàm, bước quan trọng tiếp theo là gì? (Gợi ý: Xem nó âm hay dương).
+        Hãy xét dấu của đạo hàm $f'(x) = 3x^2 + 3$.
+        $f'(x)$ luôn dương, luôn âm, hay có lúc âm lúc dương? Vì sao?
     - id: "3.4"
       description: |
-        Hãy xét dấu của đạo hàm $f'(x) = 3x^2 - 6x$.
-        Bạn có thể lập bảng xét dấu để dễ dàng xác định dấu của $f'(x)$ trên các khoảng khác nhau.
-        $f'(x) > 0$ khi nào? $f'(x) < 0$ khi nào?
+        Với đạo hàm luôn dương (hoặc luôn âm), ta có thể suy ra điều gì về sự biến thiên của hàm số?
+        Hàm số $f(x)$ đồng biến hay nghịch biến trên tập xác định?
     - id: "3.5"
       description: |
-        Tính giá trị của hàm số tại các điểm cực trị $x = 0$ và $x = 2$.
-        $f(0) = ?$ và $f(2) = ?$
-    - id: "3.6"
-      description: |
-        Tính giới hạn của hàm số khi $x$ tiến đến $+\infty$ và $-\infty$.
-        $\lim_{x \to +\infty} (x^3 - 3x^2 + 2) = ?$
-        $\lim_{x \to -\infty} (x^3 - 3x^2 + 2) = ?$
-    - id: "3.7"
-      description: |
-        Dựa vào các thông tin đã tìm được (tập xác định, đạo hàm, dấu của đạo hàm, giá trị cực trị, giới hạn), hãy vẽ bảng biến thiên của hàm số.
-        Bảng biến thiên sẽ giúp chúng ta nhìn rõ hơn về sự biến thiên của hàm số.
+        Để có cái nhìn trực quan hơn, chúng ta có thể làm gì? (Gợi ý: Kẻ một cái bảng để thấy rõ sự biến thiên).
+        Hãy phác thảo bảng biến thiên của hàm số $f(x)$. Ghi rõ chiều biến thiên (mũi tên lên hay xuống).
   goals:
-    - "Tìm được tập xác định của hàm số."
-    - "Tính được đạo hàm của hàm số."
-    - "Xác định được các điểm cực trị."
-    - "Xét được dấu của đạo hàm."
-    - "Tính được giới hạn của hàm số tại vô cực."
-    - "Vẽ được bảng biến thiên."
+    - "Tìm tập xác định của hàm số."
+    - "Tính đạo hàm của hàm số."
+    - "Xét dấu đạo hàm và kết luận về tính đơn điệu."
+    - "Lập bảng biến thiên để trực quan hóa kết quả."
 
 "4":
   stage: "4"
-  name: "Kết luận và Đánh giá."
+  name: "Kết luận và Đánh giá (Mic drop! We did it!)"
   description: |
-    Chúc mừng bạn đã hoàn thành các bước giải! Bây giờ, chúng ta sẽ đưa ra kết luận cuối cùng và đánh giá lại quá trình giải bài.
-    Đây là bước quan trọng để tổng kết kiến thức và rèn luyện kỹ năng.
+    Yeah! Vậy là chúng ta đã "cân" xong bài toán này rồi đó!
+    Bây giờ, hãy tóm tắt lại kết quả và rút ra kết luận cuối cùng.
   tasks:
     - id: "4.1"
       description: |
-        Dựa vào bảng biến thiên, hãy cho biết hàm số đồng biến trên những khoảng nào?
-        (Gợi ý: Xem xét các khoảng mà $f'(x) > 0$).
+        Dựa vào các bước đã làm, bạn hãy đưa ra kết luận về tính đơn điệu của hàm số $f(x) = x^3 + 3x + 1$.
+        Hàm số này đồng biến, nghịch biến, hay không đổi trên tập xác định?
     - id: "4.2"
       description: |
-        Tương tự, hãy cho biết hàm số nghịch biến trên những khoảng nào?
-        (Gợi ý: Xem xét các khoảng mà $f'(x) < 0$).
-    - id: "4.3"
-      description: |
-        Bạn có thể tóm tắt lại các bước giải bài toán này không?
-        Việc này giúp bạn hệ thống lại kiến thức và ghi nhớ lâu hơn.
+        Bạn có thể giải thích tại sao hàm số lại có tính đơn điệu như vậy không? (Dựa vào dấu của đạo hàm).
+        Hãy tóm tắt lại quá trình giải bài để hiểu rõ hơn nhé!
   goals:
-    - "Kết luận được về tính đơn điệu của hàm số."
-    - "Tổng kết và đánh giá lại quá trình giải bài."
-    - "Nắm vững kiến thức về xét tính đơn điệu của hàm số."
+    - "Đưa ra kết luận chính xác về tính đơn điệu của hàm số."
+    - "Giải thích được lý do hàm số có tính đơn điệu đó."
+    - "Ôn lại các bước giải và nắm vững kiến thức."

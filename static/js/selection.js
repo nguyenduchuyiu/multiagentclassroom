@@ -42,9 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
     problemSelect.addEventListener('change', (event) => {
         const selectedOption = event.target.selectedOptions[0];
         if (selectedOption && selectedOption.value) {
-            previewContent.textContent = selectedOption.dataset.fulltext;
+            previewContent.innerHTML = selectedOption.dataset.fulltext;
             previewArea.style.display = 'block';
             previewArea.classList.add('show');
+            if (window.MathJax) MathJax.typesetPromise([previewContent]);
         } else {
             previewArea.style.display = 'none';
             previewArea.classList.remove('show');

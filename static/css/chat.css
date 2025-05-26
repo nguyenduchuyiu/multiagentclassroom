@@ -192,9 +192,14 @@ header {
 }
 
 #connectionStatusIcon {
-    width: 8px;
-    height: 8px;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    background: var(--warning-color); /* mặc định màu vàng */
+    transition: background 0.3s;
 }
 
 .status.connecting #connectionStatusIcon {
@@ -203,9 +208,11 @@ header {
 }
 .status.connected #connectionStatusIcon {
     background: var(--success-color);
+    animation: none;
 }
 .status.disconnected #connectionStatusIcon {
     background: var(--error-color);
+    animation: none;
 }
 
 /* Main App Container */
