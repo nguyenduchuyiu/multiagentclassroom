@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let messageCounter = 0;
     let currentTypingAgents = new Set();
     let agentStatuses = {};
-    let eventSource = null; // Initialize eventSource to null
+    let socket = null;
 
     // --- Get session ID and username from HTML data attributes ---
     const currentSessionId = container?.dataset.sessionId;
@@ -250,38 +250,16 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.disabled = true;
         sendButton.disabled = true;
 
-        const payload = { text, sender_name: currentUsername };
-        fetch(`/send_message/${currentSessionId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(res => {
-            if (!res.ok) {
-                console.error('Send error status:', res.status, res.statusText);
-                // Try to get error message from response body
-                return res.json().catch(() => ({ error: res.statusText })).then(errData => {
-                    throw new Error(errData.error || 'Unknown error');
-                });
-            }
-            // Success is handled by SSE echo
-        })
-        .catch(err => {
-            console.error('Send error:', err);
-            displayMessage({ source: 'System', content: { text: `Lỗi khi gửi tin nhắn: ${err.message || 'Lỗi không xác định'}`, sender_name: 'System' }, timestamp: Date.now() });
-        })
-        .finally(() => {
-            // Re-enable only if connection is still open
-            if (eventSource?.readyState === EventSource.OPEN) {
-                if (messageInput) messageInput.disabled = false;
-                if (sendButton) sendButton.disabled = false;
-                if (messageInput) messageInput.focus();
-            }
-            if (messageInput) {
-                messageInput.value = '';
-                messageInput.style.height = 'auto';
-            }
+        // Use Socket.IO instead of fetch for sending messages
+        socket.emit('user_message', {
+            session_id: currentSessionId,
+            text: text,
+            sender_name: currentUsername
         });
+
+        // Clear the input after sending
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
     }
 
     // --- Event Listeners ---
@@ -329,19 +307,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    // --- Server-Sent Events (SSE) Setup ---
-    function connectSSE() {
-        if (eventSource?.readyState === EventSource.OPEN) return; // Already open
-
+    // --- Socket.IO Setup ---
+    function connectSocketIO() {
         updateConnectionStatus('connecting');
-        eventSource = new EventSource(`/stream/${currentSessionId}`);
-
-        eventSource.onopen = () => {
+        
+        // Initialize Socket.IO connection
+        socket = io();
+        
+        // Connection events
+        socket.on('connect', () => {
+            console.log('Connected to Socket.IO server');
             updateConnectionStatus('connected');
-            initializeUserDisplay(); // Initialize user display info
-            initializeAgentStatuses(); // Initialize agent display info
-            renderMathInElement(problemDisplayEl); // Render problem math
-
+            
+            // Join the session room
+            socket.emit('join', { session_id: currentSessionId });
+            
+            initializeUserDisplay();
+            initializeAgentStatuses();
+            renderMathInElement(problemDisplayEl);
+            
             // Fetch initial chat history
             fetch(`/history/${currentSessionId}`)
                 .then(r => {
@@ -351,106 +335,124 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(history => {
                     if (chatbox) chatbox.innerHTML = '';
                     messageCounter = 0;
-                    history.forEach(displayMessage); // displayMessage handles math rendering
+                    history.forEach(displayMessage);
                     if (messageInput) messageInput.focus();
                 })
                 .catch(err => {
                     console.error("History fetch error:", err);
-                    displayMessage({ source: 'System', content: { text: 'Không thể tải lịch sử.', sender_name: 'System' }, timestamp: Date.now() })
+                    displayMessage({ 
+                        source: 'System', 
+                        content: { text: 'Không thể tải lịch sử.', sender_name: 'System' }, 
+                        timestamp: Date.now() 
+                    });
                 });
-        };
-
-        eventSource.onerror = err => {
-            console.error('SSE error:', err);
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from Socket.IO server');
             updateConnectionStatus('disconnected');
-            if (eventSource) eventSource.close();
-            if (statusTextEl) statusTextEl.textContent = 'Mất kết nối. Tải lại trang để thử.';
-        };
-
-        eventSource.addEventListener('new_message', e => {
-            try { 
-                const data = JSON.parse(e.data);
-                displayMessage(data);
-
-                // --- FIX: Nếu là agent, xóa trạng thái "đang nhập" ngay khi gửi xong ---
-                const senderName = data.content?.sender_name;
-                if (senderName && agentStatuses.hasOwnProperty(senderName)) {
-                    currentTypingAgents.delete(senderName);
-                    updateParticipantDisplay();
-                }
-            }
-            catch (err) { 
-                console.error('Parsing new_message:', err, e.data); 
+        });
+        
+        socket.on('error', (data) => {
+            console.error('Socket.IO error:', data.message);
+            displayMessage({ 
+                source: 'System', 
+                content: { text: `Lỗi: ${data.message}`, sender_name: 'System' }, 
+                timestamp: Date.now() 
+            });
+        });
+        
+        socket.on('joined', (data) => {
+            console.log('Successfully joined session:', data.session_id);
+        });
+        
+        socket.on('message_received', (data) => {
+            console.log('Message received confirmation:', data);
+            // Re-enable input fields
+            if (messageInput) messageInput.disabled = false;
+            if (sendButton) sendButton.disabled = false;
+            if (messageInput) messageInput.focus();
+        });
+        
+        // Handle incoming messages
+        socket.on('new_message', (data) => {
+            console.log("New message received:", data); // Debug: Log the received data
+            displayMessage(data);
+            
+            // If it's an agent message, clear typing status
+            const senderName = data.content?.sender_name;
+            if (senderName && agentStatuses.hasOwnProperty(senderName)) {
+                currentTypingAgents.delete(senderName);
+                updateParticipantDisplay();
             }
         });
-
-        eventSource.addEventListener('agent_status', e => {
+        
+        // Handle agent status updates
+        socket.on('agent_status', (data) => {
             try {
-                const eventData = JSON.parse(e.data);
-                const update = eventData.content; // Status data is inside content
+                const update = data.content;
                 const { agent_name: nameFromEvent, status } = update;
-
+                
                 if (!nameFromEvent || !status) {
-                    console.warn("Received agent_status with missing name or status:", eventData);
+                    console.warn("Received agent_status with missing name or status:", data);
                     return;
                 }
-
+                
                 let actualAgentNameKey = null;
-                // Perform a case-insensitive search for the agent name in our agentStatuses object
+                // Case-insensitive search for agent name
                 for (const key in agentStatuses) {
                     if (agentStatuses.hasOwnProperty(key) && key.toLowerCase() === nameFromEvent.toLowerCase()) {
-                        actualAgentNameKey = key; // Found the matching key (preserving its original case)
+                        actualAgentNameKey = key;
                         break;
                     }
                 }
-
+                
                 if (actualAgentNameKey) {
                     agentStatuses[actualAgentNameKey] = status;
                     if (status === 'typing') {
-                        currentTypingAgents.add(actualAgentNameKey); // Add the original-cased name for display
+                        currentTypingAgents.add(actualAgentNameKey);
                     } else {
                         currentTypingAgents.delete(actualAgentNameKey);
                     }
                     updateParticipantDisplay();
                 } else {
                     console.warn(
-                        "Received agent_status for an unknown or uninitialized agent (after case-insensitive check):",
+                        "Received agent_status for unknown agent:",
                         {
                             eventName: nameFromEvent,
                             eventStatus: status,
-                            knownAgentKeys: Object.keys(agentStatuses),
-                            fullEventData: eventData
+                            knownAgentKeys: Object.keys(agentStatuses)
                         }
                     );
                 }
-            } catch (err) { console.error('Parsing agent_status error:', err, { rawData: e.data }); }
+            } catch (err) {
+                console.error('Error handling agent_status:', err);
+            }
         });
-
-        eventSource.addEventListener('message', e => { /* Handle keep-alive */ });
-
-        eventSource.addEventListener('stage_update', e => {
+        
+        // Handle stage updates
+        socket.on('stage_update', (data) => {
             try {
-                const eventData = JSON.parse(e.data);
-                const phaseInfo = eventData.content;
-
+                const phaseInfo = data.content;
+                
                 console.log("[STAGE_UPDATE] Received phaseInfo:", phaseInfo);
-
+                
                 if (phaseInfo && typeof phaseInfo.id !== 'undefined' && typeof phaseInfo.name !== 'undefined') {
                     if (currentStageEl) currentStageEl.textContent = phaseInfo.name;
                     if (stageDescriptionEl) stageDescriptionEl.textContent = phaseInfo.description || 'Không có mô tả cho giai đoạn này.';
-
+                    
                     // Update progress bar fill
                     if (progressFillEl && typeof phaseInfo.progress_bar_percent === 'number') {
                         const progressPercent = phaseInfo.progress_bar_percent;
                         console.log(`[STAGE_UPDATE] Progress bar: Using weighted progress_bar_percent = ${progressPercent.toFixed(2)}%`);
                         progressFillEl.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
                         
-                        // NEW: Hiển thị phần trăm hoàn thành
+                        // Display progress percentage
                         if (progressPercentEl) {
                             progressPercentEl.textContent = `(${Math.round(progressPercent)}%)`;
                         }
                         
-                        // NEW: Update progress label
+                        // Update progress label
                         if (progressLabelEl && Array.isArray(phaseInfo.main_stage_markers)) {
                             const totalStages = phaseInfo.main_stage_markers.length;
                             const currentStageIndex = phaseInfo.main_stage_markers.findIndex(m => m.id === phaseInfo.id);
@@ -459,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             progressLabelEl.textContent = `Giai đoạn ${currentStageNum}/${totalStages}: ${phaseInfo.name}`;
                         }
                         
-                        // NEW: Create tooltip for progress bar
+                        // Create tooltip for progress bar
                         if (progressBarEl && Array.isArray(phaseInfo.main_stage_markers)) {
                             let tooltipText = phaseInfo.main_stage_markers.map((marker, idx) => {
                                 const prefix = marker.id === phaseInfo.id ? '➤ ' : '';
@@ -468,7 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             progressBarEl.setAttribute('data-tooltip', tooltipText);
                         }
                     }
-
+                    
+                    // Handle progress stage markers
                     if (progressStageMarkersEl && Array.isArray(phaseInfo.main_stage_markers)) {
                         progressStageMarkersEl.innerHTML = '';
                         const n = phaseInfo.main_stage_markers.length;
@@ -488,7 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             progressStageMarkersEl.appendChild(markerEl);
                         });
                     }
-
+                    
+                    // Update subtasks list
                     if (subTasksListEl) {
                         subTasksListEl.innerHTML = '';
                         if (phaseInfo.tasks && Array.isArray(phaseInfo.tasks) && phaseInfo.tasks.length > 0) {
@@ -513,16 +517,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else {
-                    console.warn("Received invalid stage_update data from SSE:", eventData);
+                    console.warn("Received invalid stage_update data:", data);
                 }
             } catch (err) {
-                console.error('Error parsing stage_update event from SSE:', err, e.data);
+                console.error('Error parsing stage_update event:', err);
             }
         });
+    }
 
-    } // End connectSSE
-
-    // --- Initial Load ---
-    connectSSE(); // Start connection
+    // Start Socket.IO connection when page loads
+    connectSocketIO();
 
 }); // End DOMContentLoaded

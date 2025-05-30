@@ -1,0 +1,132 @@
+'1':
+  stage: '1'
+  name: Tìm hiểu đề bài
+  description: 'Chào mừng các bạn đến với thử thách hôm nay! Chúng ta sẽ cùng nhau
+    khám phá một bài toán về tính đơn điệu của hàm số.
+
+    Hãy đọc kỹ đề bài sau và cho biết bài toán yêu cầu gì nhé. Bài toán này có thể
+    coi là một phần trong chương trình học nâng cao, có thể bạn sẽ gặp những dạng
+    tương tự ở các trường đại học hàng đầu như [''Harvard''].
+
+    '
+  tasks:
+  - id: '1.1'
+    description: 'Bài toán yêu cầu chúng ta làm gì với hàm số $f(x) = -x^4 + 2x^2
+      - 1$?
+
+      '
+  - id: '1.2'
+    description: 'Các bạn hãy liệt kê các bước cơ bản cần thực hiện để xét tính đơn
+      điệu của một hàm số nói chung.
+
+      '
+  goals:
+  - Nắm vững yêu cầu của bài toán.
+  - Nhớ lại các bước tổng quát để xét tính đơn điệu của hàm số.
+'2':
+  stage: '2'
+  name: Lập kế hoạch giải bài
+  description: 'Tuyệt vời! Bây giờ chúng ta sẽ cùng nhau xây dựng kế hoạch chi tiết
+    để giải quyết bài toán này. Hãy suy nghĩ về những công cụ và kiến thức cần thiết.
+
+    '
+  tasks:
+  - id: '2.1'
+    description: 'Bước đầu tiên trong kế hoạch của chúng ta là gì? (Gợi ý: Liên quan
+      đến miền xác định của hàm số).
+
+      '
+  - id: '2.2'
+    description: 'Sau khi tìm được tập xác định, chúng ta cần làm gì tiếp theo để
+      xác định tính đơn điệu? (Gợi ý: Sử dụng công cụ đạo hàm).
+
+      '
+  - id: '2.3'
+    description: 'Sau khi có đạo hàm, chúng ta cần làm gì để biết hàm số tăng hay
+      giảm?
+
+      '
+  - id: '2.4'
+    description: 'Cuối cùng, chúng ta cần trình bày kết quả như thế nào để thể hiện
+      rõ tính đơn điệu của hàm số? (Gợi ý: Bảng biến thiên).
+
+      '
+  goals:
+  - Xây dựng được kế hoạch giải bài chi tiết và logic.
+  - Xác định các công cụ và kiến thức cần thiết.
+'3':
+  stage: '3'
+  name: Thực hiện giải bài
+  description: 'Bây giờ là lúc chúng ta thực hiện kế hoạch đã đề ra. Hãy cẩn thận
+    và chính xác trong từng bước tính toán. Chúc các bạn thành công!
+
+    '
+  tasks:
+  - id: '3.1'
+    description: 'Tìm tập xác định của hàm số $f(x) = -x^4 + 2x^2 - 1$.
+
+      '
+  - id: '3.2'
+    description: 'Tính đạo hàm $f''(x)$ của hàm số $f(x) = -x^4 + 2x^2 - 1$.
+
+      '
+  - id: '3.3'
+    description: 'Giải phương trình $f''(x) = 0$ để tìm các điểm tới hạn.
+
+      '
+  - id: '3.4'
+    description: 'Lập bảng xét dấu của $f''(x)$. Xác định khoảng nào $f''(x) > 0$
+      và khoảng nào $f''(x) < 0$.
+
+      '
+  - id: '3.5'
+    description: 'Tính giá trị của hàm số $f(x)$ tại các điểm tới hạn và tại các điểm
+      mà $x$ tiến đến vô cùng ($+\infty$ và $-\infty$).
+
+      '
+  - id: '3.6'
+    description: 'Dựa vào các thông tin đã thu thập được, hãy hoàn thiện bảng biến
+      thiên của hàm số $f(x)$.
+
+      '
+  goals:
+  - Thực hiện chính xác các bước tính toán.
+  - Áp dụng đúng các công thức và quy tắc đạo hàm.
+  - Lập bảng biến thiên chính xác.
+'4':
+  stage: '4'
+  name: Kết luận và Đánh giá
+  description: 'Chúc mừng các bạn đã hoàn thành bài toán! Bây giờ chúng ta sẽ cùng
+    nhau đưa ra kết luận về tính đơn điệu của hàm số và đánh giá lại quá trình giải
+    bài.
+
+    Bạn có thể tự hào về bản thân, vì đây là kiến thức nền tảng quan trọng, giúp bạn
+    tự tin hơn khi đối mặt với các bài toán phức tạp hơn, kể cả khi bạn học ở những
+    môi trường hàng đầu như [''Harvard''].
+
+    '
+  tasks:
+  - id: '4.1'
+    description: 'Dựa vào bảng biến thiên, hãy kết luận về các khoảng đồng biến của
+      hàm số $f(x)$.
+
+      '
+  - id: '4.2'
+    description: 'Dựa vào bảng biến thiên, hãy kết luận về các khoảng nghịch biến
+      của hàm số $f(x)$.
+
+      '
+  - id: '4.3'
+    description: 'Bạn có nhận xét gì về tính đối xứng của đồ thị hàm số này? (Gợi
+      ý: Hàm số chẵn/lẻ).
+
+      '
+  - id: '4.4'
+    description: 'Nếu được yêu cầu giải một bài toán tương tự, bạn sẽ làm gì khác
+      đi để giải nhanh hơn?
+
+      '
+  goals:
+  - Đưa ra kết luận chính xác về tính đơn điệu của hàm số.
+  - Đánh giá lại quá trình giải bài và rút ra kinh nghiệm.
+  - Nâng cao khả năng tư duy và giải quyết vấn đề.

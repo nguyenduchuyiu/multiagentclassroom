@@ -6,9 +6,14 @@ CREATE TABLE sessions (
   session_id TEXT PRIMARY KEY,      -- Unique UUID for the session
   user_name TEXT NOT NULL,          -- User who started the session
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  problem_description TEXT,         -- Problem context for this session
-  current_phase_id TEXT,            -- Last known phase ID (optional)
-  metadata JSON_TEXT                 -- Store other session info as JSON text
+  problem TEXT,                     -- Problem context for this session
+  script TEXT,                      -- Generated script for the session
+  roles TEXT,                       -- Roles of participants as JSON
+  current_stage_id TEXT,            -- Current stage ID in the script
+  conversation TEXT,                -- Conversation history
+  log_file TEXT,                    -- Path to the log file
+  stage_state TEXT,                 -- State of the current stage as string of JSON
+  inner_thought TEXT                 -- Agent's inner thoughts as string of lists
 );
 
 CREATE TABLE events (
