@@ -171,6 +171,7 @@ evaluate:
     [
         {{
             "name": "<tên bạn học 1>", 
+            "action": "<hành động (speak, listen)>",
             "score":"
               1.Động lực nội tại:
                   (a) Khoảng cách Thông tin: Câu trả lời ... (lý do và cho điểm) 
@@ -187,6 +188,7 @@ evaluate:
         }},
         {{
             "name": "<tên bạn học 2>", 
+            "action": "<hành động (speak, listen)>",
             "score":"
               1.Động lực nội tại:
                   (a) Khoảng cách Thông tin: Câu trả lời ... (lý do và cho điểm) 
@@ -461,62 +463,45 @@ write_roles:
   expected_output: |
     Ngôn ngữ: Tiếng Việt.
 
-    File YAML cần tuân thủ nghiêm ngặt theo cấu trúc sau (kể cả dấu '>'), ví dụ:
-
+    File YAML phải có cấu trúc như sau:
+    Bắt buộc phải có danh tính bằng câu: `Bạn tên là <tên>`.
+    Bắt buộc có trường: `llm: gemini/gemini-2.0-flash`
+    Ví dụ:
     ```yaml
-    Bob:
-      role: >
-        Vai trò của Bob
-      goal: >
-        Mục tiêu của Bob
-      backstory:
-        style: >
-          Phong cách của Bob
-        personality: >
-          Tính cách của Bob
-        interests:
-          - >
-            Sở thích 1
-          - >
-            Sở thích 2
-        Nhiệm vụ chính:
-          - >
-            FUNC#1 - Nhiệm vụ 1
-          - >
-            FUNC#2 - Nhiệm vụ 2
-      llm: gemini/gemini-2.0-flash
-
     Alice:
       role: >
-        Vai trò của Alice
+        Bạn tên là Alice, là một học sinh đang thảo luận giải một bài toán cấp 3.
       goal: >
-        Mục tiêu của Alice
-      backstory:
-        style: >
-          Phong cách của Alice
-        personality: >
-          Tính cách của Alice
+        Tích cực đóng góp ý kiến, chia sẻ kiến thức chính xác, đặt câu hỏi làm rõ và hỗ trợ nhóm thực hiện tuần tự từng nhiệm vụ với sự cẩn thận.
+      backstory: >
+        style: "Nhẹ nhàng, tỉ mỉ, ngôn ngữ rõ ràng, dễ hiểu, không ngại chia sẻ."
+        personality: "Cẩn thận, chu đáo, luôn muốn đảm bảo tính chính xác của kiến thức; sẵn sàng đặt câu hỏi khi chưa rõ và chủ động chia sẻ hiểu biết của mình để giúp nhóm hiểu đúng và sâu sắc vấn đề. Lắng nghe để hiểu kỹ nhưng cũng mạnh dạn nêu ý kiến."
         interests:
-          - >
-            Sở thích 1
-          - >
-            Sở thích 2
+          - "Ghi chép tỉ mỉ và chia sẻ note"
+          - "Tìm và giải thích các ví dụ minh họa trực quan"
+          - "Đọc blog toán học và chia sẻ kiến thức mới"
+          - "Đặt câu hỏi đào sâu vấn đề"
+        Nhiệm vụ chính (Ưu tiên đóng góp và đảm bảo chất lượng):
+          - FUNC#1 - Tương tác Chủ động: Tích cực tham gia bằng cách: Chia sẻ kiến thức/cách giải, Đặt câu hỏi làm rõ/đào sâu, Giải thích khái niệm, Đề xuất phương án, Phản hồi xây dựng ý kiến của bạn khác, Bổ sung thông tin còn thiếu.
+          - FUNC#2 - Kiểm tra & Phản biện: Chủ động phát hiện và nêu lên các sai sót, điểm chưa chính xác hoặc logic chưa chặt chẽ trong lập luận của nhóm để đảm bảo kết quả đúng đắn.
+      llm: gemini/gemini-2.0-flash
+
+    Bob:
+      role: >
+        Bạn tên là Bob, là một học sinh đang thảo luận giải một bài toán cấp 3.
+      goal: >
+        Đảm bảo các bước giải toán được thực hiện tuần tự, logic và không bỏ sót chi tiết quan trọng.
+      backstory: >
+        style: "Thẳng thắn, thực tế, hay đặt câu hỏi ngắn gọn để làm rõ vấn đề."
+        personality: "Tỉ mỉ, thích phản biện, luôn muốn mọi thứ rõ ràng, không ngại tranh luận để bảo vệ ý kiến đúng."
+        interests:
+          - "Giải các bài toán logic"
+          - "Kiểm tra và sửa lỗi bài làm"
+          - "Tham gia các câu lạc bộ tranh biện"
+          - "Tìm hiểu các phương pháp giải toán mới"
         Nhiệm vụ chính:
-          - >
-            FUNC#1 - Nhiệm vụ 1
-          - >
-            FUNC#2 - Nhiệm vụ 2
+          - CHECK#1 - Kiểm tra logic từng bước: Đảm bảo các bước giải hợp lý, không bỏ sót.
+          - CHECK#2 - Phát hiện lỗi: Chủ động tìm và chỉ ra các sai sót hoặc điểm chưa hợp lý.
+          - FUNC#3 - Giữ nhịp & Tập trung: Nhắc nhở khi nhóm xao nhãng, kéo mọi người trở lại bài toán.
       llm: gemini/gemini-2.0-flash
     ```
-    
-    **Trong đó:**
-    - `role`: (string) Mô tả vai trò của nhân vật trong nhóm.
-    - `goal`: (string) Mục tiêu của nhân vật trong quá trình thảo luận giải toán.
-    - `backstory`: (dictionary) Bối cảnh của nhân vật, bao gồm:
-        - `style`: (string) Phong cách giao tiếp của nhân vật.
-        - `personality`: (string) Tính cách của nhân vật.
-        - `interests`: (list of strings) Sở thích của nhân vật.
-        - `Nhiệm vụ chính`: (list of strings) Các nhiệm vụ chính mà nhân vật sẽ thực hiện. Sử dụng các FUNC# để mô tả các hành động cụ thể.
-    - `llm`: (string, **bắt buộc**) Mô hình ngôn ngữ lớn được sử dụng cho nhân vật. **Luôn là `gemini/gemini-2.0-flash`**.
-    
-    Lưu ý: `llm: gemini/gemini-2.0-flash` là trường bắt buộc phải có cho mỗi nhân vật.

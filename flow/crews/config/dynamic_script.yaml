@@ -1,132 +1,138 @@
 '1':
   stage: '1'
   name: Tìm hiểu đề bài
-  description: 'Chào mừng các bạn đến với thử thách hôm nay! Chúng ta sẽ cùng nhau
-    khám phá một bài toán về tính đơn điệu của hàm số.
+  description: 'Chào mừng các bạn GenZ đến với thử thách khảo sát hàm số! Hôm nay,
+    chúng ta sẽ "flex" kiến thức để "decode" tính đơn điệu của một hàm số "căng đét".
 
-    Hãy đọc kỹ đề bài sau và cho biết bài toán yêu cầu gì nhé. Bài toán này có thể
-    coi là một phần trong chương trình học nâng cao, có thể bạn sẽ gặp những dạng
-    tương tự ở các trường đại học hàng đầu như [''Harvard''].
+    Hãy đọc kỹ đề bài và cho biết chúng ta cần làm gì nhé! Đừng "toxic" nếu thấy khó,
+    vì AI luôn ở đây "support" các bạn!
 
     '
   tasks:
   - id: '1.1'
-    description: 'Bài toán yêu cầu chúng ta làm gì với hàm số $f(x) = -x^4 + 2x^2
-      - 1$?
+    description: 'Bài toán yêu cầu chúng ta làm gì với hàm số $f(x) = -x^3 + 3x -
+      2$? (Gợi ý: Tìm khoảng đồng biến, nghịch biến).
 
       '
   - id: '1.2'
-    description: 'Các bạn hãy liệt kê các bước cơ bản cần thực hiện để xét tính đơn
-      điệu của một hàm số nói chung.
+    description: 'Bạn hiểu thế nào về "tính đơn điệu" của hàm số? Hãy giải thích bằng
+      ngôn ngữ "teen code" hoặc một ví dụ thực tế mà bạn thấy "relate" nhé!
 
       '
   goals:
-  - Nắm vững yêu cầu của bài toán.
-  - Nhớ lại các bước tổng quát để xét tính đơn điệu của hàm số.
+  - Hiểu rõ yêu cầu của bài toán (xét tính đơn điệu).
+  - Nắm vững khái niệm đơn điệu của hàm số.
 '2':
   stage: '2'
   name: Lập kế hoạch giải bài
-  description: 'Tuyệt vời! Bây giờ chúng ta sẽ cùng nhau xây dựng kế hoạch chi tiết
-    để giải quyết bài toán này. Hãy suy nghĩ về những công cụ và kiến thức cần thiết.
+  description: '"Let''s go!" Đến giai đoạn "brainstorming" để vạch ra "strategy" giải
+    bài toán này.
+
+    Chúng ta sẽ dùng "skill" gì để "combat" với bài toán này?
 
     '
   tasks:
   - id: '2.1'
-    description: 'Bước đầu tiên trong kế hoạch của chúng ta là gì? (Gợi ý: Liên quan
-      đến miền xác định của hàm số).
+    description: 'Để xét tính đơn điệu của hàm số, chúng ta cần "triệu hồi" kiến thức
+      nào? (Gợi ý: Đạo hàm). "Pls" cho biết các bước cơ bản để giải quyết bài toán
+      này.
 
       '
   - id: '2.2'
-    description: 'Sau khi tìm được tập xác định, chúng ta cần làm gì tiếp theo để
-      xác định tính đơn điệu? (Gợi ý: Sử dụng công cụ đạo hàm).
-
-      '
-  - id: '2.3'
-    description: 'Sau khi có đạo hàm, chúng ta cần làm gì để biết hàm số tăng hay
-      giảm?
-
-      '
-  - id: '2.4'
-    description: 'Cuối cùng, chúng ta cần trình bày kết quả như thế nào để thể hiện
-      rõ tính đơn điệu của hàm số? (Gợi ý: Bảng biến thiên).
+    description: 'Theo bạn, bước nào là quan trọng nhất và dễ "fail" nhất? Vì sao?
 
       '
   goals:
-  - Xây dựng được kế hoạch giải bài chi tiết và logic.
-  - Xác định các công cụ và kiến thức cần thiết.
+  - Xác định các bước giải bài toán (tìm tập xác định, tính đạo hàm, xét dấu đạo hàm,...).
+  - Nhận diện các khó khăn có thể gặp phải.
 '3':
   stage: '3'
   name: Thực hiện giải bài
-  description: 'Bây giờ là lúc chúng ta thực hiện kế hoạch đã đề ra. Hãy cẩn thận
-    và chính xác trong từng bước tính toán. Chúc các bạn thành công!
+  description: '"Time to shine!" Giai đoạn "try hard" để biến kế hoạch thành "reality".
+
+    Hãy "focus" và "try hết sức" nhé!
 
     '
   tasks:
   - id: '3.1'
-    description: 'Tìm tập xác định của hàm số $f(x) = -x^4 + 2x^2 - 1$.
+    description: 'Bước đầu tiên, tìm tập xác định của hàm số $f(x) = -x^3 + 3x - 2$.
+      Tập xác định của hàm số đa thức là gì nhỉ?
 
       '
   - id: '3.2'
-    description: 'Tính đạo hàm $f''(x)$ của hàm số $f(x) = -x^4 + 2x^2 - 1$.
+    description: 'Tiếp theo, tính đạo hàm $f''(x)$ của hàm số $f(x) = -x^3 + 3x -
+      2$. Nhớ lại công thức đạo hàm của $x^n$ nhé!
 
       '
   - id: '3.3'
-    description: 'Giải phương trình $f''(x) = 0$ để tìm các điểm tới hạn.
+    description: 'Bây giờ, hãy tìm các điểm mà $f''(x) = 0$. Giải phương trình $-3x^2
+      + 3 = 0$ xem nào!
 
       '
   - id: '3.4'
-    description: 'Lập bảng xét dấu của $f''(x)$. Xác định khoảng nào $f''(x) > 0$
-      và khoảng nào $f''(x) < 0$.
+    description: 'Lập bảng xét dấu của $f''(x)$. Chú ý dấu của tam thức bậc hai nhé!
+      $f''(x) > 0$ khi nào, $f''(x) < 0$ khi nào?
 
       '
   - id: '3.5'
-    description: 'Tính giá trị của hàm số $f(x)$ tại các điểm tới hạn và tại các điểm
-      mà $x$ tiến đến vô cùng ($+\infty$ và $-\infty$).
+    description: 'Tính giá trị của hàm số tại các điểm cực trị $x = -1$ và $x = 1$.
+
+      $f(-1) = ?$
+
+      $f(1) = ?$
 
       '
   - id: '3.6'
-    description: 'Dựa vào các thông tin đã thu thập được, hãy hoàn thiện bảng biến
-      thiên của hàm số $f(x)$.
+    description: 'Tính giới hạn của $f(x)$ khi $x$ tiến tới $+\infty$ và $-\infty$.
+
+      $\\lim_{x \to +\infty} f(x) = ?$
+
+      $\\lim_{x \to -\infty} f(x) = ?$
+
+      '
+  - id: '3.7'
+    description: 'Dựa vào các thông tin trên, hãy vẽ bảng biến thiên của hàm số.
+
+      Bảng biến thiên có dạng như thế nào?
 
       '
   goals:
-  - Thực hiện chính xác các bước tính toán.
-  - Áp dụng đúng các công thức và quy tắc đạo hàm.
-  - Lập bảng biến thiên chính xác.
+  - Tìm tập xác định của hàm số.
+  - Tính đạo hàm của hàm số.
+  - Giải phương trình f'(x) = 0.
+  - Lập bảng xét dấu đạo hàm.
+  - Tính giá trị cực trị của hàm số.
+  - Tìm giới hạn của hàm số tại vô cực.
+  - Vẽ bảng biến thiên.
 '4':
   stage: '4'
   name: Kết luận và Đánh giá
-  description: 'Chúc mừng các bạn đã hoàn thành bài toán! Bây giờ chúng ta sẽ cùng
-    nhau đưa ra kết luận về tính đơn điệu của hàm số và đánh giá lại quá trình giải
-    bài.
+  description: '"Mission completed!" Đến giai đoạn "review" lại thành quả và rút ra
+    "lesson learned".
 
-    Bạn có thể tự hào về bản thân, vì đây là kiến thức nền tảng quan trọng, giúp bạn
-    tự tin hơn khi đối mặt với các bài toán phức tạp hơn, kể cả khi bạn học ở những
-    môi trường hàng đầu như [''Harvard''].
+    Cùng nhau "check" lại xem chúng ta đã "master" được kiến thức gì nhé! "Gg" (good
+    game)!
 
     '
   tasks:
   - id: '4.1'
-    description: 'Dựa vào bảng biến thiên, hãy kết luận về các khoảng đồng biến của
-      hàm số $f(x)$.
+    description: 'Dựa vào bảng biến thiên, hãy kết luận về tính đơn điệu của hàm số
+      $f(x) = -x^3 + 3x - 2$. Hàm số đồng biến trên khoảng nào? Nghịch biến trên khoảng
+      nào?
 
       '
   - id: '4.2'
-    description: 'Dựa vào bảng biến thiên, hãy kết luận về các khoảng nghịch biến
-      của hàm số $f(x)$.
+    description: 'Bạn có thể "summarize" lại các bước để xét tính đơn điệu của một
+      hàm số bất kỳ không? "Bonus points" nếu bạn có thể dùng "sơ đồ tư duy" hoặc
+      "infographic" để trình bày!
 
       '
   - id: '4.3'
-    description: 'Bạn có nhận xét gì về tính đối xứng của đồ thị hàm số này? (Gợi
-      ý: Hàm số chẵn/lẻ).
-
-      '
-  - id: '4.4'
-    description: 'Nếu được yêu cầu giải một bài toán tương tự, bạn sẽ làm gì khác
-      đi để giải nhanh hơn?
+    description: 'Bài học hôm nay có "useful" không? Bạn đã học được điều gì mới?
+      Nếu được "remake" lại, bạn sẽ làm gì khác đi?
 
       '
   goals:
-  - Đưa ra kết luận chính xác về tính đơn điệu của hàm số.
-  - Đánh giá lại quá trình giải bài và rút ra kinh nghiệm.
-  - Nâng cao khả năng tư duy và giải quyết vấn đề.
+  - Kết luận về tính đơn điệu của hàm số.
+  - Tổng kết các bước giải bài toán.
+  - Đánh giá quá trình học tập và rút kinh nghiệm.

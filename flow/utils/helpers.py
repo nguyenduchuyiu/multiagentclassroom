@@ -28,14 +28,24 @@ def clean_response(raw_response):
     )
     return cleaned.strip()
 
+def fix_missing_commas(s):
+    # Thêm dấu phẩy giữa } và { nếu không có dấu phẩy
+    s = re.sub(r'\}\s*\{', '}, {', s)
+    # Thêm dấu phẩy giữa ] và [ nếu không có dấu phẩy (nếu có list lồng nhau)
+    s = re.sub(r'\]\s*\[', '], [', s)
+    return s
+
 def parse_json_response(cleaned_response):
     """Xử lý và validate JSON response"""
     try:
         return json.loads(cleaned_response)
     except Exception as e:
-        print(cleaned_response)
-        print(f"Error parsing JSON: {e}")
-        return None
+        try:
+            print(f"Error parsing JSON, trying to fix...")
+            return json.loads(fix_missing_commas(cleaned_response))
+        except Exception as e:
+            print(f"Still error parsing JSON: {e}")
+            return None
 
 def process_content(content):
     """Chuyển đổi định dạng markdown sang HTML"""
@@ -87,53 +97,16 @@ def parse_yaml(yaml_string: str) -> dict:
         print(f"Error parsing YAML: {e}")
         return {}
 
-def load_yaml(yaml_path: str):
-    with open(yaml_path, "r") as f:
+def load_yaml(yaml_path: str) -> dict:
+    with open(yaml_path, "r", encoding="utf-8") as f:
         yaml_data = parse_yaml(f.read())
     return yaml_data
 
 def save_yaml(yaml_path: str, yaml_data: dict):
-    """Saves a YAML dictionary to a file, using a style similar to 'folded block' (>)
-    for multi-line strings where newlines are preserved, mimicking the format
-    observed in files like meta_agents.yaml.
-    """
-    # Dump the YAML data using literal block style for multi-line strings
-    # This ensures all newlines within the strings are preserved.
-    literal_yaml_string = yaml.dump(
-        yaml_data,
-        indent=2,
-        sort_keys=False,
-        allow_unicode=True,
-        default_flow_style=False,  # Use block style for collections
-        default_style='|'          # Use literal style for scalars (preserves newlines)
-    )
-
-    # Replace the literal block style indicator ": |" with ": >"
-    # This changes the visual marker to '>' while keeping the newline preservation
-    # achieved by the literal style dump.
-    processed_string = re.sub(r'(:\s*)\|', r'\1>', literal_yaml_string)
-    
-    with open(yaml_path, "w", encoding="utf-8") as f:
-        f.write(processed_string)
+    with open(yaml_path, "w") as f:
+        yaml.dump(yaml_data, f, indent=2, sort_keys=False, allow_unicode=True)
 
 
-def select_talker(evaluation_results, lambda_weight=0.5):
-    evaluated_results = []
-    for result in evaluation_results:
-        agent_name = result['name']
-        internal_scores = result.get('internal_score')
-        external_scores = result.get('external_score')
-        if internal_scores and external_scores:
-            internal_s = internal_scores
-            external_s = external_scores
-            final_s = ((1 - lambda_weight) * internal_s + lambda_weight * external_s) + random.uniform(-0.01, 0.01)
-            evaluated_results.append({**result, "internal_score": internal_s, "external_score": external_s, "final_score": final_s})
-    if not evaluated_results:
-        return None
-    else:
-        evaluated_results.sort(key=lambda x: x["final_score"], reverse=True)
-        selected_agent_result = evaluated_results[0]
-        return selected_agent_result["name"]
   
 def create_agent_config(participants_path, meta_agents_path, output_path):
     '''
@@ -161,3 +134,6 @@ def dummy_llm_call(data_type):
     else:
         return "Hello, world!"
 
+def save_to_log_file(message, filename):
+    with open(filename, "a") as f:
+        f.write(message)

@@ -56,10 +56,13 @@ def generate_script_and_roles(folder_path: str, **kwargs: dict) -> tuple[dict, d
     dynamic_script_path = f"{folder_path}/dynamic_script.yaml"
     dynamic_participants_path = f"{folder_path}/dynamic_participants.yaml"
     scriptFlow = ScriptGenerationFlow(**kwargs)
+    
     script, roles = scriptFlow.kickoff()
     script = parse_yaml(script)
     roles = parse_yaml(roles)
+    
     save_yaml(dynamic_script_path, script)
     save_yaml(dynamic_participants_path, roles)
+
 
     return script, roles

@@ -13,7 +13,8 @@ CREATE TABLE sessions (
   conversation TEXT,                -- Conversation history
   log_file TEXT,                    -- Path to the log file
   stage_state TEXT,                 -- State of the current stage as string of JSON
-  inner_thought TEXT                 -- Agent's inner thoughts as string of lists
+  inner_thought TEXT,               -- Agent's inner thoughts as string of lists
+  turn_number INTEGER                -- Number of turns in the conversation
 );
 
 CREATE TABLE events (

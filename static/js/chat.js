@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sendButton.disabled = true;
 
         // Use Socket.IO instead of fetch for sending messages
-        socket.emit('user_message', {
+        socket.emit('new_message', {
             session_id: currentSessionId,
             text: text,
             sender_name: currentUsername
@@ -333,6 +333,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     return r.json()
                 })
                 .then(history => {
+                    // Log the fetched history data
+                    console.log("Fetched history:", history);
+
                     if (chatbox) chatbox.innerHTML = '';
                     messageCounter = 0;
                     history.forEach(displayMessage);
@@ -384,6 +387,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (senderName && agentStatuses.hasOwnProperty(senderName)) {
                 currentTypingAgents.delete(senderName);
                 updateParticipantDisplay();
+            }
+
+            // Send the message back to the server
+            if (senderName !== currentUsername) {
+                socket.emit('new_message', {
+                    session_id: currentSessionId,
+                    text: data.content?.text,
+                    sender_name: data.content?.sender_name
+                });
             }
         });
         
@@ -527,5 +539,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start Socket.IO connection when page loads
     connectSocketIO();
+    
+    // --- Add this event listener to handle 'navigate' events ---
+    socket.on('navigate', (data) => {
+        console.log("Navigation event received:", data);
+        if (data && data.url) {
+            window.location.href = data.url;
+        } else {
+            console.warn("Navigation event missing URL.");
+        }
+    });
 
+    document.querySelectorAll('a.button-like-link, a.new-chat-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (window.socket && window.currentSessionId) {
+                e.preventDefault();
+                socket.emit('leave', { session_id: currentSessionId });
+                setTimeout(() => {
+                    window.location.href = link.href;
+                }, 150); // Đợi 150ms cho leave gửi đi, có thể điều chỉnh
+            }
+        });
+    });
 }); // End DOMContentLoaded
