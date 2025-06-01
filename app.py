@@ -135,7 +135,7 @@ def create_session(session_data):
     """
     Create a new session in the database.
     """
-    db = database.get_db()
+    db = database.get_db()      
     db.execute(
         '''INSERT INTO sessions (
             session_id, user_name, problem, script, roles,
