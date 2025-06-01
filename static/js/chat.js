@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressLabelEl = document.getElementById('progressLabel');
     const progressBarEl = document.querySelector('.progress-bar');
     const progressPercentEl = document.getElementById('progressPercent');
+    let currentScript = {};
+    let currentStageId = '';
+    let completedTaskIds = [];
 
     // --- State Variables ---
     let messageCounter = 0;
@@ -55,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentUsername = currentUsername.trim();
         if (!currentUsername) currentUsername = 'Bạn'; // Final fallback
 
-        console.log(`Username for session ${currentSessionId}: ${currentUsername}`);
         localStorage.setItem(`chatcollab_username_${currentSessionId}`, currentUsername);
 
         const userLi = participantsList?.querySelector('.user-participant');
@@ -332,14 +334,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
                     return r.json()
                 })
-                .then(history => {
-                    // Log the fetched history data
-                    console.log("Fetched history:", history);
-
+                .then(data => {
+                    // Log the fetched data
+                    console.log("Fetched data:", data);
+                    
+                    // Display chat history
                     if (chatbox) chatbox.innerHTML = '';
                     messageCounter = 0;
-                    history.forEach(displayMessage);
+                    if (data.history) {
+                        data.history.forEach(displayMessage);
+                    }
                     if (messageInput) messageInput.focus();
+                    
+                    // Update stage information
+                    if (data.script && data.current_stage_id) {
+                        currentScript = data.script;
+                        currentStageId = data.current_stage_id;
+                        completedTaskIds = data.completed_task_ids;
+                        updateStageInformation();
+                    }
                 })
                 .catch(err => {
                     console.error("History fetch error:", err);
@@ -445,89 +458,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle stage updates
         socket.on('stage_update', (data) => {
             try {
-                const phaseInfo = data.content;
+                const stageInfo = data.content;
                 
-                console.log("[STAGE_UPDATE] Received phaseInfo:", phaseInfo);
+                console.log("[STAGE_UPDATE] Received stageInfo:", stageInfo);
                 
-                if (phaseInfo && typeof phaseInfo.id !== 'undefined' && typeof phaseInfo.name !== 'undefined') {
-                    if (currentStageEl) currentStageEl.textContent = phaseInfo.name;
-                    if (stageDescriptionEl) stageDescriptionEl.textContent = phaseInfo.description || 'Không có mô tả cho giai đoạn này.';
-                    
-                    // Update progress bar fill
-                    if (progressFillEl && typeof phaseInfo.progress_bar_percent === 'number') {
-                        const progressPercent = phaseInfo.progress_bar_percent;
-                        console.log(`[STAGE_UPDATE] Progress bar: Using weighted progress_bar_percent = ${progressPercent.toFixed(2)}%`);
-                        progressFillEl.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
-                        
-                        // Display progress percentage
-                        if (progressPercentEl) {
-                            progressPercentEl.textContent = `(${Math.round(progressPercent)}%)`;
-                        }
-                        
-                        // Update progress label
-                        if (progressLabelEl && Array.isArray(phaseInfo.main_stage_markers)) {
-                            const totalStages = phaseInfo.main_stage_markers.length;
-                            const currentStageIndex = phaseInfo.main_stage_markers.findIndex(m => m.id === phaseInfo.id);
-                            const currentStageNum = currentStageIndex !== -1 ? currentStageIndex + 1 : '?';
-                            
-                            progressLabelEl.textContent = `Giai đoạn ${currentStageNum}/${totalStages}: ${phaseInfo.name}`;
-                        }
-                        
-                        // Create tooltip for progress bar
-                        if (progressBarEl && Array.isArray(phaseInfo.main_stage_markers)) {
-                            let tooltipText = phaseInfo.main_stage_markers.map((marker, idx) => {
-                                const prefix = marker.id === phaseInfo.id ? '➤ ' : '';
-                                return `${prefix}${idx+1}. ${marker.name || 'Giai đoạn ' + marker.id}`;
-                            }).join('\n');
-                            progressBarEl.setAttribute('data-tooltip', tooltipText);
-                        }
-                    }
-                    
-                    // Handle progress stage markers
-                    if (progressStageMarkersEl && Array.isArray(phaseInfo.main_stage_markers)) {
-                        progressStageMarkersEl.innerHTML = '';
-                        const n = phaseInfo.main_stage_markers.length;
-                        phaseInfo.main_stage_markers.forEach((marker, idx) => {
-                            const markerEl = document.createElement('span');
-                            markerEl.title = marker.name || marker.id; // Tooltip
-                            let leftPercent = 0;
-                            if (n === 1) {
-                                leftPercent = 0;
-                            } else {
-                                leftPercent = (idx) * 100 / (n - 1);
-                            }
-                            markerEl.style.left = `${leftPercent}%`;
-                            if (marker.id === phaseInfo.id) {
-                                markerEl.classList.add('active-stage-marker');
-                            }
-                            progressStageMarkersEl.appendChild(markerEl);
-                        });
-                    }
-                    
-                    // Update subtasks list
-                    if (subTasksListEl) {
-                        subTasksListEl.innerHTML = '';
-                        if (phaseInfo.tasks && Array.isArray(phaseInfo.tasks) && phaseInfo.tasks.length > 0) {
-                            phaseInfo.tasks.forEach(task => {
-                                const li = document.createElement('li');
-                                li.classList.add(task.completed ? 'completed' : 'pending');
-                                const icon = document.createElement('span');
-                                icon.classList.add('task-status-icon');
-                                icon.innerHTML = task.completed ? '&#10004;' : '&#9711;';
-                                const desc = document.createElement('span');
-                                desc.classList.add('task-description');
-                                desc.textContent = task.description;
-                                li.appendChild(icon);
-                                li.appendChild(desc);
-                                subTasksListEl.appendChild(li);
-                            });
-                        } else {
-                            const li = document.createElement('li');
-                            li.classList.add('no-tasks');
-                            li.textContent = 'Giai đoạn này không có nhiệm vụ cụ thể.';
-                            subTasksListEl.appendChild(li);
-                        }
-                    }
+                if (stageInfo && typeof stageInfo.current_stage_id !== 'undefined') {
+                    currentStageId = stageInfo.current_stage_id;
+                    completedTaskIds = stageInfo.completed_task_ids || [];
+                    updateStageInformation();
                 } else {
                     console.warn("Received invalid stage_update data:", data);
                 }
@@ -561,4 +499,90 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Add this new function to update stage information
+    function updateStageInformation() {
+        if (!currentScript || !currentStageId) return;
+        
+        // Update current stage name and description
+        if (currentStageEl) currentStageEl.textContent = currentScript[currentStageId]?.name || 'Giai đoạn không xác định';
+        if (stageDescriptionEl) stageDescriptionEl.textContent = currentScript[currentStageId]?.description || 'Không có mô tả cho giai đoạn này.';
+        
+        // Calculate progress
+        const totalStages = Object.keys(currentScript).length;
+        const currentStageNum = parseInt(currentStageId);
+        
+        // Update progress label
+        if (progressLabelEl) {
+            progressLabelEl.textContent = `Giai đoạn ${currentStageNum}/${totalStages}: ${currentScript[currentStageId]?.name || ''}`;
+        }
+        
+        // Update progress bar
+        if (progressFillEl) {
+            const progressPercent = (currentStageNum / totalStages) * 100;
+            progressFillEl.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
+            
+            if (progressPercentEl) {
+                progressPercentEl.textContent = `(${Math.round(progressPercent)}%)`;
+            }
+        }
+        
+        // Create progress markers
+        if (progressStageMarkersEl) {
+            progressStageMarkersEl.innerHTML = '';
+            for (let i = 1; i <= totalStages; i++) {
+                const markerEl = document.createElement('span');
+                markerEl.title = currentScript[i.toString()]?.name || `Giai đoạn ${i}`;
+                const leftPercent = (i - 1) * (100 / (totalStages - 1));
+                markerEl.style.left = `${leftPercent}%`;
+                if (i === currentStageNum) {
+                    markerEl.classList.add('active-stage-marker');
+                }
+                progressStageMarkersEl.appendChild(markerEl);
+            }
+        }
+        
+        // Update tasks list
+        if (subTasksListEl) {
+            subTasksListEl.innerHTML = '';
+            const currentStageTasks = currentScript[currentStageId]?.tasks;
+            
+            if (currentStageTasks && Array.isArray(currentStageTasks) && currentStageTasks.length > 0) {
+                currentStageTasks.forEach(task => {
+                    const li = document.createElement('li');
+                    const isCompleted = completedTaskIds.includes(task.id);
+                    li.classList.add(isCompleted ? 'completed' : 'pending');
+                    
+                    const icon = document.createElement('span');
+                    icon.classList.add('task-status-icon');
+                    icon.innerHTML = isCompleted ? '&#10004;' : '&#9711;';
+                    
+                    const desc = document.createElement('span');
+                    desc.classList.add('task-description');
+                    desc.textContent = task.description;
+                    
+                    li.appendChild(icon);
+                    li.appendChild(desc);
+                    subTasksListEl.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.classList.add('no-tasks');
+                li.textContent = 'Giai đoạn này không có nhiệm vụ cụ thể.';
+                subTasksListEl.appendChild(li);
+            }
+        }
+        
+        // Create tooltip for progress bar
+        if (progressBarEl) {
+            let tooltipText = Object.keys(currentScript)
+                .sort()
+                .map(key => {
+                    const prefix = key === currentStageId ? '➤ ' : '';
+                    return `${prefix}${key}. ${currentScript[key].name || 'Giai đoạn ' + key}`;
+                })
+                .join('\n');
+            progressBarEl.setAttribute('data-tooltip', tooltipText);
+        }
+    }
 }); // End DOMContentLoaded

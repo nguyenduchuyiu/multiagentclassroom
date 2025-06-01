@@ -32,6 +32,7 @@ class DialogueState(BaseModel):
     turn_number: int = 0
     problem: str = ""
     current_stage_description: str = ""
+    completed_task_ids: list[str] = []
     talker: str = ""
     script: dict = {}
     current_stage_id: str = ""
@@ -45,10 +46,12 @@ class DialogueFlow(Flow[DialogueState]):
         self.state.conversation = kwargs["conversation"]
         self.filename = kwargs["filename"]
         self.state.problem = kwargs["problem"]
-        self.state.current_stage_id = kwargs["current_stage_id"]
-        self.state.current_stage_description = track_task(kwargs["stage_state"], 
+        current_stage_description, completed_task_ids, current_stage_id = track_task(kwargs["stage_state"], 
                                                           kwargs["current_stage_id"],
                                                           kwargs["script"])
+        self.state.current_stage_description = current_stage_description
+        self.state.completed_task_ids = completed_task_ids
+        self.state.current_stage_id = current_stage_id
         self.state.participants = kwargs["participants"]
         self.state.script = kwargs["script"]
         self.thinker_list = [Participant(agent_name, "think") for agent_name in self.state.participants]    
@@ -107,16 +110,19 @@ class DialogueFlow(Flow[DialogueState]):
         stage_state = parse_json_response(clean_response(stage_manager_result.raw))
         if stage_state:
             self.state.stage_state = stage_state
-        self.state.current_stage_description = track_task(self.state.stage_state, 
+            
+        current_stage_description, completed_task_ids, current_stage_id = track_task(self.state.stage_state, 
                                                           self.state.current_stage_id, 
                                                           self.state.script)
+
+        self.state.current_stage_description = current_stage_description
+        self.state.completed_task_ids = completed_task_ids
+        self.state.current_stage_id = current_stage_id
         
-        # Cập nhật thông tin giai đoạn cho client
         if self.session_id:
             send_stage_update_via_socketio({
-                'id': self.state.current_stage_id,
-                'description': self.state.script[self.state.current_stage_id]["description"],
-                'completed_tasks': self.state.stage_state.get("completed_task_ids", [])
+                'current_stage_id': self.state.current_stage_id,
+                'completed_task_ids': self.state.completed_task_ids
             }, self.session_id)
 
     @listen(manage_stage)

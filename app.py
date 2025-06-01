@@ -192,6 +192,7 @@ def save_session_data(session_data):
          session_data['session_id'])
     )
     db.commit()
+    print(f"--- APP: Saved session data for session {session_data['session_id']}")
     # print(f'''--- APP: Saved session data for session {session_data['session_id']} 
     #       with turn number {session_data['turn_number']}
     #       and current stage {session_data['current_stage_id']}
@@ -266,14 +267,16 @@ def history(session_id):
     if not session_exists:
         return jsonify({"error": "Session not found"}), 404
 
-    session_history = db.execute(
-        'SELECT conversation FROM sessions WHERE session_id = ?',
+    session_data = db.execute(
+        '''SELECT conversation, script, current_stage_id, stage_state 
+            FROM sessions 
+            WHERE session_id = ?''',
         (session_id,)
     ).fetchone()
     
     history_list = []
-    if session_history and session_history[0]:
-        lines = session_history[0].split('\n')
+    if session_data and session_data[0]:
+        lines = session_data[0].split('\n')
         for line in lines:
             pattern = r"TIME=([0-9.]+) \| CON#(\d+) \| SENDER=([^|]+) \| TEXT=(.+)"
             match = re.match(pattern, line)
@@ -296,7 +299,17 @@ def history(session_id):
                     print(f"Error parsing line: {line} - {e}")
                     continue
     
-    return jsonify(history_list)
+    script_content = json.loads(session_data["script"])
+    stage_state = json.loads(session_data["stage_state"])
+    completed_task_ids = stage_state.get("completed_task_ids", [])
+    current_stage_id = session_data["current_stage_id"]
+    
+    return jsonify({
+        "history": history_list,
+        "script": script_content,
+        "completed_task_ids": completed_task_ids,
+        "current_stage_id": current_stage_id
+    })
 
 # --- Socket.IO Events ---
 @socketio.on('connect')

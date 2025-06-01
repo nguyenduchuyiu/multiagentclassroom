@@ -3,20 +3,18 @@ def track_task(stage_state: dict, current_stage_id: str, script: dict):
     Track the task for the current stage.
     Return the current stage description.
     '''
+    print("stage_state ", stage_state)
     completed_task_ids = stage_state["completed_task_ids"]
     signal = stage_state["signal"]
     all_task_ids = [task["id"] for task in script[current_stage_id]["tasks"]]
     max_number_of_stage = len(script.keys())
     uncompleted_task_ids = [task_id for task_id in all_task_ids if task_id not in completed_task_ids]
+    next_stage_id = str(int(current_stage_id) + 1)
     
     # signal = 3 means the move to the next stage
-    print("signal ", signal)
-    print("current_stage_id ", current_stage_id)
-    print("max_number_of_stage ", max_number_of_stage)
-    print("uncompleted_task_ids ", uncompleted_task_ids)
-    print("completed_task_ids ", completed_task_ids)
-    if len(uncompleted_task_ids) == 0 and signal == "3" and int(current_stage_id) <= max_number_of_stage:
-        return initialize_task(script, str(int(current_stage_id) + 1))
+    if len(uncompleted_task_ids) == 0 and signal[0] == "3" and int(next_stage_id) <= max_number_of_stage:
+        return initialize_task(script, next_stage_id), completed_task_ids, next_stage_id
+    
     else:
         task_status = []
         next_task_id = None
@@ -43,7 +41,7 @@ def track_task(stage_state: dict, current_stage_id: str, script: dict):
         Tasks:
         {task_status}
         '''
-        return current_stage_description
+        return current_stage_description, completed_task_ids, current_stage_id
 
 def initialize_task(script: dict, current_stage_id: str):
     '''
