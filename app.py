@@ -462,6 +462,13 @@ def generate_script_and_start_chat():
     if not username: # Ensure username is not empty
         username = 'User'
     keywords = request.form.get('keywords', '').strip()
+    # --- Lấy giá trị script từ client ---
+    script_from_client = request.form.get('script', None)
+
+    # Nếu client gửi script=default thì xử lý riêng
+    if script_from_client == 'default':
+        default_problem_id = '1'
+        problem_id = default_problem_id
 
     if not problem_id or problem_id not in problem_list_data:
         flash("Vui lòng chọn một bài toán hợp lệ.", "error")
@@ -477,24 +484,35 @@ def generate_script_and_start_chat():
 
     keywords_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
-    try:
-        kwargs = {
-            "problem": problem_text,
-            "solution": solution_text,
-            "keywords": keywords_list
-        }
-        script, roles = generate_script_and_roles(folder_path, **kwargs)
-    except Exception as e:
-        print(f"!!! ERROR generating or saving script/personas: {e}")
-        traceback.print_exc()
-        flash("Có lỗi xảy ra trong quá trình tạo kịch bản. Sử dụng kịch bản mặc định (nếu có).", "warning")
+    if script_from_client == 'default':
+        script = load_yaml(base_script_path)
+        roles = load_yaml(base_participants_path)
+        create_agent_config(
+            base_participants_path,
+            meta_agents_path,
+            output_path
+        )
+    else:
+        try:
+            kwargs = {
+                "problem": problem_text,
+                "solution": solution_text,
+                "keywords": keywords_list
+            }
+            script, roles = generate_script_and_roles(folder_path, **kwargs)
+            
+            # Create agent config from dynamic script and roles for this session
+            create_agent_config(
+                dynamic_participants_path,
+                meta_agents_path,
+                output_path
+            )
+        except Exception as e:
+            print(f"!!! ERROR generating or saving script/personas: {e}")
+            traceback.print_exc()
+            flash("Có lỗi xảy ra trong quá trình tạo kịch bản. Sử dụng kịch bản mặc định (nếu có).", "warning")
 
-    # Create agent config from dynamic script and roles for this session
-    create_agent_config(
-        dynamic_participants_path,
-        meta_agents_path,
-        output_path
-    )
+
 
     # Create new session in DB
     session_id = str(uuid.uuid4())
