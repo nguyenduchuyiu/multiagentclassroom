@@ -286,7 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
                 return r.json();
             })
-            .then(history => {
+            .then(data => {
+                // Lấy đúng mảng history từ object trả về
+                const history = data.history || [];
                 let content = `Chat Export - Session ${currentSessionId}\nUser: ${currentUsername}\n====================\n\n`;
                 history.forEach(ev => {
                     const t = formatTimestamp(ev.timestamp);
