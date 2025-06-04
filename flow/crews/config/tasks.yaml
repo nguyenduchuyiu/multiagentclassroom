@@ -114,7 +114,7 @@ think:
 
 evaluate:
   description: >
-    Dựa trên thông tin được cung cấp (Bài toán, Nhiệm vụ Stage hiện tại, Lịch sử hội thoại, và các Suy nghĩ nội tâm), bạn cần đánh giá độc lập từng suy nghĩ cho mỗi người. Gán hai điểm số riêng biệt: `internal_score` và `external_score` theo thang điểm 1.0 đến 5.0.
+    Dựa trên thông tin được cung cấp (Bài toán, Nhiệm vụ Stage hiện tại, Lịch sử hội thoại, và các Suy nghĩ nội tâm cũng như vai trò của từng thành viên), bạn cần đánh giá độc lập từng suy nghĩ cho mỗi người. Gán hai điểm số riêng biệt: `internal_score` và `external_score` theo thang điểm 1.0 đến 5.0.
 
     ### Thang điểm Đánh giá (Áp dụng cho cả internal_score và external_score):
     *   **1.0 - 1.9 (Rất Thấp):** Suy nghĩ/thời điểm hoàn toàn không phù hợp; gần như chắc chắn nên im lặng / không có động lực nội tại.
@@ -136,6 +136,7 @@ evaluate:
         *   **(f) Tính Mới mẻ:** Suy nghĩ có cung cấp thông tin/góc nhìn mới, tránh lặp lại những gì đã nói hoặc hành động đã thực hiện không?
         *   **(g) Cân bằng Lượt nói:** Có sự mất cân bằng trong lượt nói gần đây không? (Ví dụ: Chỉ 2 người nói chuyện, người khác im lặng lâu). Việc bạn này nói có giúp cân bằng hơn không?
         *   **(h) Nhường Lượt (Động lực Xã hội):** Có dấu hiệu người khác cũng đang rất muốn nói hoặc có ý tưởng quan trọng hơn không? Liệu việc chờ đợi có phù hợp hơn không?
+        *   **(i) Vai trò của từng thành viên:** Suy nghĩ có phù hợp với vai trò của từng thành viên không?
 
     ### Hướng dẫn Quan trọng Khi Đánh giá:
     *   **Sử dụng Toàn bộ Thang điểm:** Hãy mạnh dạn cho điểm thấp (1.0-2.0) hoặc cao (4.0-5.0) khi cần thiết. Đừng mặc định ở mức trung bình.
@@ -182,7 +183,8 @@ evaluate:
                   (e) Tính Mạch lạc: Câu trả lời ... (lý do và cho điểm)
                   (f) Tính Mới mẻ: Câu trả lời ... (lý do và cho điểm)
                   (g) Cân bằng Lượt nói: Câu trả lời ... (lý do và cho điểm)
-                  (h) Nhường Lượt (Động lực Xã hội): Câu trả lời ... (lý do và cho điểm)", 
+                  (h) Nhường Lượt (Động lực Xã hội): Câu trả lời ... (lý do và cho điểm)
+                  (i) Vai trò của từng thành viên: Câu trả lời ... (lý do và cho điểm)", 
             "internal_score": <điểm số từ 1.0-5.0>, 
             "external_score": <điểm số từ 1.0-5.0>
         }},
@@ -199,7 +201,8 @@ evaluate:
                   (e) Tính Mạch lạc: Câu trả lời ... (lý do và cho điểm)
                   (f) Tính Mới mẻ: Câu trả lời ... (lý do và cho điểm)
                   (g) Cân bằng Lượt nói: Câu trả lời ... (lý do và cho điểm)
-                  (h) Nhường Lượt (Động lực Xã hội): Câu trả lời ... (lý do và cho điểm)", 
+                  (h) Nhường Lượt (Động lực Xã hội): Câu trả lời ... (lý do và cho điểm)
+                  (i) Vai trò của từng thành viên: Câu trả lời ... (lý do và cho điểm)",
             "internal_score": <điểm số từ 1.0-5.0>, 
             "external_score": <điểm số từ 1.0-5.0>
         }}

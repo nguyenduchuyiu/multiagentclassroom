@@ -459,23 +459,24 @@ def generate_script_and_start_chat():
     """
     problem_id = request.form.get('problem_id')
     username = request.form.get('username', 'User').strip()
-    if not username: # Ensure username is not empty
-        username = 'User'
     keywords = request.form.get('keywords', '').strip()
     # --- Lấy giá trị script từ client ---
     script_from_client = request.form.get('script', None)
-
+    
     # Nếu client gửi script=default thì xử lý riêng
     if script_from_client == 'default':
         default_problem_id = '1'
         problem_id = default_problem_id
+    
 
-    if not problem_id or problem_id not in problem_list_data:
+
+    if problem_id not in problem_list_data:
         flash("Vui lòng chọn một bài toán hợp lệ.", "error")
         return redirect(url_for('select_problem_page'))
 
     problem_data = problem_list_data[problem_id]
     problem_text = problem_data.get('problem', '')
+    print(f"--- APP: Problem text: {problem_text}")
     solution_text = problem_data.get('solution', '') # Assuming solution is available for script generation
 
     if not problem_text:

@@ -180,7 +180,8 @@ class DialogueFlow(Flow[DialogueState]):
             "problem": self.state.problem,
             "current_stage_description": self.state.current_stage_description,
             "conversation": self.state.conversation,
-            "thoughts": json.dumps(latest_inner_thought_list) # evaluate all agents' thoughts in this turn
+            "thoughts": json.dumps(latest_inner_thought_list), # evaluate all agents' thoughts in this turn
+            "roles": self.roles
         })
         self.state.evaluation = parse_json_response(clean_response(evaluation.raw)) # [{}]
         
@@ -439,3 +440,4 @@ Evaluation:\n{evaluation}
         except Exception as e:
             print(f"--- DIALOGUE FLOW [{self.session_id}]: An unexpected error occurred in select_talker: {e}")
             raise RuntimeError(f"Error selecting talker: {e}") from e # Ném RuntimeError và giữ lại thông tin lỗi gốc
+        
