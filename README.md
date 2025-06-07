@@ -1,5 +1,5 @@
 # MultiAgentClassroom - Interactive Multi-Agent Learning Framework
-
+See demo video below (may take some time to load): 
 [![Demo](https://github.com/nguyenduchuyiu/multiagentclassroom/raw/main/demo.gif)](https://github.com/nguyenduchuyiu/multiagentclassroom/raw/main/demo.gif)
 
 **MultiAgentClassroom** is a Flask-based web app for a dynamic **virtual learning environment**. It supports real-time discussions between a student and a system designed for **multiple AI agents** (e.g., tutors, peers) to foster collaborative problem-solving, guided discovery, and debate. The framework aims to simulate diverse classroom dynamics using a configurable **multi-agent system**.
