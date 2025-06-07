@@ -1,5 +1,7 @@
 # MultiAgentClassroom - Interactive Multi-Agent Learning Framework
 
+[![Demo](https://github.com/nguyenduchuyiu/multiagentclassroom/raw/main/demo.gif)](https://github.com/nguyenduchuyiu/multiagentclassroom/raw/main/demo.gif)
+
 **MultiAgentClassroom** is a Flask-based web app for a dynamic **virtual learning environment**. It supports real-time discussions between a student and a system designed for **multiple AI agents** (e.g., tutors, peers) to foster collaborative problem-solving, guided discovery, and debate. The framework aims to simulate diverse classroom dynamics using a configurable **multi-agent system**.
 
 ---
@@ -28,7 +30,7 @@ The app enables students to engage with educational content via an interactive c
    - **Learning Cycle:** Starts with student input or cues, storing context in SQLite.
    - **Agent Roles:** AI agents (e.g., Socratic Questioner) use YAML-defined personas (`config/personas.yaml`) to respond pedagogically.
    - **Coordination:** A Speaker Selector picks the best agent response based on learning goals.
-   - **Response Delivery:** Selected agent’s response is sent via SSE to the student and other agents.
+   - **Response Delivery:** Selected agent's response is sent via SSE to the student and other agents.
 
 3. **Configuration & Progress:**
    - **YAML Files:** Define personas (`personas.yaml`), learning phases (`phases.yaml`), and problems (`problems.yaml`).

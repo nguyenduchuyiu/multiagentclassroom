@@ -24,12 +24,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressLabelEl = document.getElementById('progressLabel');
     const progressBarEl = document.querySelector('.progress-bar');
     const progressPercentEl = document.getElementById('progressPercent');
+    let currentScript = {};
+    let currentStageId = '';
+    let completedTaskIds = [];
 
     // --- State Variables ---
     let messageCounter = 0;
     let currentTypingAgents = new Set();
     let agentStatuses = {};
-    let eventSource = null; // Initialize eventSource to null
+    let socket = null;
 
     // --- Get session ID and username from HTML data attributes ---
     const currentSessionId = container?.dataset.sessionId;
@@ -55,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentUsername = currentUsername.trim();
         if (!currentUsername) currentUsername = 'Bạn'; // Final fallback
 
-        console.log(`Username for session ${currentSessionId}: ${currentUsername}`);
         localStorage.setItem(`chatcollab_username_${currentSessionId}`, currentUsername);
 
         const userLi = participantsList?.querySelector('.user-participant');
@@ -250,38 +252,16 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.disabled = true;
         sendButton.disabled = true;
 
-        const payload = { text, sender_name: currentUsername };
-        fetch(`/send_message/${currentSessionId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(res => {
-            if (!res.ok) {
-                console.error('Send error status:', res.status, res.statusText);
-                // Try to get error message from response body
-                return res.json().catch(() => ({ error: res.statusText })).then(errData => {
-                    throw new Error(errData.error || 'Unknown error');
-                });
-            }
-            // Success is handled by SSE echo
-        })
-        .catch(err => {
-            console.error('Send error:', err);
-            displayMessage({ source: 'System', content: { text: `Lỗi khi gửi tin nhắn: ${err.message || 'Lỗi không xác định'}`, sender_name: 'System' }, timestamp: Date.now() });
-        })
-        .finally(() => {
-            // Re-enable only if connection is still open
-            if (eventSource?.readyState === EventSource.OPEN) {
-                if (messageInput) messageInput.disabled = false;
-                if (sendButton) sendButton.disabled = false;
-                if (messageInput) messageInput.focus();
-            }
-            if (messageInput) {
-                messageInput.value = '';
-                messageInput.style.height = 'auto';
-            }
+        // Use Socket.IO instead of fetch for sending messages
+        socket.emit('new_message', {
+            session_id: currentSessionId,
+            text: text,
+            sender_name: currentUsername
         });
+
+        // Clear the input after sending
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
     }
 
     // --- Event Listeners ---
@@ -306,7 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
                 return r.json();
             })
-            .then(history => {
+            .then(data => {
+                // Lấy đúng mảng history từ object trả về
+                const history = data.history || [];
                 let content = `Chat Export - Session ${currentSessionId}\nUser: ${currentUsername}\n====================\n\n`;
                 history.forEach(ev => {
                     const t = formatTimestamp(ev.timestamp);
@@ -329,200 +311,280 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    // --- Server-Sent Events (SSE) Setup ---
-    function connectSSE() {
-        if (eventSource?.readyState === EventSource.OPEN) return; // Already open
-
+    // --- Socket.IO Setup ---
+    function connectSocketIO() {
         updateConnectionStatus('connecting');
-        eventSource = new EventSource(`/stream/${currentSessionId}`);
-
-        eventSource.onopen = () => {
+        
+        // Initialize Socket.IO connection
+        socket = io();
+        
+        // Connection events
+        socket.on('connect', () => {
+            console.log('Connected to Socket.IO server');
             updateConnectionStatus('connected');
-            initializeUserDisplay(); // Initialize user display info
-            initializeAgentStatuses(); // Initialize agent display info
-            renderMathInElement(problemDisplayEl); // Render problem math
-
+            
+            // Join the session room
+            socket.emit('join', { session_id: currentSessionId });
+            
+            initializeUserDisplay();
+            initializeAgentStatuses();
+            renderMathInElement(problemDisplayEl);
+            
             // Fetch initial chat history
             fetch(`/history/${currentSessionId}`)
                 .then(r => {
                     if (!r.ok) throw new Error(`HTTP error! status: ${r.status}`);
                     return r.json()
                 })
-                .then(history => {
+                .then(data => {
+                    // Log the fetched data
+                    console.log("Fetched data:", data);
+                    
+                    // Display chat history
                     if (chatbox) chatbox.innerHTML = '';
                     messageCounter = 0;
-                    history.forEach(displayMessage); // displayMessage handles math rendering
+                    if (data.history) {
+                        data.history.forEach(displayMessage);
+                    }
                     if (messageInput) messageInput.focus();
+                    
+                    // Update stage information
+                    if (data.script && data.current_stage_id) {
+                        currentScript = data.script;
+                        currentStageId = data.current_stage_id;
+                        completedTaskIds = data.completed_task_ids;
+                        updateStageInformation();
+                    }
                 })
                 .catch(err => {
                     console.error("History fetch error:", err);
-                    displayMessage({ source: 'System', content: { text: 'Không thể tải lịch sử.', sender_name: 'System' }, timestamp: Date.now() })
+                    displayMessage({ 
+                        source: 'System', 
+                        content: { text: 'Không thể tải lịch sử.', sender_name: 'System' }, 
+                        timestamp: Date.now() 
+                    });
                 });
-        };
-
-        eventSource.onerror = err => {
-            console.error('SSE error:', err);
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from Socket.IO server');
             updateConnectionStatus('disconnected');
-            if (eventSource) eventSource.close();
-            if (statusTextEl) statusTextEl.textContent = 'Mất kết nối. Tải lại trang để thử.';
-        };
-
-        eventSource.addEventListener('new_message', e => {
-            try { 
-                const data = JSON.parse(e.data);
-                displayMessage(data);
-
-                // --- FIX: Nếu là agent, xóa trạng thái "đang nhập" ngay khi gửi xong ---
-                const senderName = data.content?.sender_name;
-                if (senderName && agentStatuses.hasOwnProperty(senderName)) {
-                    currentTypingAgents.delete(senderName);
-                    updateParticipantDisplay();
-                }
+        });
+        
+        socket.on('error', (data) => {
+            console.error('Socket.IO error:', data.message);
+            displayMessage({ 
+                source: 'System', 
+                content: { text: `Lỗi: ${data.message}`, sender_name: 'System' }, 
+                timestamp: Date.now() 
+            });
+        });
+        
+        socket.on('joined', (data) => {
+            console.log('Successfully joined session:', data.session_id);
+        });
+        
+        socket.on('message_received', (data) => {
+            console.log('Message received confirmation:', data);
+            // Re-enable input fields
+            if (messageInput) messageInput.disabled = false;
+            if (sendButton) sendButton.disabled = false;
+            if (messageInput) messageInput.focus();
+        });
+        
+        // Handle incoming messages
+        socket.on('new_message', (data) => {
+            console.log("New message received:", data); // Debug: Log the received data
+            displayMessage(data);
+            
+            // If it's an agent message, clear typing status
+            const senderName = data.content?.sender_name;
+            if (senderName && agentStatuses.hasOwnProperty(senderName)) {
+                currentTypingAgents.delete(senderName);
+                updateParticipantDisplay();
             }
-            catch (err) { 
-                console.error('Parsing new_message:', err, e.data); 
+
+            // Send the message back to the server
+            if (senderName !== currentUsername) {
+                socket.emit('new_message', {
+                    session_id: currentSessionId,
+                    text: data.content?.text,
+                    sender_name: data.content?.sender_name
+                });
             }
         });
-
-        eventSource.addEventListener('agent_status', e => {
+        
+        // Handle agent status updates
+        socket.on('agent_status', (data) => {
             try {
-                const eventData = JSON.parse(e.data);
-                const update = eventData.content; // Status data is inside content
+                const update = data.content;
                 const { agent_name: nameFromEvent, status } = update;
-
+                
                 if (!nameFromEvent || !status) {
-                    console.warn("Received agent_status with missing name or status:", eventData);
+                    console.warn("Received agent_status with missing name or status:", data);
                     return;
                 }
-
+                
                 let actualAgentNameKey = null;
-                // Perform a case-insensitive search for the agent name in our agentStatuses object
+                // Case-insensitive search for agent name
                 for (const key in agentStatuses) {
                     if (agentStatuses.hasOwnProperty(key) && key.toLowerCase() === nameFromEvent.toLowerCase()) {
-                        actualAgentNameKey = key; // Found the matching key (preserving its original case)
+                        actualAgentNameKey = key;
                         break;
                     }
                 }
-
+                
                 if (actualAgentNameKey) {
                     agentStatuses[actualAgentNameKey] = status;
                     if (status === 'typing') {
-                        currentTypingAgents.add(actualAgentNameKey); // Add the original-cased name for display
+                        currentTypingAgents.add(actualAgentNameKey);
                     } else {
                         currentTypingAgents.delete(actualAgentNameKey);
                     }
                     updateParticipantDisplay();
                 } else {
                     console.warn(
-                        "Received agent_status for an unknown or uninitialized agent (after case-insensitive check):",
+                        "Received agent_status for unknown agent:",
                         {
                             eventName: nameFromEvent,
                             eventStatus: status,
-                            knownAgentKeys: Object.keys(agentStatuses),
-                            fullEventData: eventData
+                            knownAgentKeys: Object.keys(agentStatuses)
                         }
                     );
                 }
-            } catch (err) { console.error('Parsing agent_status error:', err, { rawData: e.data }); }
-        });
-
-        eventSource.addEventListener('message', e => { /* Handle keep-alive */ });
-
-        eventSource.addEventListener('stage_update', e => {
-            try {
-                const eventData = JSON.parse(e.data);
-                const phaseInfo = eventData.content;
-
-                console.log("[STAGE_UPDATE] Received phaseInfo:", phaseInfo);
-
-                if (phaseInfo && typeof phaseInfo.id !== 'undefined' && typeof phaseInfo.name !== 'undefined') {
-                    if (currentStageEl) currentStageEl.textContent = phaseInfo.name;
-                    if (stageDescriptionEl) stageDescriptionEl.textContent = phaseInfo.description || 'Không có mô tả cho giai đoạn này.';
-
-                    // Update progress bar fill
-                    if (progressFillEl && typeof phaseInfo.progress_bar_percent === 'number') {
-                        const progressPercent = phaseInfo.progress_bar_percent;
-                        console.log(`[STAGE_UPDATE] Progress bar: Using weighted progress_bar_percent = ${progressPercent.toFixed(2)}%`);
-                        progressFillEl.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
-                        
-                        // NEW: Hiển thị phần trăm hoàn thành
-                        if (progressPercentEl) {
-                            progressPercentEl.textContent = `(${Math.round(progressPercent)}%)`;
-                        }
-                        
-                        // NEW: Update progress label
-                        if (progressLabelEl && Array.isArray(phaseInfo.main_stage_markers)) {
-                            const totalStages = phaseInfo.main_stage_markers.length;
-                            const currentStageIndex = phaseInfo.main_stage_markers.findIndex(m => m.id === phaseInfo.id);
-                            const currentStageNum = currentStageIndex !== -1 ? currentStageIndex + 1 : '?';
-                            
-                            progressLabelEl.textContent = `Giai đoạn ${currentStageNum}/${totalStages}: ${phaseInfo.name}`;
-                        }
-                        
-                        // NEW: Create tooltip for progress bar
-                        if (progressBarEl && Array.isArray(phaseInfo.main_stage_markers)) {
-                            let tooltipText = phaseInfo.main_stage_markers.map((marker, idx) => {
-                                const prefix = marker.id === phaseInfo.id ? '➤ ' : '';
-                                return `${prefix}${idx+1}. ${marker.name || 'Giai đoạn ' + marker.id}`;
-                            }).join('\n');
-                            progressBarEl.setAttribute('data-tooltip', tooltipText);
-                        }
-                    }
-
-                    if (progressStageMarkersEl && Array.isArray(phaseInfo.main_stage_markers)) {
-                        progressStageMarkersEl.innerHTML = '';
-                        const n = phaseInfo.main_stage_markers.length;
-                        phaseInfo.main_stage_markers.forEach((marker, idx) => {
-                            const markerEl = document.createElement('span');
-                            markerEl.title = marker.name || marker.id; // Tooltip
-                            let leftPercent = 0;
-                            if (n === 1) {
-                                leftPercent = 0;
-                            } else {
-                                leftPercent = (idx) * 100 / (n - 1);
-                            }
-                            markerEl.style.left = `${leftPercent}%`;
-                            if (marker.id === phaseInfo.id) {
-                                markerEl.classList.add('active-stage-marker');
-                            }
-                            progressStageMarkersEl.appendChild(markerEl);
-                        });
-                    }
-
-                    if (subTasksListEl) {
-                        subTasksListEl.innerHTML = '';
-                        if (phaseInfo.tasks && Array.isArray(phaseInfo.tasks) && phaseInfo.tasks.length > 0) {
-                            phaseInfo.tasks.forEach(task => {
-                                const li = document.createElement('li');
-                                li.classList.add(task.completed ? 'completed' : 'pending');
-                                const icon = document.createElement('span');
-                                icon.classList.add('task-status-icon');
-                                icon.innerHTML = task.completed ? '&#10004;' : '&#9711;';
-                                const desc = document.createElement('span');
-                                desc.classList.add('task-description');
-                                desc.textContent = task.description;
-                                li.appendChild(icon);
-                                li.appendChild(desc);
-                                subTasksListEl.appendChild(li);
-                            });
-                        } else {
-                            const li = document.createElement('li');
-                            li.classList.add('no-tasks');
-                            li.textContent = 'Giai đoạn này không có nhiệm vụ cụ thể.';
-                            subTasksListEl.appendChild(li);
-                        }
-                    }
-                } else {
-                    console.warn("Received invalid stage_update data from SSE:", eventData);
-                }
             } catch (err) {
-                console.error('Error parsing stage_update event from SSE:', err, e.data);
+                console.error('Error handling agent_status:', err);
             }
         });
+        
+        // Handle stage updates
+        socket.on('stage_update', (data) => {
+            try {
+                const stageInfo = data.content;
+                
+                console.log("[STAGE_UPDATE] Received stageInfo:", stageInfo);
+                
+                if (stageInfo && typeof stageInfo.current_stage_id !== 'undefined') {
+                    currentStageId = stageInfo.current_stage_id;
+                    completedTaskIds = stageInfo.completed_task_ids || [];
+                    updateStageInformation();
+                } else {
+                    console.warn("Received invalid stage_update data:", data);
+                }
+            } catch (err) {
+                console.error('Error parsing stage_update event:', err);
+            }
+        });
+    }
 
-    } // End connectSSE
+    // Start Socket.IO connection when page loads
+    connectSocketIO();
+    
+    // --- Add this event listener to handle 'navigate' events ---
+    socket.on('navigate', (data) => {
+        console.log("Navigation event received:", data);
+        if (data && data.url) {
+            window.location.href = data.url;
+        } else {
+            console.warn("Navigation event missing URL.");
+        }
+    });
 
-    // --- Initial Load ---
-    connectSSE(); // Start connection
+    document.querySelectorAll('a.button-like-link, a.new-chat-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (window.socket && window.currentSessionId) {
+                e.preventDefault();
+                socket.emit('leave', { session_id: currentSessionId });
+                setTimeout(() => {
+                    window.location.href = link.href;
+                }, 150); // Đợi 150ms cho leave gửi đi, có thể điều chỉnh
+            }
+        });
+    });
 
+    // Add this new function to update stage information
+    function updateStageInformation() {
+        if (!currentScript || !currentStageId) return;
+        
+        // Update current stage name and description
+        if (currentStageEl) currentStageEl.textContent = currentScript[currentStageId]?.name || 'Giai đoạn không xác định';
+        if (stageDescriptionEl) stageDescriptionEl.textContent = currentScript[currentStageId]?.description || 'Không có mô tả cho giai đoạn này.';
+        
+        // Calculate progress
+        const totalStages = Object.keys(currentScript).length;
+        const currentStageNum = parseInt(currentStageId);
+        
+        // Update progress label
+        if (progressLabelEl) {
+            progressLabelEl.textContent = `Giai đoạn ${currentStageNum}/${totalStages}: ${currentScript[currentStageId]?.name || ''}`;
+        }
+        
+        // Update progress bar
+        if (progressFillEl) {
+            const progressPercent = (currentStageNum / totalStages) * 100;
+            progressFillEl.style.width = `${Math.min(100, Math.max(0, progressPercent))}%`;
+            
+            if (progressPercentEl) {
+                progressPercentEl.textContent = `(${Math.round(progressPercent)}%)`;
+            }
+        }
+        
+        // Create progress markers
+        if (progressStageMarkersEl) {
+            progressStageMarkersEl.innerHTML = '';
+            for (let i = 1; i <= totalStages; i++) {
+                const markerEl = document.createElement('span');
+                markerEl.title = currentScript[i.toString()]?.name || `Giai đoạn ${i}`;
+                const leftPercent = (i - 1) * (100 / (totalStages - 1));
+                markerEl.style.left = `${leftPercent}%`;
+                if (i === currentStageNum) {
+                    markerEl.classList.add('active-stage-marker');
+                }
+                progressStageMarkersEl.appendChild(markerEl);
+            }
+        }
+        
+        // Update tasks list
+        if (subTasksListEl) {
+            subTasksListEl.innerHTML = '';
+            const currentStageTasks = currentScript[currentStageId]?.tasks;
+            
+            if (currentStageTasks && Array.isArray(currentStageTasks) && currentStageTasks.length > 0) {
+                currentStageTasks.forEach(task => {
+                    const li = document.createElement('li');
+                    const isCompleted = completedTaskIds.includes(task.id);
+                    li.classList.add(isCompleted ? 'completed' : 'pending');
+                    
+                    const icon = document.createElement('span');
+                    icon.classList.add('task-status-icon');
+                    icon.innerHTML = isCompleted ? '&#10004;' : '&#9711;';
+                    
+                    const desc = document.createElement('span');
+                    desc.classList.add('task-description');
+                    desc.textContent = task.description;
+                    
+                    li.appendChild(icon);
+                    li.appendChild(desc);
+                    subTasksListEl.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.classList.add('no-tasks');
+                li.textContent = 'Giai đoạn này không có nhiệm vụ cụ thể.';
+                subTasksListEl.appendChild(li);
+            }
+        }
+        
+        // Create tooltip for progress bar
+        if (progressBarEl) {
+            let tooltipText = Object.keys(currentScript)
+                .sort()
+                .map(key => {
+                    const prefix = key === currentStageId ? '➤ ' : '';
+                    return `${prefix}${key}. ${currentScript[key].name || 'Giai đoạn ' + key}`;
+                })
+                .join('\n');
+            progressBarEl.setAttribute('data-tooltip', tooltipText);
+        }
+    }
 }); // End DOMContentLoaded

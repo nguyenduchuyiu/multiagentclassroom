@@ -1,0 +1,148 @@
+'1':
+  stage: '1'
+  name: Tìm hiểu đề bài
+  description: 'Chào mừng các bạn genZ siêu cấp đến với thử thách khảo sát hàm số!
+    Hôm nay, chúng ta sẽ cùng nhau "bắt trend" giải bài toán này.
+
+    Hãy đọc thật kỹ đề bài và cho biết bài toán yêu cầu gì nhé. Đừng quên check insta
+    để lấy thêm động lực!
+
+    '
+  tasks:
+  - id: '1.1'
+    description: 'Bài toán yêu cầu gì? (Gợi ý: Đề bài yêu cầu xét một tính chất quan
+      trọng của hàm số).
+
+      '
+  - id: '1.2'
+    description: 'Hàm số $f(x) = -x^3 + 3x - 2$ có dạng đặc biệt nào không? (Ví dụ:
+      bậc 2, bậc 3, hàm lượng giác...)
+
+      '
+  - id: '1.3'
+    description: 'Bạn có thể nhắc lại định nghĩa về tính đơn điệu của hàm số không?
+      (Hàm số đồng biến/nghịch biến khi nào?)
+
+      '
+  goals:
+  - Hiểu rõ yêu cầu của bài toán.
+  - Nhận diện dạng của hàm số.
+  - Ôn lại kiến thức về tính đơn điệu của hàm số.
+'2':
+  stage: '2'
+  name: Lập kế hoạch giải bài
+  description: 'Tuyệt vời! Bây giờ, chúng ta sẽ lên "kèo" để "chiến" bài toán này.
+    Hãy cùng nhau vạch ra các bước cần thiết để giải quyết bài toán nhé!
+
+    Nếu bạn là một icon toán học, bạn sẽ tiếp cận bài toán này như thế nào?
+
+    '
+  tasks:
+  - id: '2.1'
+    description: 'Bước đầu tiên thường làm khi khảo sát tính đơn điệu của hàm số là
+      gì? (Gợi ý: Tìm điều kiện xác định của hàm số).
+
+      '
+  - id: '2.2'
+    description: 'Sau khi tìm tập xác định, chúng ta cần làm gì tiếp theo? (Gợi ý:
+      Liên quan đến đạo hàm).
+
+      '
+  - id: '2.3'
+    description: 'Khi đã có đạo hàm, làm thế nào để xác định được khoảng đồng biến
+      và nghịch biến của hàm số? (Gợi ý: Xét dấu).
+
+      '
+  - id: '2.4'
+    description: 'Để có cái nhìn trực quan hơn về sự biến thiên của hàm số, chúng
+      ta nên làm gì? (Gợi ý: Lập một bảng).
+
+      '
+  goals:
+  - Xác định các bước giải bài toán.
+  - Sắp xếp các bước theo trình tự logic.
+  - Nhận diện các công cụ và kiến thức cần thiết.
+'3':
+  stage: '3'
+  name: Thực hiện giải bài
+  description: 'Ok, "Let''s go!" Đến lúc thực hiện kế hoạch rồi! Hãy cùng nhau thực
+    hiện từng bước một cách cẩn thận và tỉ mỉ nhé.
+
+    Đừng ngại mắc lỗi, vì mỗi sai lầm là một bài học kinh nghiệm. Keep it Hype!
+
+    '
+  tasks:
+  - id: '3.1'
+    description: 'Xác định tập xác định của hàm số $f(x) = -x^3 + 3x - 2$.
+
+      '
+  - id: '3.2'
+    description: 'Tính đạo hàm $f''(x)$ của hàm số $f(x) = -x^3 + 3x - 2$.
+
+      '
+  - id: '3.3'
+    description: 'Giải phương trình $f''(x) = 0$. Tìm các nghiệm của phương trình.
+
+      '
+  - id: '3.4'
+    description: 'Lập bảng xét dấu của $f''(x)$. Xác định các khoảng mà $f''(x) >
+      0$ và $f''(x) < 0$.
+
+      '
+  - id: '3.5'
+    description: 'Tính giá trị của hàm số tại các điểm mà $f''(x) = 0$.
+
+      Tính $f(-1)$ và $f(1)$.
+
+      '
+  - id: '3.6'
+    description: 'Tìm giới hạn của hàm số khi $x$ tiến đến $+\\infty$ và $-\\infty$.
+
+      '
+  - id: '3.7'
+    description: 'Dựa vào các thông tin đã thu thập, hãy hoàn thiện bảng biến thiên
+      của hàm số.
+
+      '
+  goals:
+  - Tính toán chính xác.
+  - Áp dụng đúng công thức đạo hàm.
+  - Biện luận và xét dấu đạo hàm.
+  - Lập bảng biến thiên.
+'4':
+  stage: '4'
+  name: Kết luận và Đánh giá
+  description: 'Yeah! Chúng ta đã hoàn thành bài toán! Hãy cùng nhau nhìn lại quá
+    trình giải và rút ra những bài học kinh nghiệm nhé.
+
+    Bạn cảm thấy "chill" hay "stress" sau khi giải xong bài toán này? Chia sẻ cảm
+    xúc của bạn nào! Đừng quên thả icon cảm xúc nhé!
+
+    '
+  tasks:
+  - id: '4.1'
+    description: 'Dựa vào bảng biến thiên, hãy kết luận về tính đơn điệu của hàm số
+      $f(x) = -x^3 + 3x - 2$. Hàm số đồng biến trên khoảng nào? Nghịch biến trên khoảng
+      nào?
+
+      '
+  - id: '4.2'
+    description: 'Bạn có thể giải thích tại sao hàm số lại đồng biến/nghịch biến trên
+      các khoảng đó không? (Liên hệ với dấu của đạo hàm).
+
+      '
+  - id: '4.3'
+    description: 'Nếu bài toán yêu cầu tìm cực trị của hàm số, bạn sẽ làm như thế
+      nào? (Gợi ý: Sử dụng bảng biến thiên).
+
+      '
+  - id: '4.4'
+    description: 'Bạn có thể áp dụng phương pháp này để giải các bài toán tương tự
+      không? Hãy thử sức với một bài toán khác nhé!
+
+      '
+  goals:
+  - Đưa ra kết luận chính xác về tính đơn điệu của hàm số.
+  - Hiểu rõ mối liên hệ giữa đạo hàm và tính đơn điệu.
+  - Vận dụng kiến thức để giải các bài toán tương tự.
+  - Tự đánh giá quá trình học tập và rút ra kinh nghiệm.

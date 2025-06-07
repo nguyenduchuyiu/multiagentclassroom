@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('problem-selection-form');
     const loadingOverlay = document.getElementById('loading-overlay');
     const submitButton = form.querySelector('.submit-button');
+    const defaultScriptBtn = document.getElementById('default-script-btn');
 
     // Fetch problems
     fetch('/api/problems')
@@ -59,4 +60,22 @@ document.addEventListener('DOMContentLoaded', () => {
         submitButton.disabled = true;
         submitButton.classList.add('loading');
     });
+
+    if (defaultScriptBtn) {
+        defaultScriptBtn.addEventListener('click', () => {
+            // Xóa input script cũ nếu có
+            const oldInput = form.querySelector('input[name="script"]');
+            if (oldInput) oldInput.remove();
+            // Tạo input ẩn
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'script';
+            input.value = 'default';
+            form.appendChild(input);
+            // Bỏ required cho problem_id để submit không bị lỗi
+            problemSelect.required = false;
+            // Submit form
+            form.submit();
+        });
+    }
 });

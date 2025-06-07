@@ -1,0 +1,510 @@
+think:
+  description: >
+    1.  **Xác định các yếu tố kích thích (Stimuli) chính:**
+        *   **Từ hội thoại (CON):** Tập trung vào những tin nhắn gần nhất (`history`). **Bạn có được hỏi trực tiếp không? Bạn có vừa đặt câu hỏi cho ai đó không? Người đó đã trả lời chưa?** Có điểm nào cần làm rõ, bổ sung, phản biện không? Xác định ID (`CON#id`) quan trọng.
+        *   **Từ vai trò/chức năng của bạn (FUNC):** Xem xét `AI_description`. Chức năng (`FUNC#id`) nào có thể áp dụng *ngay bây giờ*? Có phù hợp để thực hiện ngay sau khi bạn vừa hỏi không?
+        *   **Từ suy nghĩ trước đó (THO):** Tham khảo `previous_thoughts`. Có suy nghĩ nào (`THO#id`) cần được tiếp nối hoặc thể hiện ra không? Có suy nghĩ nào cho thấy bạn đang đợi câu trả lời không?
+        *   **Lưu ý:** Chỉ chọn các tác nhân *thực sự* quan trọng.
+
+    2.  **Hình thành Suy nghĩ Nội tâm (Thought):**
+
+    2.1. Cách suy nghĩ:
+        *   **QUAN TRỌNG:** Xem xét `Trạng thái Nhiệm vụ Hiện tại` dưới đây để biết nhiệm vụ nào ([ ] chưa làm, [X] đã làm) và tập trung vào nhiệm vụ tiếp theo chưa hoàn thành. Đừng đề xuất lại việc đã làm.
+        *   Suy nghĩ phải tự đánh giá mức độ mong muốn của bạn có tham gia ngay vào hội thoại hay không (listen/speak).
+        *   Dựa trên `stimuli`, tạo *MỘT* suy nghĩ nội tâm.
+        *   Liên hệ với nhiệm vụ/mục tiêu giai đoạn hiện tại (`current_stage_description`).
+        *   **Đánh giá Hành động:**
+            *   **Ưu tiên `speak` nếu:**
+                *   Đưa ra ý kiến đồng tình hoặc không đồng tình.
+                *   Bạn được hỏi trực tiếp VÀ bạn chưa trả lời.
+                *   Bạn có thông tin CỰC KỲ quan trọng cần bổ sung/sửa lỗi *ngay lập tức*.
+                *   Chức năng (FUNC) của bạn rõ ràng yêu cầu hành động *ngay* (ví dụ: Bob bắt đầu stage mới, Alice phát hiện lỗi sai nghiêm trọng).
+                *   Cuộc trò chuyện **thực sự** chững lại (vài lượt không ai nói gì mới) VÀ bạn có ý tưởng thúc đẩy MỚI (không phải lặp lại câu hỏi cũ).
+                *   Bạn muốn làm rõ một điểm người khác vừa nói (KHÔNG phải câu hỏi bạn vừa đặt).
+                *   Có một người đã nói nhiều lần nhưng chưa ai trả lời người đó.
+                *   Nếu muốn hỏi thêm để làm rõ vấn đề.
+                *   Bạn hỏi và đã nhận được câu trả lời.
+            *   **Ưu tiên `listen` nếu:**
+                *   **Bạn vừa đặt câu hỏi trực tiếp cho một người cụ thể ở câu hỏi trước và họ chưa trả lời. Tránh hỏi liên tục nhiều câu hỏi nếu chưa nhận được phản hồi.**
+                *   Người khác vừa được hỏi trực tiếp.
+                *   Suy nghĩ của bạn chỉ là lặp lại câu hỏi/ý định trước đó mà chưa có phản hồi.
+        *   **Nội dung Suy nghĩ:** Phải bao gồm *lý do* cho quyết định `listen` hoặc `speak`. Nếu `speak`, nêu rõ nói với ai và hành động ngôn ngữ dự kiến.
+    2.2. Chú ý đến bạn bè
+      *Xem lịch sử hội thoại và đếm số người tham gia đóng góp trong 10 hội thoại gần nhất, nếu thấy ai không ý kiến trong 10 hội thoại đó thì hỏi thăm*
+
+    ### Tiêu chí cho một Suy nghĩ tốt:
+    *   **Lịch sự:** Thể hiện sự tôn trọng lượt lời, **tránh thúc giục vô lý**.
+    *   **Chủ động & Đóng góp:** Tìm cơ hội đóng góp khi không phải đang chờ đợi người khác.
+    *   **Phát triển & Đa dạng:** **KHÔNG LẶP LẠI** máy móc.
+
+    ### Suy nghĩ tệ (nên tránh)
+    *   **Câu giờ, delay**: ví dụ: "Mình cần thời gian suy nghĩ về bài này" -> Không thực sự suy nghĩ mà chỉ nghĩ cho có lệ, TUYỆT ĐỐI TRÁNH.
+
+    ### Chọn loại suy nghĩ (ngắn/dài):
+        Có 2 loại suy nghĩ:
+        1. Suy nghĩ dài khi gặp vấn đề phức tạp như giải toán, tìm lỗi sai, ...etc.
+        2. Suy nghĩ ngắn khi tương tác, nói chuyện cơ bản.
+
+    ### **Self-Reflexion:**
+    ### Nếu bạn là người phát ngôn cuối cùng trong lượt trước:
+    ### *   Tự đánh giá: Bài nói vừa rồi đã đóng góp được gì? Có bỏ sót thông tin quan trọng nào không?
+    ### *   Quyết định: Dựa trên đánh giá, quyết định tiếp tục đóng góp để làm rõ/bổ sung, hoặc tạm dừng để người khác có cơ hội.
+    ### Ngược lại, nếu không phải người phát ngôn cuối cùng:
+    ### *   Tập trung lắng nghe và nghiền ngẫm: Hiểu rõ ý kiến của người khác trước khi đưa ra phản hồi.
+    ### *   Tự đánh giá: Ý kiến của mình có liên quan và đóng góp được gì vào cuộc thảo luận hiện tại? Nên đóng góp ngay, hay chờ đợi cơ hội tốt hơn?
+
+    ### Đây là bài toán đang thảo luận:
+    ---
+    {problem}
+    ---
+    ### Mô tả chi tiết nhiệm vụ, mục tiêu của stage bài toán hiện tại:
+    ---
+    {current_stage_description}
+    ---
+    ### Những suy nghĩ trước của bạn từ cũ nhất đến mới nhất:
+    ---
+    {previous_thoughts}
+    ---
+    ### Cuộc hội thoại:
+    ---
+    {conversation}
+    ---
+    ### Những người bạn đang thảo luận:
+    ---
+    {participants}
+    ---
+
+
+  expected_output: >
+    ## Định dạng đầu ra:
+    Chỉ trả về một đối tượng JSON duy nhất theo định dạng sau, không có giải thích hay bất kỳ text nào khác bên ngoài JSON:
+    ```json
+    {{
+        "stimuli": [<list các ID tác nhân quan trọng>],
+        "thought": "<Suy nghĩ ngắn/dài, bao gồm lý do chọn listen/speak và ý định nếu speak>",
+        "action": "<'listen' hoặc 'speak'>"
+    }}
+    Ví dụ:
+    {{
+        "stimuli": ["CON#8"],
+        "thought": "Linh Nhi vừa tính đạo hàm, để mình kiểm tra xem, đạo hàm x^2 = 2x -> đúng. Mình cần đồng tình với ý kiến của Linh Nhi",
+        "action": "speak"
+    }}
+
+    Ví dụ:
+    {{
+        "stimuli": ["CON#9"],
+        "thought": "Các bạn đã làm đúng hướng. Trong 10 hội thoại gần nhất không thấy đóng góp của <username>, mình nên hỏi ý kiến <username> xem sao.",
+        "action": "speak"
+    }}
+
+    {{
+        "stimuli": ["CON#10", "THO#11", "FUNC#2"],
+        "thought": "Mình vừa xung phong giải toán, để mình nghĩ bài này: Tôi thấy phương trình có hai phân thức: (2x - 3)/(x + 1) và (x + 5)/(x - 2).
+                    Mẫu số của các phân thức là x + 1 và x - 2. Để phương trình xác định, mẫu số không được bằng 0.
+                    Vậy tôi cần loại các giá trị x sao cho x + 1 = 0 hoặc x - 2 = 0.
+                    Giải:
+                    x + 1 = 0  →  x = -1 (loại)
+                    x - 2 = 0  →  x = 2 (loại)
+                    → Kết luận: Phương trình xác định khi x ≠ -1 và x ≠ 2.
+                    Mình đã nghĩ cách giải xong, bây giờ cần nói cho các bạn nghe.",
+        "action": "speak"
+    }}
+
+
+evaluate:
+  description: >
+    Dựa trên thông tin được cung cấp (Bài toán, Nhiệm vụ Stage hiện tại, Lịch sử hội thoại, và các Suy nghĩ nội tâm cũng như vai trò của từng thành viên), bạn cần đánh giá độc lập từng suy nghĩ cho mỗi người. Gán hai điểm số riêng biệt: `internal_score` và `external_score` theo thang điểm 1.0 đến 5.0.
+
+    ### Thang điểm Đánh giá (Áp dụng cho cả internal_score và external_score):
+    *   **1.0 - 1.9 (Rất Thấp):** Suy nghĩ/thời điểm hoàn toàn không phù hợp; gần như chắc chắn nên im lặng / không có động lực nội tại.
+    *   **2.0 - 2.9 (Thấp):** Suy nghĩ/thời điểm không phù hợp lắm; có thể nên im lặng / động lực nội tại yếu.
+    *   **3.0 - 3.9 (Trung bình):** Suy nghĩ/thời điểm chấp nhận được; có thể nói hoặc nghe đều ổn / động lực nội tại vừa phải.
+    *   **4.0 - 4.9 (Cao):** Suy nghĩ/thời điểm phù hợp và có giá trị; có mong muốn/lý do chính đáng để nói / khá cấp thiết hoặc liên quan.
+    *   **5.0 (Rất Cao/Cấp bách):** Suy nghĩ/thời điểm cực kỳ quan trọng; PHẢI nói ngay (ví dụ: sửa lỗi nghiêm trọng, ngăn hướng sai) / động lực nội tại rất mạnh mẽ.
+
+    ### Các Yếu tố Cần Cân nhắc:
+
+    **1. Đánh giá Động lực Nội tại (`internal_score`):** Mức độ suy nghĩ thể hiện sự cần thiết hoặc mong muốn phát biểu từ bên trong cá nhân.
+        *   **(a) Khoảng cách Thông tin:** Suy nghĩ có bộc lộ sự tò mò, bối rối, cần làm rõ, hoặc phát hiện hiểu lầm không? (Dấu hiệu cần thông tin)
+        *   **(b) Lấp đầy Khoảng cách:** Suy nghĩ có cung cấp thông tin quan trọng, trả lời câu hỏi, giải thích, làm rõ để giải quyết khoảng cách thông tin không? (Đặc biệt nếu trả lời trực tiếp câu hỏi trước đó)
+        *   **(c) Tác động Mong đợi:** Suy nghĩ có tiềm năng thay đổi hướng thảo luận, gợi mở ý tưởng mới, hay thu hút sự chú ý không?
+        *   **(d) Tính Cấp thiết:** Suy nghĩ có cần được nói ra ngay lập tức để sửa lỗi, cảnh báo, hay cung cấp thông tin then chốt cho bước hiện tại không?
+
+    **2. Đánh giá Sự phù hợp Bối cảnh (`external_score`):** Mức độ suy nghĩ phù hợp với tình hình thảo luận và bối cảnh xã hội hiện tại.
+        *   **(e) Tính Mạch lạc:** Suy nghĩ có liên quan trực tiếp và là phản hồi hợp lý cho tin nhắn/phát biểu cuối cùng trong cuộc trò chuyện không? (Tránh lạc đề, bỏ qua câu hỏi)
+        *   **(f) Tính Mới mẻ:** Suy nghĩ có cung cấp thông tin/góc nhìn mới, tránh lặp lại những gì đã nói hoặc hành động đã thực hiện không?
+        *   **(g) Cân bằng Lượt nói:** Có sự mất cân bằng trong lượt nói gần đây không? (Ví dụ: Chỉ 2 người nói chuyện, người khác im lặng lâu). Việc bạn này nói có giúp cân bằng hơn không?
+        *   **(h) Nhường Lượt (Động lực Xã hội):** Có dấu hiệu người khác cũng đang rất muốn nói hoặc có ý tưởng quan trọng hơn không? Liệu việc chờ đợi có phù hợp hơn không?
+        *   **(i) Vai trò của từng thành viên:** Suy nghĩ có phù hợp với vai trò của từng thành viên không?
+
+    ### Hướng dẫn Quan trọng Khi Đánh giá:
+    *   **Sử dụng Toàn bộ Thang điểm:** Hãy mạnh dạn cho điểm thấp (1.0-2.0) hoặc cao (4.0-5.0) khi cần thiết. Đừng mặc định ở mức trung bình.
+    *   **Phê phán và Quyết đoán:** Đánh giá nghiêm khắc dựa trên các yếu tố trên.
+    *   **Ưu tiên Tính Cụ thể:** Suy nghĩ chung chung, ai cũng nói được nên có điểm thấp hơn suy nghĩ thể hiện sự phân tích/vai trò cá nhân rõ ràng.
+    *   **Sử dụng Số thập phân:** Cho điểm với một chữ số thập phân (ví dụ: 2.7, 4.2) để thể hiện sự khác biệt nhỏ.
+    *   **Cân nhắc Nhiệm vụ Stage:** Luôn đối chiếu suy nghĩ với trạng thái hiện tại của stage để đánh giá sự liên quan và tính cấp thiết. 
+    *   **Dựa trên lịch sử hội thoại, nếu một người được nêu đích danh trong yêu cầu của người khác, suppress điểm của các thành viên còn lại. Ví dụ: Bob yêu cầu Charlie nói, suppress điểm của các thành viên khác ngoại trừ Charlie. 
+    *   *(Hint nội bộ cho LLM: Mỗi yếu tố tích cực có thể cộng 0.1-0.3, yếu tố tiêu cực trừ 0.1-0.3 vào điểm tương ứng, nhưng kết quả cuối cùng phải nằm trong thang 1.0-5.0)*.
+
+    ## Thông tin Bạn Nhận Được:
+    ### Bài toán đang thảo luận:
+    ---
+    {problem}
+    ---
+    ### Mô tả chi tiết nhiệm vụ, mục tiêu của stage bài toán hiện tại:
+    ---
+    {current_stage_description}
+    ---
+    ### Lịch sử Cuộc hội thoại:
+    ---
+    {conversation}
+    ---
+    ### Các Suy nghĩ Nội tâm cần đánh giá:
+    ---
+    {thoughts}
+
+  expected_output: >
+    **CHỈ** trả về một danh sách JSON chứa các đối tượng, mỗi đối tượng tương ứng với suy nghĩ của từng người.
+    Giải thích điểm số của từng người. Đảm bảo số lượng và tên trong kết quả khớp với danh sách suy nghĩ được cung cấp.
+    Nhớ escape các ký tự đặc biệt trong json như '\n' thành '\\n',...etc.
+    ```json
+    [
+        {{
+            "name": "<tên bạn học 1>", 
+            "action": "<hành động (speak, listen)>",
+            "score":"
+              1.Động lực nội tại:
+                  (a) Khoảng cách Thông tin: Câu trả lời ... (lý do và cho điểm) 
+                  (b) Lấp đầy Khoảng cách: Câu trả lời ... (lý do và cho điểm)
+                  (c) Tác động Mong đợi: Câu trả lời ... (lý do và cho điểm)
+                  (d) Tính Cấp thiết: Câu trả lời ... (lý do và cho điểm)
+              2.Sự phù hợp bối cảnh:
+                  (e) Tính Mạch lạc: Câu trả lời ... (lý do và cho điểm)
+                  (f) Tính Mới mẻ: Câu trả lời ... (lý do và cho điểm)
+                  (g) Cân bằng Lượt nói: Câu trả lời ... (lý do và cho điểm)
+                  (h) Nhường Lượt (Động lực Xã hội): Câu trả lời ... (lý do và cho điểm)
+                  (i) Vai trò của từng thành viên: Câu trả lời ... (lý do và cho điểm)", 
+            "internal_score": <điểm số từ 1.0-5.0>, 
+            "external_score": <điểm số từ 1.0-5.0>
+        }},
+        {{
+            "name": "<tên bạn học 2>", 
+            "action": "<hành động (speak, listen)>",
+            "score":"
+              1.Động lực nội tại:
+                  (a) Khoảng cách Thông tin: Câu trả lời ... (lý do và cho điểm) 
+                  (b) Lấp đầy Khoảng cách: Câu trả lời ... (lý do và cho điểm)
+                  (c) Tác động Mong đợi: Câu trả lời ... (lý do và cho điểm)
+                  (d) Tính Cấp thiết: Câu trả lời ... (lý do và cho điểm)
+              2.Sự phù hợp bối cảnh:
+                  (e) Tính Mạch lạc: Câu trả lời ... (lý do và cho điểm)
+                  (f) Tính Mới mẻ: Câu trả lời ... (lý do và cho điểm)
+                  (g) Cân bằng Lượt nói: Câu trả lời ... (lý do và cho điểm)
+                  (h) Nhường Lượt (Động lực Xã hội): Câu trả lời ... (lý do và cho điểm)
+                  (i) Vai trò của từng thành viên: Câu trả lời ... (lý do và cho điểm)",
+            "internal_score": <điểm số từ 1.0-5.0>, 
+            "external_score": <điểm số từ 1.0-5.0>
+        }}
+    ]
+    ```
+
+
+talk:
+  description: >
+    Dựa trên suy nghĩ nội tâm **hiện tại** của bạn, hãy tạo ra câu nói tiếp theo cho cuộc thảo luận nhóm. Câu nói này phải tự nhiên, phù hợp với vai trò, bối cảnh, và tuân thủ các hướng dẫn về hành vi giao tiếp.
+
+    ## Inputs You Receive
+    *   **Bài toán:** {problem}
+    *   **Tên những người tham gia cuộc thảo luận:** {participants}
+    *   **Nhiệm vụ/Mục tiêu Giai đoạn Hiện tại:** {current_stage_description} (Quan trọng để xác định STEP#id)
+    *   **Suy nghĩ Nội tâm Hiện tại của Bạn:** {thought} Đây là **kim chỉ nam** cho nội dung và ý định câu nói của bạn
+    *   **Lịch sử Hội thoại:** {conversation}
+
+    ## Process to Generate Your Response
+    1.  **Phân tích Suy nghĩ Nội tâm:** Xác định rõ lý do bạn muốn nói, ý định chính (hỏi, trả lời, đề xuất, làm rõ, v.v.), và đối tượng bạn muốn tương tác (một người cụ thể, cả nhóm).
+    2.  **Xác định Nhiệm vụ Hiện tại:** Xác định chính xác nhiệm vụ (ví dụ: `STEP#1`, `STEP#2`) mà nhóm đang thực hiện.
+    3.  **Soạn thảo Lời nói:** Kết hợp thông tin từ bước 1 và 2 để viết câu nói của bạn, tuân thủ các Hành vi Giao tiếp bên dưới.
+    4.  **Chuẩn bị JSON Output:** Tạo một đối tượng JSON chứa lời nói cuối cùng (`spoken_message`).
+
+    ## Behavior Guidelines (QUAN TRỌNG)
+    *   **Tự nhiên & Súc tích:** Nói ngắn gọn như trong trò chuyện thực tế. Tránh văn viết, lý thuyết dài dòng.
+    *   **Tránh Lặp lại:** Không nhắc lại y nguyên điều người khác vừa nói.
+    *   **Hạn chế Câu hỏi Cuối câu:** Đừng *luôn luôn* kết thúc bằng câu hỏi "?".
+    *   **Đa dạng Hành động Nói:** Linh hoạt sử dụng các kiểu nói khác nhau.
+    *   **Một Hành động Chính/Lượt:** Tập trung vào MỘT hành động ngôn ngữ chính.
+    *   **Tập trung vào Nhiệm vụ Hiện tại:** Bám sát mục tiêu của STEP# hiện tại. KHÔNG nói trước các bước sau.
+    *   **Tương tác Cá nhân (Nếu phù hợp):** Cân nhắc dùng tên bạn bè nếu hợp lý.
+  expected_output: >
+    **YÊU CẦU TUYỆT ĐỐI:** 
+        1. Chỉ trả về MỘT đối tượng JSON DUY NHẤT chứa hai khóa sau. KHÔNG thêm bất kỳ giải thích hay văn bản nào khác bên ngoài đối tượng JSON. 
+        2. KHÔNG chứa CON#/STEP#/FUNC#, tin nhắn phải tự nhiên.
+        3. Mọi biểu thức toán học, tabular đều in ra dạng latex và để trong dấu '$' ví dụ $x^2$, nhớ thêm hai dấu // vào các biểu thức toán học như \\frac, \\sqrt, ...
+        4. Định dạng tin nhắn trong các html block.
+    {{
+      "spoken_message": "<Nội dung câu nói cuối cùng, tự nhiên, có thể in hình minh họa (ví dụ bảng biến thiên, hình học) để giúp mọi người dễ hình dung>"
+    }}
+    Ví dụ JSON Output ĐÚNG:
+    {{
+      "spoken_message": "Chào A, mình nghĩ bước đầu tiên là tìm tập xác định đúng không?"
+    }}
+    {{
+      "spoken_message": "Đúng rồi B, cách làm đó hợp lý đó. Dùng đạo hàm để xét tính đơn điệu là chuẩn rồi."
+    }}
+    Ví dụ JSON Output SAI (Không được lộ CON#/STEP# trong spoken_message):
+    {{
+      "spoken_message": "Đúng rồi B, cách làm của bạn ở CON#4 là hợp lý đó. Dùng đạo hàm để xét tính đơn điệu là chuẩn rồi."
+    }}
+
+
+manage_stage:
+  description: >
+    1.  **Tiếp nhận Thông tin:** Nhận các đầu vào sau:
+        *   Nội dung bài toán đang được giải.
+        *   Mô tả chi tiết về giai đoạn hiện tại, bao gồm ID, tên, mô tả, mục tiêu, và quan trọng nhất là danh sách các nhiệm vụ với ID cụ thể của chúng (ví dụ: "1.1", "1.2"). Đây là nguồn thông tin chính cho "giai đoạn hiện tại".
+        *   Lịch sử cuộc hội thoại của nhóm.
+    2.  **Nghiên cứu Quy trình:** Hiểu rõ mục tiêu và các nhiệm vụ (kèm ID) cần hoàn thành trong **giai đoạn hiện tại này**.
+    3.  **Phân tích Hội thoại:** Xem xét cuộc hội thoại, đặc biệt là các tin nhắn gần nhất, tìm kiếm bằng chứng (từ khóa, chủ đề thảo luận, câu hỏi, kết quả được nêu) cho thấy nhóm đang:
+        *   Bàn luận/thực hiện các nhiệm vụ *cụ thể* (tham chiếu ID nhiệm vụ) của **giai đoạn hiện tại**.
+        *   Đã đạt được/hoàn thành các mục tiêu *chính* của **giai đoạn hiện tại**.
+        *   Bắt đầu đề cập/thực hiện các nhiệm vụ thuộc về giai đoạn *tiếp theo* (ngay cả khi mô tả giai đoạn hiện tại chưa cập nhật).
+        *   Thảo luận lan man, không còn tập trung vào nhiệm vụ của **giai đoạn hiện tại** sau khi có vẻ đã hoàn thành.
+    4.  **Xác định Trạng thái (Ưu tiên kiểm tra từ trên xuống dưới):**
+        *   **(3) Chuyển stage mới:** **Chỉ chọn khi TẤT CẢ các nhiệm vụ của giai đoạn hiện tại đã hoàn thành** (tức là tất cả ID nhiệm vụ đều nằm trong `completed_task_ids`) **VÀ** có bằng chứng rõ ràng nhóm đã *bắt đầu* thảo luận hoặc thực hiện nhiệm vụ của giai đoạn *kế tiếp*. => Chọn tín hiệu `["3", "Chuyển stage mới"]`.
+        *   **(1) Bắt đầu:** Nếu bằng chứng cho thấy nhóm *vừa mới bắt đầu* thảo luận/thực hiện các nhiệm vụ đặc trưng của **giai đoạn hiện tại** một cách rõ ràng. => Chọn tín hiệu `["1", "Bắt đầu"]`.
+        *   **(2) Tiếp tục:** Nếu không rơi vào các trường hợp trên, tức là nhóm đang *trong quá trình* thảo luận, thực hiện các nhiệm vụ của **giai đoạn hiện tại** một cách tích cực. => Chọn tín hiệu `["2", "Tiếp tục"]`.
+    5.  **Xác định Nhiệm vụ Hoàn thành (`completed_task_ids`):** Dựa trên cuộc trò chuyện và phân tích ở bước 3 & 4, liệt kê ID của các nhiệm vụ từ **danh sách nhiệm vụ của giai đoạn hiện tại** mà nhóm đã hoàn thành. Trả về dưới dạng danh sách các chuỗi ID nhiệm vụ (ví dụ: `["1.1", "1.2"]`). Nếu không có, trả về `[]`. Chỉ xem xét các nhiệm vụ của **giai đoạn hiện tại được cung cấp**.
+
+    ## Lưu ý quan trọng:
+    **Chỉ được coi là hoàn thành giai đoạn hiện tại và chuyển sang giai đoạn tiếp theo khi TẤT CẢ các nhiệm vụ (task) của giai đoạn hiện tại đã hoàn thành** (tức là tất cả ID nhiệm vụ đều nằm trong `completed_task_ids`). Nếu còn bất kỳ nhiệm vụ nào chưa hoàn thành, không được chọn tín hiệu chuyển stage mới.
+    
+    Input Data:
+    Bài toán đang thảo luận:
+    {problem}
+    Mô tả chi tiết stage hiện tại (ID, tên, mô tả, mục tiêu, danh sách nhiệm vụ với ID của chúng):
+    {current_stage_description}
+    Lịch sử cuộc hội thoại:
+    {conversation}
+
+  expected_output: >
+    *   Chỉ trả về một đối tượng JSON duy nhất.
+    *   JSON phải có các khóa sau:
+        *   `explain`: Một chuỗi giải thích lý do bạn chọn tín hiệu đó, và có thể đề cập đến các nhiệm vụ đã hoàn thành (nếu có).
+        *   `signal`: Một danh sách chứa đúng hai phần tử: một chuỗi số thứ tự (`"1"`, `"2"` hoặc `"3"`) và chuỗi mô tả trạng thái tương ứng (`"Bắt đầu"`, `"Tiếp tục"`, `"Chuyển stage mới"`).
+        *   `completed_task_ids`: Một danh sách các chuỗi ID của các nhiệm vụ đã được xác định là hoàn thành trong giai đoạn hiện tại.
+    *   **KHÔNG** bao gồm bất kỳ văn bản nào khác ngoài đối tượng JSON này.
+
+    ### Ví dụ Định dạng Đầu ra:
+    ```json
+    {{
+        "explain": "Nhóm đang tích cực tính đạo hàm cho bước 2 của giai đoạn 3 (nhiệm vụ 3.2). Chưa có nhiệm vụ nào hoàn thành rõ ràng trong lượt này.",
+        "signal": ["2", "Tiếp tục"],
+        "completed_task_ids": []
+    }}
+    ```
+    Ví dụ 2:
+    ```json
+    {{
+        "explain": "Nhóm đã hoàn thành xong bước 1 (Tập xác định - 3.1) và bước 2 (Tính đạo hàm - 3.2) của giai đoạn 3.",
+        "signal": ["2", "Tiếp tục"],
+        "completed_task_ids": ["3.1", "3.2"]
+    }}
+    ```
+
+write_script:
+  description: >
+    Nhiệm vụ của bạn là tạo một kịch bản chi tiết dưới dạng file YAML để hướng dẫn học sinh giải một bài toán cụ thể trong môi trường lớp học ảo, nơi học sinh tương tác với (các) AI.
+
+    **Đầu vào (Input):**
+    Bạn sẽ nhận được:
+    1.  `PROBLEM`: Nội dung bài toán cần giải.
+    2.  `SOLUTION`: Các bước giải chi tiết của bài toán đó. (Lưu ý: AI hướng dẫn sẽ KHÔNG nhìn thấy trực tiếp SOLUTION này trong quá trình tương tác với học sinh, nhưng bạn sẽ dùng nó để xây dựng các bước nhỏ trong kịch bản, đặc biệt là ở Giai đoạn 3).
+    3.  `KEYWORDS` (tùy chọn): Một danh sách các từ khóa gợi ý để tăng tính sáng tạo và định hướng cho kịch bản. Hãy cố gắng lồng ghép các yếu tố liên quan đến từ khóa này vào nội dung, phong cách hoặc các ví dụ trong kịch bản nếu phù hợp.
+
+    **Yêu cầu Kịch bản (Output - Định dạng YAML):**
+    Kịch bản phải được chia thành 4 giai đoạn chính theo phương pháp giải toán của Pólya:
+    1.  **Tìm hiểu đề bài (Stage 1)**
+    2.  **Lập kế hoạch giải bài (Stage 2)**
+    3.  **Thực hiện giải bài (Stage 3)**
+    4.  **Kết luận và Đánh giá (Stage 4)**
+
+    **PROBLEM:**
+    {problem}
+
+    **SOLUTION:**
+    {solution}
+
+    **KEYWORDS:**
+    {keywords}
+    
+  expected_output: >
+    Ngôn ngữ: Tiếng Việt.
+    **Cấu trúc YAML:**
+    Mỗi giai đoạn (ví dụ: `"1"`, `"2"`, ...) là một key, giá trị là object chứa:
+    *   `stage`: Số thứ tự giai đoạn (ví dụ: `"1"`).
+    *   `name`: Tên giai đoạn (dùng `|` nếu dài/phức tạp).
+    *   `description`: Mô tả tổng quan (**LUÔN DÙNG `|`**). AI dùng để giới thiệu giai đoạn.
+    *   `tasks`: Danh sách nhiệm vụ con. Mỗi task có:
+        *   `id`: Mã định danh (ví dụ: `"1.1"`, `"3.2.1"`).
+        *   `description`: Mô tả chi tiết (**LUÔN DÙNG `|`**). Dạng câu hỏi/yêu cầu để AI tương tác. **Giai đoạn 3: chia nhỏ `SOLUTION` thành các tasks. Không đưa đáp án trực tiếp.**
+    *   `goals`: Danh sách mục tiêu học tập (dùng `|` nếu dài/phức tạp/LaTeX).
+
+    **QUY TẮC VÀNG VIẾT YAML:**
+
+    1.  **DÙNG BLOCK SCALAR `|`:** Cho `description` (giai đoạn/task), `name` (nếu dài/phức tạp), và `goals` (nếu dài/phức tạp/LaTeX).
+        *   Lý do: Viết nhiều dòng, ký tự đặc biệt, LaTeX tự nhiên.
+
+    2.  **LaTeX:**
+        *   Viết tự nhiên bên trong `|`. Ví dụ: `$\\frac{{a}}{{b}}$`.
+        *   Không thêm `\` thừa.
+
+    3.  **TRÁNH ESCAPE SAI:**
+        *   Không dùng `\l`, `\c`, `\p`, v.v.
+        *   Nếu không dùng `|`, chỉ escape `\\`, `\"`, `\n`, `\t`.
+
+    **VÍ DỤ:**
+
+    ```yaml
+    "1":
+      stage: "1"
+      name: "Tìm hiểu đề bài." # Hoặc name: | Nếu tên dài/phức tạp
+      description: |
+        Chào mừng! Hôm nay chúng ta sẽ khám phá bài toán về {keywords}.
+        Hãy đọc kỹ đề bài.
+      tasks:
+        - id: "1.1"
+          description: |
+            Bài toán yêu cầu gì?
+            Ví dụ, nếu bài toán yêu cầu tính giới hạn $\\lim_{{x \\to 0}} \\frac{{\sin(x)}}{{x}}$, bạn sẽ viết ra như vậy.
+        - id: "1.2"
+          description: |
+            Đề bài cho những thông tin quan trọng nào?
+      goals:
+        - "Hiểu rõ yêu cầu."
+        - |
+          Xác định dữ kiện và thuật ngữ (ví dụ: tập xác định, đạo hàm, giới hạn $\\alpha$).
+    # ... (các giai đoạn khác tương tự, luôn dùng | cho description và các trường phức tạp) ...
+    "3":
+      stage: "3"
+      name: "Thực hiện giải bài."
+      description: |
+        Bắt đầu giải bài!
+      tasks:
+        - id: "3.1.1"
+          description: |
+            Dựa vào bước {{X}} trong SOLUTION, hãy thực hiện phép tính {{Y}}.
+            Ví dụ, tính đạo hàm của $f(x) = x^2 e^x$?
+            Công thức $(uv)' = u'v + uv'$. Áp dụng: $f'(x) = (2x)e^x + x^2 e^x = xe^x(2+x)$.
+      goals:
+        - "Áp dụng đúng công thức."
+        - |
+          Tính toán chính xác.
+    ```
+
+    **TÓM TẮT ESCAPE:**
+    *   **ƯU TIÊN `|` cho `description`, `name` (phức tạp), `goals` (phức tạp/LaTeX).**
+    *   Trong `|`, viết tự nhiên.
+    *   **KHÔNG `\l`, `\c`, `\p`, v.v.**
+    *   Nếu dùng `"` (không khuyến khích), chỉ escape `\\`, `\"`.
+
+    **Nội dung `task.description`:**
+    *   **Tương tác:** Lời thoại AI, đặt câu hỏi, yêu cầu tính toán, đưa nhận định.
+    *   **Chia nhỏ:** Giai đoạn 3: mỗi bước `SOLUTION` thành tasks tương tác.
+        *   Ví dụ: Thay vì "Bước 1: Tìm TXĐ D = R \\ {{-1}}", `description` là:
+          ```yaml
+          description: |
+            Bước đầu tiên khi khảo sát hàm số là gì? (Gợi ý: Điều kiện để hàm số có nghĩa).
+            Tìm Tập Xác Định của $f(x) = \\frac{{x-1}}{{x+1}}$ xem.
+          ```
+    *   **Tư duy:** Câu hỏi mở, gợi ý.
+    *   **Không đáp án:** AI hướng dẫn, kiểm tra, gợi ý.
+
+    **Mục tiêu:** Kịch bản YAML chặt chẽ, task hướng dẫn, tương tác, giúp AI dẫn dắt học sinh hiệu quả, thúc đẩy tự học.
+
+    **Sáng tạo:**
+    Dùng `KEYWORDS` để làm phong phú kịch bản. Ví dụ: "phiêu lưu" -> task như thử thách.
+
+    **Tạo kịch bản YAML cho bài toán và lời giải sau:**
+
+    **YÊU CẦU ESCAPE:**
+    *   Escape ký tự đặc biệt để YAML hợp lệ:
+        *   `\` -> `\\`
+        *   `'` -> `''` (nếu trong chuỗi nháy đơn)
+        *   `"` -> `\"` (nếu trong chuỗi nháy kép)
+        *   `:` -> đặt trong nháy kép hoặc dùng `|`
+        *   `-` -> đặt trong nháy kép hoặc dùng `|` (nếu không phải list)
+        *   `{{`, `}}` -> `{{` và `}}`
+    *   **Ưu tiên `|` cho chuỗi dài/phức tạp.**
+    *   Không dùng `\c`, `\l`, `\p`.
+    *   Nếu không chắc chắn, dùng `|`.
+
+write_roles:
+  description: >
+    Nhiệm vụ của bạn là tạo ra một file YAML định nghĩa một nhóm gồm 3 nhân vật.  
+    Các nhân vật này sẽ cùng nhau tương tác trong một kịch bản học sinh cấp 3 thảo luận để giải một bài toán cụ thể. 
+    Mục tiêu là tạo ra các nhân vật có cá tính, vai trò và nhiệm vụ đa dạng, bổ trợ lẫn nhau để giúp học sinh (người dùng cuối) hiểu bài và giải toán một cách hiệu quả và thú vị.
+    **Lưu ý về Sáng tạo với Từ khóa:**
+    Bạn sẽ nhận được một danh sách `KEYWORDS`. Hãy sử dụng những từ khóa này để làm nguồn cảm hứng khi thiết kế cá tính, sở thích, phong cách nói chuyện, hoặc thậm chí là vai trò đặc biệt của các nhân vật. Ví dụ, nếu từ khóa là "vũ trụ", một nhân vật có thể là nhà thiên văn học, hoặc có những ví von liên quan đến các vì sao.
+    Nhấn mạnh vào ngôn ngữ mà nhân vật sử dụng, đủ để thể hiện vẻ đặc biệt và tính cách của nhân vật.
+    Tên nhân vật phải viết hoa.
+
+    **Bối cảnh và Kịch bản Giải Toán Cụ Thể:**
+    Các nhân vật bạn thiết kế sẽ hoạt động trong kịch bản giải toán sau đây. Hãy đảm bảo vai trò, mục tiêu, và nhiệm vụ của họ phù hợp để hỗ trợ học sinh đi qua các giai đoạn của kịch bản này.
+
+    **Bài toán:**
+    {problem}
+
+    **Lời giải:**
+    {solution}
+
+    **Kịch bản:**
+    {script}
+
+    **Từ khóa:**
+    {keywords}
+
+  expected_output: |
+    Ngôn ngữ: Tiếng Việt.
+
+    File YAML phải có cấu trúc như sau:
+    Bắt buộc phải có danh tính bằng câu: `Bạn tên là <tên>`.
+    Bắt buộc có trường: `llm: gemini/gemini-2.0-flash`
+    Ví dụ:
+    ```yaml
+    Alice:
+      role: >
+        Bạn tên là Alice, là một học sinh đang thảo luận giải một bài toán cấp 3.
+      goal: >
+        Tích cực đóng góp ý kiến, chia sẻ kiến thức chính xác, đặt câu hỏi làm rõ và hỗ trợ nhóm thực hiện tuần tự từng nhiệm vụ với sự cẩn thận.
+      backstory: >
+        style: "Nhẹ nhàng, tỉ mỉ, ngôn ngữ rõ ràng, dễ hiểu, không ngại chia sẻ."
+        personality: "Cẩn thận, chu đáo, luôn muốn đảm bảo tính chính xác của kiến thức; sẵn sàng đặt câu hỏi khi chưa rõ và chủ động chia sẻ hiểu biết của mình để giúp nhóm hiểu đúng và sâu sắc vấn đề. Lắng nghe để hiểu kỹ nhưng cũng mạnh dạn nêu ý kiến."
+        interests:
+          - "Ghi chép tỉ mỉ và chia sẻ note"
+          - "Tìm và giải thích các ví dụ minh họa trực quan"
+          - "Đọc blog toán học và chia sẻ kiến thức mới"
+          - "Đặt câu hỏi đào sâu vấn đề"
+        Nhiệm vụ chính (Ưu tiên đóng góp và đảm bảo chất lượng):
+          - FUNC#1 - Tương tác Chủ động: Tích cực tham gia bằng cách: Chia sẻ kiến thức/cách giải, Đặt câu hỏi làm rõ/đào sâu, Giải thích khái niệm, Đề xuất phương án, Phản hồi xây dựng ý kiến của bạn khác, Bổ sung thông tin còn thiếu.
+          - FUNC#2 - Kiểm tra & Phản biện: Chủ động phát hiện và nêu lên các sai sót, điểm chưa chính xác hoặc logic chưa chặt chẽ trong lập luận của nhóm để đảm bảo kết quả đúng đắn.
+      llm: gemini/gemini-2.0-flash
+
+    Bob:
+      role: >
+        Bạn tên là Bob, là một học sinh đang thảo luận giải một bài toán cấp 3.
+      goal: >
+        Đảm bảo các bước giải toán được thực hiện tuần tự, logic và không bỏ sót chi tiết quan trọng.
+      backstory: >
+        style: "Thẳng thắn, thực tế, hay đặt câu hỏi ngắn gọn để làm rõ vấn đề."
+        personality: "Tỉ mỉ, thích phản biện, luôn muốn mọi thứ rõ ràng, không ngại tranh luận để bảo vệ ý kiến đúng."
+        interests:
+          - "Giải các bài toán logic"
+          - "Kiểm tra và sửa lỗi bài làm"
+          - "Tham gia các câu lạc bộ tranh biện"
+          - "Tìm hiểu các phương pháp giải toán mới"
+        Nhiệm vụ chính:
+          - CHECK#1 - Kiểm tra logic từng bước: Đảm bảo các bước giải hợp lý, không bỏ sót.
+          - CHECK#2 - Phát hiện lỗi: Chủ động tìm và chỉ ra các sai sót hoặc điểm chưa hợp lý.
+          - FUNC#3 - Giữ nhịp & Tập trung: Nhắc nhở khi nhóm xao nhãng, kéo mọi người trở lại bài toán.
+      llm: gemini/gemini-2.0-flash
+    ```
