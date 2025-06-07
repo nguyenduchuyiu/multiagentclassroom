@@ -44,6 +44,7 @@ class DialogueFlow(Flow[DialogueState]):
         super().__init__()
         self.socketio = socketio
         self.state.conversation = kwargs["conversation"]
+        save_to_log_file(f"Conversation: {self.state.conversation}\n", "test.txt")
         self.filename = kwargs["filename"]
         self.state.problem = kwargs["problem"]
         current_stage_description, completed_task_ids, current_stage_id = track_task(kwargs["stage_state"], 
@@ -108,8 +109,10 @@ class DialogueFlow(Flow[DialogueState]):
         })
         
         stage_state = parse_json_response(clean_response(stage_manager_result.raw))
-        if stage_state:
+        if stage_state is not None:
             self.state.stage_state = stage_state
+        else:
+            print("Warning: Stage state is None")
             
         current_stage_description, completed_task_ids, current_stage_id = track_task(self.state.stage_state, 
                                                           self.state.current_stage_id, 
@@ -117,7 +120,9 @@ class DialogueFlow(Flow[DialogueState]):
 
         self.state.current_stage_description = current_stage_description
         self.state.completed_task_ids = completed_task_ids
-        self.state.current_stage_id = current_stage_id
+        if int(current_stage_id) != int(self.state.current_stage_id):
+            self.state.current_stage_id = current_stage_id
+            save_to_log_file(f"Stage changed to {current_stage_id}\n", self.filename)
         
         if self.session_id:
             send_stage_update_via_socketio({

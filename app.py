@@ -277,27 +277,35 @@ def history(session_id):
     history_list = []
     if session_data and session_data[0]:
         lines = session_data[0].split('\n')
+        current_message = None
         for line in lines:
             pattern = r"TIME=([0-9.]+) \| CON#(\d+) \| SENDER=([^|]+) \| TEXT=(.+)"
             match = re.match(pattern, line)
             if match:
-                try:
-                    time_val, turn, sender, text = match.groups()
-                    timestamp = float(time_val)
-                    turn = int(turn)
-                    sender_name = sender.strip()
-                    text = text.strip()
-                    history_list.append({
-                        "source": sender_name,
-                        "content": {
-                            "text": text,
-                            "sender_name": sender_name
-                        },
-                        "timestamp": timestamp * 1000  # Convert to milliseconds
-                    })
-                except (IndexError, ValueError) as e:
-                    print(f"Error parsing line: {line} - {e}")
-                    continue
+                # Nếu có message trước đó, lưu lại
+                if current_message:
+                    history_list.append(current_message)
+                time_val, turn, sender, text = match.groups()
+                timestamp = float(time_val)
+                turn = int(turn)
+                sender_name = sender.strip()
+                text = text.strip()
+                current_message = {
+                    "source": sender_name,
+                    "content": {
+                        "text": text,
+                        "sender_name": sender_name
+                    },
+                    "timestamp": timestamp * 1000  # Convert to milliseconds
+                }
+            else:
+                # Nếu không match, đây là dòng tiếp theo của TEXT
+                if current_message:
+                    # Nối thêm dòng này vào text, giữ nguyên xuống dòng
+                    current_message["content"]["text"] += "\n" + line
+        # Đừng quên lưu message cuối cùng
+        if current_message:
+            history_list.append(current_message)
     
     script_content = json.loads(session_data["script"])
     stage_state = json.loads(session_data["stage_state"])
@@ -310,6 +318,37 @@ def history(session_id):
         "completed_task_ids": completed_task_ids,
         "current_stage_id": current_stage_id
     })
+
+@app.route('/delete_session/<session_id>', methods=['POST'])
+def delete_session(session_id):
+    """Delete a chat session from the database."""
+    try:
+        db = database.get_db()
+        # Check if session exists
+        session = db.execute('SELECT 1 FROM sessions WHERE session_id = ?', (session_id,)).fetchone()
+        if not session:
+            flash("Session not found.", "error")
+            return redirect(url_for('list_sessions'))
+        
+        # Delete the session
+        db.execute('DELETE FROM sessions WHERE session_id = ?', (session_id,))
+        db.commit()
+        
+        # Try to delete the log file if it exists
+        try:
+            log_file = f"logs/{session_id}.log"
+            if os.path.exists(log_file):
+                os.remove(log_file)
+        except Exception as e:
+            print(f"Warning: Could not delete log file: {e}")
+        
+        flash("Session deleted successfully.", "success")
+    except Exception as e:
+        print(f"Error deleting session: {e}")
+        flash("An error occurred while deleting the session.", "error")
+        db.rollback()
+    
+    return redirect(url_for('list_sessions'))
 
 # --- Socket.IO Events ---
 @socketio.on('connect')

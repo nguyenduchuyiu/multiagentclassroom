@@ -137,7 +137,8 @@ def dummy_llm_call(data_type):
         return "Hello, world!"
 
 def save_to_log_file(message, filename):
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+    dir_name = os.path.dirname(filename)
+    if dir_name and not os.path.exists(dir_name):
+        os.makedirs(dir_name, exist_ok=True)
     with open(filename, "a") as f:
         f.write(message)

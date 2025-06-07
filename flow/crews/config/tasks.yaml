@@ -94,7 +94,7 @@ think:
     Ví dụ:
     {{
         "stimuli": ["CON#9"],
-        "thought": "Các bạn đã làm đúng hướng. Trong 10 hội thoại gần nhất không thấy Huy đóng góp, mình nên hỏi ý kiến Huy xem sao.",
+        "thought": "Các bạn đã làm đúng hướng. Trong 10 hội thoại gần nhất không thấy đóng góp của <username>, mình nên hỏi ý kiến <username> xem sao.",
         "action": "speak"
     }}
 
@@ -239,7 +239,7 @@ talk:
     **YÊU CẦU TUYỆT ĐỐI:** 
         1. Chỉ trả về MỘT đối tượng JSON DUY NHẤT chứa hai khóa sau. KHÔNG thêm bất kỳ giải thích hay văn bản nào khác bên ngoài đối tượng JSON. 
         2. KHÔNG chứa CON#/STEP#/FUNC#, tin nhắn phải tự nhiên.
-        3. Mọi biểu thức toán học, tabular đều in ra dạng latex và để trong dấu '$' ví dụ $x^2$, nhớ escape các kí tự đặc biệt.
+        3. Mọi biểu thức toán học, tabular đều in ra dạng latex và để trong dấu '$' ví dụ $x^2$, nhớ thêm hai dấu // vào các biểu thức toán học như \\frac, \\sqrt, ...
         4. Định dạng tin nhắn trong các html block.
     {{
       "spoken_message": "<Nội dung câu nói cuối cùng, tự nhiên, có thể in hình minh họa (ví dụ bảng biến thiên, hình học) để giúp mọi người dễ hình dung>"

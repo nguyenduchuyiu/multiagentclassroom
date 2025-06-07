@@ -33,14 +33,21 @@
                 <div class="session-list">
                 {% for session in sessions %}
                     <div class="session-item">
-                        <a href="{{ url_for('chat_interface', session_id=session['session_id']) }}" class="session-link">
-                            <i class="fas fa-comments"></i>
-                            Session with {{ session['user_name'] }} (ID: {{ session['session_id'][:8] }})
-                        </a>
-                        <div class="session-meta">
-                            <i class="fas fa-calendar-alt"></i>
-                            <span>Started: {{ session['created_at'].strftime('%Y-%m-%d %H:%M') }}</span>
+                        <div class="session-content">
+                            <a href="{{ url_for('chat_interface', session_id=session['session_id']) }}" class="session-link">
+                                <i class="fas fa-comments"></i>
+                                Session with {{ session['user_name'] }} (ID: {{ session['session_id'][:8] }})
+                            </a>
+                            <div class="session-meta">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Started: {{ session['created_at'].strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
                         </div>
+                        <form action="{{ url_for('delete_session', session_id=session['session_id']) }}" method="POST" class="delete-form" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phiên này không?');">
+                            <button type="submit" class="delete-btn" title="Delete Session">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
                     </div>
                 {% endfor %}
                 </div>
@@ -64,5 +71,7 @@
             </div>
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='js/list_sessions.js') }}"></script>
 </body>
 </html>

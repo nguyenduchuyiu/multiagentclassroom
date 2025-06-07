@@ -25,4 +25,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Handle delete button animations and confirmation
+    const deleteForms = document.querySelectorAll('.delete-form');
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            // Get the session item element
+            const sessionItem = this.closest('.session-item');
+            
+            // Show confirmation dialog
+            if (confirm('Bạn có chắc chắn muốn xóa phiên này không?')) {
+                // Add deleting class for visual feedback
+                sessionItem.classList.add('deleting');
+                
+                // Submit the form after a short delay for animation
+                setTimeout(() => {
+                    this.submit();
+                }, 300);
+            }
+        });
+    });
+
+    // Auto-hide flash messages after 5 seconds
+    const flashMessages = document.querySelectorAll('.flash');
+    if (flashMessages.length > 0) {
+        setTimeout(() => {
+            flashMessages.forEach(message => {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    message.style.display = 'none';
+                }, 500);
+            });
+        }, 5000);
+    }
 }); // End DOMContentLoaded
