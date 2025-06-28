@@ -417,7 +417,7 @@ Evaluation:\n{evaluation}
         '''
         try:
             potential_talkers_details = []
-
+            evaluation_results = evaluation_results or []
             for result in evaluation_results:
                 if result.get('action') == 'speak':
                     agent_name = result.get('name')

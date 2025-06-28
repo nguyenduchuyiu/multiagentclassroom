@@ -151,7 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const messageTextDiv = msg.querySelector('.message-text');
         if (messageTextDiv) {
-            messageTextDiv.innerHTML = text;
+            if (senderType === 'system') {
+                messageTextDiv.innerHTML = escapeHTML(text);
+            } else {
+                messageTextDiv.innerHTML = marked.parse(text);
+            }
         }
 
         chatbox.appendChild(msg);
